@@ -4,17 +4,20 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { STATIONS, Station } from '@/lib/constants';
 import { DashIssue } from '@/types';
 import { KanbanColumn } from './KanbanColumn';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, Plus } from 'lucide-react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { NewIssueModal } from '@/components/NewIssueModal';
 
 interface KanbanBoardProps {
   initialIssues: DashIssue[];
+  trackedRepos: string[];
 }
 
-export function KanbanBoard({ initialIssues }: KanbanBoardProps) {
+export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [issues, setIssues] = useState<DashIssue[]>(initialIssues);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [showNewIssueModal, setShowNewIssueModal] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
   const getSupabase = useCallback(async () => {
@@ -121,19 +124,37 @@ export function KanbanBoard({ initialIssues }: KanbanBoardProps) {
             </p>
           )}
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--primary)', color: '#fff' }}
-        >
-          {syncing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          Sync GitHub
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowNewIssueModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all"
+            style={{ background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#059669';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#10B981';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Issue</span>
+          </button>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-50"
+            style={{ background: 'var(--primary)', color: '#fff' }}
+          >
+            {syncing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            Sync GitHub
+          </button>
+        </div>
       </div>
 
       {/* Board */}
@@ -148,6 +169,15 @@ export function KanbanBoard({ initialIssues }: KanbanBoardProps) {
           ))}
         </div>
       </div>
+
+      {/* New Issue Modal */}
+      {showNewIssueModal && (
+        <NewIssueModal
+          trackedRepos={trackedRepos}
+          onClose={() => setShowNewIssueModal(false)}
+          onSync={handleSync}
+        />
+      )}
     </div>
   );
 }

@@ -7,10 +7,21 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
-  const { data: issues } = await supabase
-    .from('dash_issues')
-    .select('*')
-    .order('updated_at', { ascending: false });
+  const { data: { user } } = await supabase.auth.getUser();
 
-  return <KanbanBoard initialIssues={(issues as DashIssue[]) ?? []} />;
+  const [issuesResult, configResult] = await Promise.all([
+    supabase.from('dash_issues').select('*').order('updated_at', { ascending: false }),
+    user
+      ? supabase.from('dash_dashboard_config').select('tracked_repos').eq('user_id', user.id).single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const trackedRepos: string[] = (configResult.data as { tracked_repos?: string[] } | null)?.tracked_repos ?? [];
+
+  return (
+    <KanbanBoard
+      initialIssues={(issuesResult.data as DashIssue[]) ?? []}
+      trackedRepos={trackedRepos}
+    />
+  );
 }
