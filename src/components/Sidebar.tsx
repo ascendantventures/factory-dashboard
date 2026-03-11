@@ -10,12 +10,14 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Board', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart2, exact: false },
+  { href: '/dashboard/costs', label: 'Costs', icon: DollarSign, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
 ];
 
