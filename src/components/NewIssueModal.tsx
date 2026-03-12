@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef as useRefFQ, DragEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { X, Plus, Loader2, AlertCircle, FolderOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { X, Plus, Loader2, AlertCircle, FolderOpen, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
 import { TargetAppDropdown } from './TargetAppDropdown';
+import type { IssueAttachment } from '@/lib/attachments';
+import { isAllowedFileType, MAX_FILE_SIZE, formatFileSize } from '@/lib/attachments';
 
 interface FormData {
   title: string;
@@ -32,6 +34,9 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [selectedTargetApp, setSelectedTargetApp] = useState<string>('');
+  const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
+  const [uploadedAttachments, setUploadedAttachments] = useState<IssueAttachment[]>([]);
 
   function handleRepoSelect(repo: string | null) {
     const currentDesc = watch('description') ?? '';
@@ -77,6 +82,23 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
         return;
       }
 
+      // Upload queued attachments to the new issue
+      if (pendingAttachments.length > 0 && result.number) {
+        setCreatedIssueNumber(result.number);
+        for (const file of pendingAttachments) {
+          try {
+            const formData = new globalThis.FormData();
+            formData.append('file', file);
+            await fetch(`/api/issues/${result.number}/attachments`, {
+              method: 'POST',
+              body: formData,
+            });
+          } catch {
+            // Non-fatal: issue already created, skip failed attachment
+          }
+        }
+      }
+
       toast.success('Issue created', {
         description: (
           <a
@@ -92,6 +114,9 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
       });
 
       reset();
+      setPendingAttachments([]);
+      setUploadedAttachments([]);
+      setCreatedIssueNumber(null);
       onClose();
       onSync?.();
     } catch {
@@ -477,6 +502,29 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
                 </div>
               </div>
 
+              {/* Attachments */}
+              <div>
+                <label style={{ ...labelStyle, marginBottom: '4px' }}>
+                  Attachments{' '}
+                  <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <p style={{ fontSize: '12px', color: '#71717A', marginBottom: '10px', fontFamily: 'Inter, sans-serif' }}>
+                  Add images, mockups, or design files. Pipeline agents will use these as reference.
+                </p>
+                <ModalFileQueue
+                  files={pendingAttachments}
+                  onFilesAdd={(newFiles) => {
+                    setPendingAttachments((prev) => {
+                      const combined = [...prev, ...newFiles];
+                      return combined.slice(0, 10);
+                    });
+                  }}
+                  onFileRemove={(idx) => {
+                    setPendingAttachments((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                />
+              </div>
+
               {/* API error */}
               {apiError && (
                 <p style={{ ...errorStyle, fontSize: '13px', padding: '10px 12px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '6px', margin: 0 }} role="alert">
@@ -588,5 +636,157 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
         }
       `}</style>
     </>
+  );
+}
+
+// ── Inline file queue for the NewIssueModal (deferred upload) ─────────────────
+
+interface ModalFileQueueProps {
+  files: File[];
+  onFilesAdd: (files: File[]) => void;
+  onFileRemove: (index: number) => void;
+}
+
+function ModalFileQueue({ files, onFilesAdd, onFileRemove }: ModalFileQueueProps) {
+  const inputRef = useRefFQ<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+
+  function processFiles(fileList: FileList | File[]) {
+    setQueueError(null);
+    const arr = Array.from(fileList);
+    const valid: File[] = [];
+    const errors: string[] = [];
+
+    for (const f of arr) {
+      if (!isAllowedFileType(f)) {
+        errors.push(`${f.name}: type not supported`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        errors.push(`${f.name}: exceeds 10MB`);
+        continue;
+      }
+      valid.push(f);
+    }
+
+    if (errors.length) setQueueError(errors.join('; '));
+    if (valid.length) onFilesAdd(valid);
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files);
+  }
+
+  return (
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Drop zone */}
+      <div
+        data-testid="attachment-dropzone"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={(e) => { e.preventDefault(); setDragOver(false); }}
+        onDrop={handleDrop}
+        style={{
+          border: `2px dashed ${dragOver ? '#2563EB' : queueError ? '#DC2626' : '#3F3F46'}`,
+          background: dragOver ? 'rgba(37,99,235,0.08)' : queueError ? 'rgba(220,38,38,0.06)' : '#1C1C1C',
+          borderRadius: '8px',
+          padding: '28px 16px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 200ms ease',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept=".png,.jpg,.jpeg,.gif,.svg,.pdf,.pen"
+          data-testid="attachment-file-input"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            if (e.target.files) processFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        <UploadIcon size={28} color={dragOver ? '#2563EB' : '#71717A'} />
+        <span style={{ fontSize: '13px', color: '#A1A1AA' }}>
+          Drop files or{' '}
+          <span style={{ color: '#10B981', fontWeight: 500 }}>browse</span>
+          {' '}— PNG, JPG, GIF, SVG, PDF, .pen · max 10MB
+        </span>
+      </div>
+
+      {queueError && (
+        <p style={{ fontSize: '12px', color: '#EF4444', marginTop: '6px' }} role="alert">
+          {queueError}
+        </p>
+      )}
+
+      {/* File list */}
+      {files.length > 0 && (
+        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {files.map((file, idx) => (
+            <div
+              key={`${file.name}-${idx}`}
+              data-testid="attachment-preview"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                background: '#1C1C1C',
+                border: '1px solid #262626',
+                borderRadius: '6px',
+                padding: '8px 10px',
+              }}
+            >
+              {/* Tiny preview */}
+              {file.type.startsWith('image/') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={file.name}
+                  style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
+                />
+              ) : (
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '4px', background: '#27272A',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: '#71717A', textTransform: 'uppercase' }}>
+                    {file.name.split('.').pop()}
+                  </span>
+                </div>
+              )}
+              <span style={{ flex: 1, fontSize: '13px', color: '#FAFAFA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {file.name}
+              </span>
+              <span style={{ fontSize: '11px', color: '#71717A', flexShrink: 0 }}>
+                {formatFileSize(file.size)}
+              </span>
+              <button
+                onClick={() => onFileRemove(idx)}
+                aria-label={`Remove ${file.name}`}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: '#71717A', padding: '2px', display: 'flex', flexShrink: 0,
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#EF4444'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#71717A'; }}
+              >
+                <XIcon size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

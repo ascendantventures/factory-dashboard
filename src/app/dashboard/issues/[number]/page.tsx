@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { formatDistanceToNow, format } from 'date-fns';
 import { IssueBody } from './IssueBody';
 import { StageOverride } from './StageOverride';
+import { AttachmentGallery } from '@/components/attachments/AttachmentGallery';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export default async function IssueDetailPage({ params, searchParams }: PageProp
   const issueNumber = parseInt(issueNumberStr, 10);
 
   const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let query = supabase
     .from('dash_issues')
@@ -134,6 +136,13 @@ export default async function IssueDetailPage({ params, searchParams }: PageProp
               Description
             </h2>
             <IssueBody body={issue.body} />
+
+            {/* Attachment gallery — below description */}
+            <AttachmentGallery
+              issueNumber={issueNumber}
+              currentUserId={user?.id}
+              isAdmin={user?.user_metadata?.role === 'admin'}
+            />
           </div>
 
           {/* Agent runs */}

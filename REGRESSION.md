@@ -157,3 +157,70 @@ _Core: Issue #8_
 
 ### Routes
 - /api/build-repos (GET)
+
+---
+
+## Image & Design Attachment System [auth]
+_Issue #36 — Added: 2026-03-12_
+
+### Upload (Create Issue flow)
+
+- [ ] [auth] Open the Create Issue modal (click "New Issue" button in header)
+- [ ] Scroll to the "Attachments" section — drag-and-drop zone renders with "Drop files here or click to browse" text
+- [ ] Drag a PNG file onto the drop zone — file appears in preview list with thumbnail, filename, and file size
+- [ ] Click the drop zone — file browser opens; select a .pdf file — appears in list with extension label
+- [ ] Add a .pen file — appears in list with "pen" extension label
+- [ ] Try to add a .exe file — error message appears: "type not supported"
+- [ ] Try to add a file over 10MB — error message appears: "exceeds 10MB"
+- [ ] Complete the form (title + description + repo) and submit — issue created successfully; attachments uploaded to the new issue number
+- [ ] Toast shows "Issue created" with link to GitHub
+
+### Gallery (Issue Detail page)
+
+- [ ] [auth] Navigate to /dashboard/issues/[number] for an issue with attachments
+- [ ] "Attachments" section renders below the Description, above Agent Runs
+- [ ] Image thumbnails display in a responsive grid (auto-fill, minmax 160px)
+- [ ] Click an image thumbnail — lightbox opens full-screen
+- [ ] Press left/right arrow keys in lightbox — navigates between images
+- [ ] Press Escape — lightbox closes
+- [ ] PDF attachment shows FileText icon with "PDF" badge; click opens PDF iframe modal
+- [ ] PDF modal has Close button and Download button; Close button dismisses modal
+- [ ] .pen file renders as PenFileBadge (violet styling, not a thumbnail card)
+- [ ] PenFileBadge has "Open in Pencil" button — URL is `pencil://open?url=...`
+- [ ] PenFileBadge has "Download" button — triggers file download via /api/attachments/[id]
+- [ ] Issue with no attachments shows empty state: "No attachments yet" with Add attachment button
+
+### Add Attachment (from Issue Detail page)
+
+- [ ] [auth] On issue detail page, click "Add file" button — AttachmentUploader zone appears inline
+- [ ] Drop/select a valid file — shows upload progress bar then checkmark on completion
+- [ ] Newly uploaded file appears in the gallery immediately after upload
+
+### Delete
+
+- [ ] [auth] As the file uploader, hover over an image thumbnail — delete button (red trash icon) appears in overlay
+- [ ] Click delete — confirmation modal appears: "Delete attachment?" with filename
+- [ ] Click "Keep file" — modal closes, file remains
+- [ ] Click "Delete file" — file removed from gallery, removed from Supabase Storage
+- [ ] [auth] As a non-owner non-admin, the delete button is NOT visible on hover overlay
+- [ ] DELETE /api/issues/[number]/attachments/[id] as non-owner returns 403
+
+### API Endpoints
+
+- [ ] GET /api/issues/[number]/attachments returns 401 when not authenticated
+- [ ] POST /api/issues/[number]/attachments returns 401 when not authenticated
+- [ ] POST with unsupported file type returns 400 with descriptive error
+- [ ] POST with file > 10MB returns 400 with size error
+- [ ] POST when issue already has 10 attachments returns 400
+- [ ] DELETE /api/issues/[number]/attachments/[id] returns 403 for non-owner
+- [ ] GET /api/attachments/[id] redirects to a signed download URL
+- [ ] GET /api/issues/[number]/attachment-context returns formatted markdown when attachments exist
+- [ ] GET /api/issues/[number]/attachment-context returns `{ "context": "" }` for issues with no attachments
+
+### Routes/Endpoints
+- /dashboard/issues/[number] (issue detail with gallery)
+- POST /api/issues/[number]/attachments
+- GET /api/issues/[number]/attachments
+- DELETE /api/issues/[number]/attachments/[id]
+- GET /api/attachments/[id]
+- GET /api/issues/[number]/attachment-context
