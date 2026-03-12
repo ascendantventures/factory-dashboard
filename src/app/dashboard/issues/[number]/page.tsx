@@ -8,6 +8,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { IssueBody } from './IssueBody';
 import { StageOverride } from './StageOverride';
 import { AttachmentGallery } from '@/components/attachments/AttachmentGallery';
+import { CommentThread } from './components/CommentThread';
 
 export const dynamic = 'force-dynamic';
 
@@ -312,6 +313,11 @@ export default async function IssueDetailPage({ params, searchParams }: PageProp
             </div>
           )}
         </div>
+      </div>
+
+      {/* GitHub comment thread */}
+      <div className="mt-6">
+        <CommentThread issueNumber={issueNumber} />
       </div>
     </div>
   );

@@ -106,6 +106,66 @@ export async function fetchIssueComments(
   return response.data as GitHubComment[];
 }
 
+export interface GithubCommentFull {
+  id: number;
+  author: string;
+  authorType: 'Bot' | 'User';
+  avatarUrl: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+}
+
+export async function fetchIssueCommentsFull(
+  owner: string,
+  repo: string,
+  issueNumber: number
+): Promise<GithubCommentFull[]> {
+  const kit = getOctokit();
+  const response = await kit.issues.listComments({
+    owner,
+    repo,
+    issue_number: issueNumber,
+    per_page: 100,
+  });
+  return response.data.map((c) => ({
+    id: c.id,
+    author: c.user?.login ?? 'unknown',
+    authorType: (c.user?.type === 'Bot' || c.user?.login?.endsWith('[bot]')) ? 'Bot' : 'User',
+    avatarUrl: c.user?.avatar_url ?? '',
+    body: c.body ?? '',
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
+    htmlUrl: c.html_url,
+  }));
+}
+
+export async function postIssueComment(
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  body: string
+): Promise<GithubCommentFull> {
+  const kit = getOctokit();
+  const { data: c } = await kit.issues.createComment({
+    owner,
+    repo,
+    issue_number: issueNumber,
+    body,
+  });
+  return {
+    id: c.id,
+    author: c.user?.login ?? 'unknown',
+    authorType: (c.user?.type === 'Bot' || c.user?.login?.endsWith('[bot]')) ? 'Bot' : 'User',
+    avatarUrl: c.user?.avatar_url ?? '',
+    body: c.body ?? '',
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
+    htmlUrl: c.html_url,
+  };
+}
+
 export async function updateIssueLabel(
   owner: string,
   repo: string,

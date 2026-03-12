@@ -224,3 +224,48 @@ _Issue #36 — Added: 2026-03-12_
 - DELETE /api/issues/[number]/attachments/[id]
 - GET /api/attachments/[id]
 - GET /api/issues/[number]/attachment-context
+
+---
+
+## GitHub Comment Threading & Reply [auth]
+_Added: 2026-03-12 — Issue #30_
+
+### Test Steps
+- [ ] Navigate to /dashboard/issues/30 — page loads with existing issue detail
+- [ ] Scroll to bottom of page — "GitHub Comments" section is visible with comment thread
+- [ ] Comment thread shows at least one comment with: avatar, author name, timestamp
+- [ ] Agent/bot comments show purple "AGENT" badge next to author name
+- [ ] Agent comments have a violet-tinted background (#F5F3FF)
+- [ ] Human comments have a white background (#FFFFFF)
+- [ ] Comments starting with "# Spec:" or "# Design:" render in DocumentViewer (not plain text)
+- [ ] DocumentViewer shows a "ON THIS PAGE" table of contents sidebar (desktop)
+- [ ] TOC entries are clickable jump links that scroll to correct section
+- [ ] Section headings have a copy button (appears on hover) — clicking copies section markdown
+- [ ] Copy button shows checkmark icon for 2 seconds after clicking
+- [ ] Long comments (>1500 chars) are initially collapsed with "Show more" button
+- [ ] Clicking "Show more" expands the comment; button changes to "Collapse"
+- [ ] Clicking "Collapse" re-collapses the comment
+- [ ] DocumentViewer comments (spec/design) start expanded by default
+- [ ] Reply editor is visible below the comment thread
+- [ ] Reply editor has "Write" and "Preview" tabs
+- [ ] Click "Preview" tab — renders markdown preview of current text
+- [ ] Toolbar buttons work: Bold wraps selected text in **, Italic in *, Code in backticks
+- [ ] Type a comment in editor, click "Post Comment" — comment appears in thread immediately (optimistic insert)
+- [ ] New comment has an amber flash background animation fading to white
+- [ ] After posting, editor is cleared
+- [ ] If comment post fails, a toast notification appears: "Couldn't post comment. Please try again."
+- [ ] Skeleton loaders appear during initial comment fetch
+- [ ] Page polls for new comments every 30 seconds (verify by waiting)
+- [ ] REQ-FDC-XXX tokens in spec comments appear with amber highlight background
+- [ ] AC-NNN.N tokens appear as amber-colored links
+
+### Routes/Endpoints
+- /dashboard/issues/[number] — issue detail page with comment thread
+- GET /api/issues/[number]/comments — fetches comments from GitHub
+- POST /api/issues/[number]/comments — posts a new comment to GitHub
+
+### Security
+- GET /api/issues/123/comments without auth → 401 response
+- POST /api/issues/123/comments without auth → 401 response
+- POST with body > 65536 chars → 400 response
+

@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/30
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -21,6 +21,8 @@
 - framer-motion (animations)
 - yet-another-react-lightbox (CR #36 — image lightbox for attachment gallery)
 - uuid (CR #36 — UUIDs for storage paths)
+- react-markdown + remark-gfm + rehype-highlight + rehype-raw (Issue #30 — markdown rendering)
+- @uiw/react-md-editor (Issue #30 — markdown editor, installed but using custom textarea editor for SSR compat)
 
 ## Architecture
 - **Auth:** Supabase Auth with email/password + magic link. Middleware protects /dashboard/* routes.
@@ -68,7 +70,8 @@
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key (client-side)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
-- `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
+- `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation + comment read/post)
+- `GITHUB_BUILD_REPO` — Target repo for comment threading (e.g. `ascendantventures/factory-dashboard`)
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -134,6 +137,19 @@
 - **Audit log polling:** page queries `pipeline_audit_log` via Supabase browser client on same 5s cycle
 - **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
+
+## GitHub Comment Threading (Issue #30)
+- **Route:** `/dashboard/issues/[number]` — CommentThread added below existing grid
+- **API routes:** `GET /api/issues/[number]/comments`, `POST /api/issues/[number]/comments`
+- **GitHub token:** Uses `GITHUB_TOKEN` server-side (same env var as sync). Target repo: `GITHUB_BUILD_REPO`.
+- **Components:** All in `src/app/dashboard/issues/[number]/components/` — CommentThread, CommentItem, CommentBody, BotBadge, CollapsibleComment, DocumentViewer, TableOfContents, ReplyEditor
+- **Bot detection:** `user.type === 'Bot'` OR `user.login.endsWith('[bot]')`
+- **DocumentViewer:** Triggers on comments starting with `# Spec:` or `# Design:`
+- **Collapsible:** Comments >1500 chars collapsed by default; DocumentViewer comments always expanded
+- **Polling:** 30s interval, paused when tab hidden (Page Visibility API)
+- **Light mode island:** Comment thread uses inline styles with light-mode amber design system (#D97706 primary, #FAFAF9 background) within the dark dashboard
+- **Reply editor:** Custom textarea with toolbar (not @uiw/react-md-editor which has SSR issues)
+- **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
 
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
