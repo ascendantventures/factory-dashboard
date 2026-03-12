@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/14
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/13
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -72,7 +72,9 @@
 - `dash_dashboard_config` — Per-user config (tracked_repos, notification_prefs)
 - `dash_user_roles` — Admin role assignments (user_id + role)
 - `dash_stage_transitions` — Stage change history for metrics (used by Activity page)
-- `dash_agent_runs` — Agent execution logs (cost, duration, model)
+- `dash_agent_runs` — Agent execution logs (cost, duration, model). **Columns:** `run_status` (not `status`), `estimated_cost_usd` (not `cost_usd`), `log_summary` (not `logs`).
+- `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
+- `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
@@ -93,6 +95,8 @@
 - `src/lib/supabase-server.ts` — Server-side Supabase clients
 - `src/lib/supabase.ts` — Browser-side Supabase client
 - `src/lib/github.ts` — GitHub API helpers
+- `src/lib/enrichment.ts` — IssueEnrichment type, EnrichmentMap, formatTimeInStage/formatCost/getIssueType helpers
+- `src/components/kanban/IssueDetailPanel.tsx` — Slide-over panel with stage timeline, agent runs table, cost breakdown
 
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
@@ -103,6 +107,14 @@
 - **Apps page** (`/dashboard/apps`) — currently shows empty state only. No backend for connected apps exists yet.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
+
+## Enhanced Kanban Cards (CR #13)
+- **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
+- **KanbanColumn** accepts `enrichmentMap: EnrichmentMap` + `onSelectIssue?` — shows column cost totals
+- **KanbanBoard** fetches enrichment from `dash_issue_cost_summary` + `dash_issue_stage_entry` views; subscribes to `dash_agent_runs` Realtime for live updates
+- **IssueDetailPanel** fetches from `/api/issues/[number]` on open; panel slide-over with framer-motion
+- data-testid attributes: `kanban-card`, `kanban-board`, `kanban-column`, `complexity-badge`, `time-in-stage`, `cost-tracker`, `agent-activity-dot`, `issue-detail-panel`, `close-panel`, `detail-title`, `stage-timeline`, `agent-run-list`, `cost-breakdown`, `column-issue-count`, `column-cost-total`
+- **dash_issues.github_issue_url** — added optional field to DashIssue type (populated by sync if present)
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
