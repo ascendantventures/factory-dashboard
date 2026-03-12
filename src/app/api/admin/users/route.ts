@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase-server';
+import { getUserRole } from '@/lib/roles';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const role = await getUserRole(user.id);
+  if (!['admin'].includes(role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get('search') ?? '';
+  const roleFilter = searchParams.get('role') ?? '';
+  const statusFilter = searchParams.get('status') ?? '';
+  const page = parseInt(searchParams.get('page') ?? '1', 10);
+  const pageSize = parseInt(searchParams.get('pageSize') ?? '20', 10);
+
+  // Fetch all auth users
+  const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({
+    page,
+    perPage: 500, // fetch a lot, we filter client-side for now
+  });
+  if (usersError) return NextResponse.json({ error: usersError.message }, { status: 500 });
+
+  // Fetch all role rows
+  const { data: roles } = await admin.from('fd_user_roles').select('*');
+  const rolesMap: Record<string, { role: string; is_active: boolean }> = {};
+  for (const r of roles ?? []) {
+    rolesMap[r.user_id] = { role: r.role, is_active: r.is_active };
+  }
+
+  let users = (usersData?.users ?? []).map((u) => ({
+    id: u.id,
+    email: u.email ?? '',
+    display_name: (u.user_metadata?.full_name as string | undefined) ?? u.email?.split('@')[0] ?? '',
+    role: rolesMap[u.id]?.role ?? 'viewer',
+    is_active: rolesMap[u.id]?.is_active ?? true,
+    last_sign_in_at: u.last_sign_in_at ?? null,
+    created_at: u.created_at,
+  }));
+
+  // Apply filters
+  if (search) {
+    const q = search.toLowerCase();
+    users = users.filter(
+      (u) => u.email.toLowerCase().includes(q) || u.display_name.toLowerCase().includes(q)
+    );
+  }
+  if (roleFilter && roleFilter !== 'all') {
+    users = users.filter((u) => u.role === roleFilter);
+  }
+  if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter === 'active') users = users.filter((u) => u.is_active);
+    if (statusFilter === 'deactivated') users = users.filter((u) => !u.is_active);
+  }
+
+  const total = users.length;
+  const offset = (page - 1) * pageSize;
+  const paginated = users.slice(offset, offset + pageSize);
+
+  return NextResponse.json({ users: paginated, total, page });
+}
