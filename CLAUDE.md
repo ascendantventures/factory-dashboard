@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/20
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/19
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -116,6 +116,22 @@
 - `src/components/apps/AppIssueList.tsx` — Issues grouped by station in pipeline order
 - `src/components/apps/AppTechStack.tsx` — Tech stack tag pills
 - `src/components/apps/DeploymentHistory.tsx` — Last deploy row with relative time
+
+## Pipeline Control Panel (CR #19)
+- **New route:** `/pipeline` — protected by middleware, uses AppShell, polls every 5s
+- **New API routes:**
+  - `GET /api/pipeline/status` — reads PID from `/tmp/harness.pid`, locks from `/tmp/harness-*.lock`, backoffs from `/tmp/backoff-*.json`; counts from `pipeline_audit_log`
+  - `POST /api/pipeline/control` — actions: `start_loop|stop_loop|force_tick|clear_locks|clear_backoff`; logs to `pipeline_audit_log`
+  - `POST /api/issues/[number]/action` — skip/block/retry/advance/revert; calls GitHub API; logs to `pipeline_audit_log`
+  - `GET|PATCH /api/pipeline/config` — reads/upserts `pipeline_station_config` (upsert on `station_name`)
+- **New DB tables:** `pipeline_station_config`, `pipeline_audit_log` (migration: 20260312075308_spec_schema_issue19.sql)
+- **Filesystem conventions:** PID file: `/tmp/harness.pid` (line 1: PID, line 2: epoch ms); Lock files: `/tmp/harness-{issue}.lock`; Backoff files: `/tmp/backoff-{issue}.json`; Force-tick: `/tmp/harness-force-tick`
+- **Harness start command:** `HARNESS_START_CMD` env var (default `node /app/loop.js`), `HARNESS_CWD` for working dir
+- **Station order:** intake → spec → design → build → qa → done
+- **Issue action menu:** also exported from `_components/IssueActionMenu.tsx` for use in Kanban + issue detail
+- **Audit log polling:** page queries `pipeline_audit_log` via Supabase browser client on same 5s cycle
+- **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
+- **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
