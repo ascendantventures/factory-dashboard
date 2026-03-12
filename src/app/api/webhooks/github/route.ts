@@ -134,5 +134,22 @@ export async function POST(request: NextRequest) {
     })
     .eq('id', loggedEvent.id);
 
+  // Fire-and-forget: log to fdash_event_log (non-blocking)
+  void admin
+    .from('fdash_event_log')
+    .upsert(
+      {
+        direction: 'in',
+        event_type: eventType || 'unknown',
+        source: 'github',
+        payload: payload as Record<string, unknown>,
+        status: 'received',
+      },
+      { onConflict: 'id' }
+    )
+    .then(({ error }) => {
+      if (error) console.error('fdash_event_log insert error:', error);
+    });
+
   return NextResponse.json({ ok: true });
 }

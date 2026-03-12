@@ -12,6 +12,8 @@ import {
   LogOut,
   ChevronLeft,
   Cpu,
+  BookOpen,
+  Radio,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
+  { href: '/dashboard/docs', label: 'API Docs', icon: BookOpen, exact: false },
+  { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
 ];
 

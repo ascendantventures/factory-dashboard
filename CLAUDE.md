@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/18
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/31
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -133,21 +133,6 @@
 - **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
-## Spec Review & Approval Flow (CR #18)
-- **New route:** Opens as slide-over panel from the Kanban board when clicking a `station:spec` issue card
-- **New API routes:**
-  - `GET /api/specs/[issueNumber]?repo=...` — fetches spec comment from GitHub (looks for heading-heavy comment or `<!-- SPEC -->` marker)
-  - `POST /api/specs/approve` — marks spec approved (`spec_approved=true`), optional `skipDesign` flag to advance station to `design`
-  - `POST /api/specs/feedback` — posts feedback comment to GitHub issue via Octokit
-- **New DB tables:** `factory_spec_activities` (FK to `dash_issues.id`), new columns added to `dash_issues` (`spec_approved`, `spec_approved_by`, `spec_approved_at`, `spec_approval_notes`)
-- **New components:** `src/components/spec-review/` — SpecReviewPanel (main), SpecMarkdownRenderer (react-markdown + remark-gfm), SpecSectionHighlighter (sticky nav chips), SpecMetadata, SpecActionBar, ApproveConfirmDialog, FeedbackDialog, SkipDesignConfirmDialog, SpecActivityFeed
-- **KanbanBoard integration:** `KanbanBoard.tsx` shows `SpecReviewPanel` (light mode panel) instead of `IssueDetailPanel` for `station:spec` issues
-- **Design:** Light mode panel (white background, blue primary) layered over the dark Kanban. Fonts: Space Grotesk (headings), Inter (body), JetBrains Mono (code)
-- **dash_issues.id is bigint** — `factory_spec_activities.issue_id` is bigint FK, not UUID. Pass the numeric `issue.id` as `issueId` in API requests.
-- **data-testid attributes:** `spec-review-panel`, `spec-markdown-renderer`, `spec-section-nav`, `spec-metadata`, `spec-activity-feed`, `spec-action-approve`, `spec-action-request-changes`, `spec-action-skip-design`, `approve-confirm-dialog`, `feedback-dialog`, `skip-design-confirm-dialog`
-- **KanbanColumn test ID changed:** `data-testid` is now `kanban-column-station-{station}` (e.g. `kanban-column-station-spec`) for E2E test targeting
-- **Migration:** `20260313100000_spec_review_flow.sql` — adds spec columns to `dash_issues`, creates `factory_spec_activities` with RLS
-
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
@@ -238,3 +223,38 @@
 - **Masking rule:** first 4 + `****...****` + last 3 chars; if <10 chars: `****`
 - **Health check services:** GitHub (`/user`), Supabase (`/rest/v1/`), Vercel (`/v2/user`), Anthropic (`/v1/models`)
 - **data-testid attributes:** `add-template-btn`, `template-table`, `template-row`, `edit-template-btn`, `delete-template-btn`, `env-var-list`, `env-var-row`, `run-health-check-btn`, `health-check-spinner`, `health-check-results`, `service-status-row`, `key-row`, `rotate-key-btn`, `confirm-rotate`
+
+## Spec Review & Approval Flow (CR #18)
+- **New route:** Opens as slide-over panel from the Kanban board when clicking a `station:spec` issue card
+- **New API routes:**
+  - `GET /api/specs/[issueNumber]?repo=...` — fetches spec comment from GitHub (looks for heading-heavy comment or `<!-- SPEC -->` marker)
+  - `POST /api/specs/approve` — marks spec approved (`spec_approved=true`), optional `skipDesign` flag to advance station to `design`
+  - `POST /api/specs/feedback` — posts feedback comment to GitHub issue via Octokit
+- **New DB tables:** `factory_spec_activities` (FK to `dash_issues.id`), new columns added to `dash_issues` (`spec_approved`, `spec_approved_by`, `spec_approved_at`, `spec_approval_notes`)
+- **New components:** `src/components/spec-review/` — SpecReviewPanel (main), SpecMarkdownRenderer, SpecSectionHighlighter, SpecMetadata, SpecActionBar, ApproveConfirmDialog, FeedbackDialog, SkipDesignConfirmDialog, SpecActivityFeed
+- **KanbanBoard integration:** `KanbanBoard.tsx` shows `SpecReviewPanel` instead of `IssueDetailPanel` for `station:spec` issues
+- **dash_issues.id is bigint** — `factory_spec_activities.issue_id` is bigint FK, not UUID
+- **data-testid attributes:** `spec-review-panel`, `spec-markdown-renderer`, `spec-section-nav`, `spec-metadata`, `spec-activity-feed`, `spec-action-approve`, `spec-action-request-changes`, `spec-action-skip-design`, `approve-confirm-dialog`, `feedback-dialog`, `skip-design-confirm-dialog`
+- **KanbanColumn test ID changed:** `data-testid` is now `kanban-column-station-{station}`
+- **Migration:** `20260313100000_spec_review_flow.sql`
+
+## API Documentation & Event Log (CR #31)
+- **New routes:** `/dashboard/docs` (API docs), `/dashboard/admin/events` (event log)
+- **New DB table:** `fdash_event_log` — stores incoming GitHub webhooks + outgoing notification events
+  - Columns: id (uuid PK), direction (in/out), event_type, source, payload (jsonb), status (received/delivered/failed), retry_count, last_retried_at, created_at
+  - RLS: SELECT for authenticated; INSERT/UPDATE for service_role only
+  - Migration: `20260312140000_spec_schema_issue31.sql`
+- **New API routes:**
+  - `GET /api/admin/events` — paginated event log; filters: direction, event_type, status, from, to; payload truncated to 500 chars in list view
+  - `POST /api/admin/events/[id]/retry` — retry failed outgoing webhook; increments retry_count + sets last_retried_at; 400 if not failed out event
+  - `GET /api/docs/routes` — returns `ROUTE_MANIFEST` from `src/lib/route-manifest.ts` (static file, NOT dynamic FS scan)
+- **Route manifest:** `src/lib/route-manifest.ts` — hand-authored static list of all API routes; update this when adding new routes
+- **New components:**
+  - `src/components/event-log/EventDirectionBadge.tsx` — IN (blue) / OUT (purple) pill
+  - `src/components/event-log/EventStatusBadge.tsx` — received/delivered/failed with color coding
+  - `src/components/event-log/PayloadViewer.tsx` — dark JSON viewer with line numbers, syntax highlighting, copy button
+- **Event logging on ingest:** Webhook handler (`src/app/api/webhooks/github/route.ts`) inserts to `fdash_event_log` via fire-and-forget upsert after processing. Uses `onConflict: 'id'` pattern.
+- **Design:** These pages use light mode (bg `#FAFBFC`) within the existing dark AppShell — intentional per DESIGN.md for this CR. Primary color #2563EB for these pages.
+- **Sidebar:** Added `BookOpen` (API Docs) and `Radio` (Event Log) icons + nav items
+- **Filters:** Direction/event_type/status/date-range filters persist in URL query string for shareability
+- **data-testid attributes:** `route-card`, `event-row`, `payload-viewer`, `retry-button`
