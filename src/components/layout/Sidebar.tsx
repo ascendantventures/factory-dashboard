@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
+  Cpu,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
+  { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
 ];
 
