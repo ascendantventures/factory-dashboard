@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { X, Plus, Loader2, AlertCircle, FolderOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { TargetAppDropdown } from './TargetAppDropdown';
 
 interface FormData {
   title: string;
@@ -25,9 +26,25 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
+    setValue,
   } = useForm<FormData>({ defaultValues: { complexityHint: '', issueType: '' } });
 
   const [apiError, setApiError] = useState<string | null>(null);
+  const [selectedTargetApp, setSelectedTargetApp] = useState<string>('');
+
+  function handleRepoSelect(repo: string | null) {
+    const currentDesc = watch('description') ?? '';
+    // Strip any existing build_repo: line (idempotent)
+    const stripped = currentDesc.replace(/^build_repo:.*\n(\n)?/m, '');
+    if (repo) {
+      setValue('description', `build_repo: ${repo}\n\n${stripped}`);
+      setSelectedTargetApp(repo);
+    } else {
+      setValue('description', stripped);
+      setSelectedTargetApp('');
+    }
+  }
 
   // Close on Escape
   useEffect(() => {
@@ -272,6 +289,7 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
                 </label>
                 <textarea
                   id="new-issue-description"
+                  data-testid="issue-description"
                   placeholder="Describe the feature, bug, or enhancement..."
                   style={{
                     ...textareaStyle,
@@ -293,6 +311,21 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
                     <AlertCircle size={14} /> {errors.description.message}
                   </p>
                 )}
+              </div>
+
+              {/* Target App — change request dropdown */}
+              <div>
+                <label style={labelStyle} htmlFor="target-app">
+                  Target App{' '}
+                  <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <TargetAppDropdown
+                  value={selectedTargetApp}
+                  onChange={handleRepoSelect}
+                />
+                <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                  Select an existing app for change requests
+                </p>
               </div>
 
               {/* Target Repository */}

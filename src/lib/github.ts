@@ -85,6 +85,27 @@ export async function fetchRepoIssues(
   return issues;
 }
 
+export interface GitHubComment {
+  id: number;
+  body: string;
+  created_at: string;
+}
+
+export async function fetchIssueComments(
+  owner: string,
+  repo: string,
+  issueNumber: number
+): Promise<GitHubComment[]> {
+  const kit = getOctokit();
+  const response = await kit.issues.listComments({
+    owner,
+    repo,
+    issue_number: issueNumber,
+    per_page: 100,
+  });
+  return response.data as GitHubComment[];
+}
+
 export async function updateIssueLabel(
   owner: string,
   repo: string,

@@ -183,6 +183,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         </div>
         <div className="flex items-center gap-3">
           <button
+            data-testid="new-issue-btn"
             onClick={() => setShowNewIssueModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all"
             style={{ background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer' }}
