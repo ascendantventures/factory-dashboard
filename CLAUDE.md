@@ -258,3 +258,39 @@
 - **Sidebar:** Added `BookOpen` (API Docs) and `Radio` (Event Log) icons + nav items
 - **Filters:** Direction/event_type/status/date-range filters persist in URL query string for shareability
 - **data-testid attributes:** `route-card`, `event-row`, `payload-viewer`, `retry-button`
+
+## Vercel Deployment Status & Management (Issue #38)
+- **New DB table:** `fdash_vercel_cache` — TTL cache for Vercel API responses
+  - Columns: id (uuid PK), cache_key (text UNIQUE), data (jsonb), cached_at (timestamptz), expires_at (timestamptz)
+  - Auth trigger `trg_fdash_purge_expired_cache` auto-deletes expired rows on insert/update
+  - **MUST use upsert (`ON CONFLICT (cache_key) DO UPDATE`) — never plain insert**
+  - Migration: `20260312150000_fdash_vercel_cache.sql`
+- **New API routes (all server-side, VERCEL_API_TOKEN never exposed to client):**
+  - `GET /api/deployments/[repoId]` — lists last 10 deployments; cache key `deployments:{repoId}`, TTL 2 min
+  - `GET /api/deployments/[repoId]/[deployId]` — deployment detail + build logs; cache key `deployment:{repoId}:{deployId}`, TTL 5 min
+  - `POST /api/deployments/[repoId]/redeploy` — triggers redeploy of latest prod deployment; busts `deployments:{repoId}` cache
+  - `GET /api/deployments/[repoId]/domains` — domain list; cache key `domains:{repoId}`, TTL 10 min
+  - `GET /api/deployments/[repoId]/env` — env var names only (values NEVER returned); cache key `env:{repoId}`, TTL 10 min
+- **New lib files:**
+  - `src/lib/vercel-api.ts` — Vercel REST API v6 client (fetchDeployments, fetchDeploymentDetail, triggerRedeploy, fetchDomains, fetchEnvVars)
+  - `src/lib/vercel-cache.ts` — getCached/setCached/invalidateCache using fdash_vercel_cache via admin client
+- **New components in `src/components/apps/DeploymentPanel/`:**
+  - `index.tsx` — Container: fetches all data, orchestrates panel, auto-refreshes when BUILDING
+  - `StatusBadge.tsx` — READY (green + pulse), BUILDING (yellow + spin), ERROR (red), CANCELED (gray)
+  - `ProductionBadge.tsx` — production URL link, status badge, relative time, build duration
+  - `DeploymentList.tsx` — table of last 10 deployments with header row
+  - `DeploymentRow.tsx` — commit SHA, message, author, status badge, timestamp; click opens drawer
+  - `BuildLogDrawer.tsx` — slide-from-right drawer: commit info, metrics, preview URL, scrollable log lines
+  - `RedeployButton.tsx` — POST /redeploy, loading state, sonner toast on success/error
+  - `DomainList.tsx` — domains with verified badge, production badge, copy-to-clipboard
+  - `EnvVarList.tsx` — env var names with present/missing indicator; values NEVER shown
+  - `MetricsChart.tsx` — Recharts line charts for build duration; bundle size chart placeholder
+- **App detail page updated:** `/dashboard/apps/[repoId]/page.tsx` now embeds `<DeploymentPanel repoId={vercelProjectId} />`
+  - Falls back to URL `repoId` if `app.vercel_project_id` is null
+- **Required env vars:**
+  - `VERCEL_API_TOKEN` — Vercel personal/team access token (server-only, never exposed)
+  - `VERCEL_TEAM_ID` — Vercel team ID (optional; omit for personal accounts)
+- **data-testid attributes:** `production-status-badge`, `production-deployment-url`, `deployment-row`, `build-log-drawer`, `build-log-content`, `commit-sha`, `commit-author`, `redeploy-button`, `domain-row`, `copy-url-button`, `env-var-list`, `build-time-chart`, `bundle-size-chart`
+- **Design:** Uses the existing dark color system (surface #141419 = var(--surface), border #2A2A36 = var(--border)); primary blue #3B82F6 for this panel (Vercel-aligned); BUILDING status shows yellow spinner
+- **Animations added to globals.css:** `@keyframes shimmer`, `@keyframes vercel-dot-pulse`, `@keyframes spin`
+- **Live URL:** https://build-work-blond.vercel.app
