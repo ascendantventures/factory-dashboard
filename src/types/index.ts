@@ -84,6 +84,21 @@ export interface DashTemplate {
   created_by: string | null;
 }
 
+export interface FdIssueTemplate {
+  id: string;
+  name: string;
+  description: string;
+  title_prefix: string;
+  body_template: string;
+  labels: string[];
+  estimated_cost: string;
+  complexity: 'simple' | 'medium' | 'complex';
+  is_default: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DashKeyRotationLog {
   id: string;
   key_name: string;

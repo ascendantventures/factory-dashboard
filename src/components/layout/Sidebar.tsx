@@ -14,12 +14,14 @@ import {
   Cpu,
   BookOpen,
   Radio,
+  LayoutTemplate,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false },
+  { href: '/dashboard/templates', label: 'Templates', icon: LayoutTemplate, exact: false },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
