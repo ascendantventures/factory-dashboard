@@ -284,7 +284,7 @@ export default function QuickCreateModal({
     setTemplatesLoading(true);
     fetch('/api/templates')
       .then((res) => res.json())
-      .then((data: FdIssueTemplate[]) => setTemplates(data))
+      .then((data: { templates: FdIssueTemplate[] }) => setTemplates(data.templates ?? []))
       .catch(() => setTemplates([]))
       .finally(() => setTemplatesLoading(false));
   }, [isOpen]);
@@ -1008,7 +1008,7 @@ export default function QuickCreateModal({
           key="modal-overlay"
           variants={modalOverlay}
           initial="hidden"
-          animate="show"
+          animate="visible"
           exit="hidden"
           style={{
             position: 'fixed',
@@ -1030,7 +1030,7 @@ export default function QuickCreateModal({
             key="modal-content"
             variants={modalContent}
             initial="hidden"
-            animate="show"
+            animate="visible"
             exit="hidden"
             style={{
               background: css.surface,
