@@ -6,7 +6,9 @@ import { DashIssue } from '@/types';
 import { KanbanColumn } from './KanbanColumn';
 import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
+import { IssueDetailPanel } from './IssueDetailPanel';
 import { RefreshCw, Loader2, Plus, LayoutGrid, Layers3, RotateCcw } from 'lucide-react';
+import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NewIssueModal } from '@/components/NewIssueModal';
 import {
@@ -69,6 +71,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [activeIssue, setActiveIssue] = useState<DashIssue | null>(null);
   const [draggingIssueIds, setDraggingIssueIds] = useState<Set<number>>(new Set());
   const [prefs, setPrefs] = useState<KanbanPrefs>(DEFAULT_PREFS);
+  const [enrichmentMap, setEnrichmentMap] = useState<EnrichmentMap>(new Map());
+  const [selectedIssue, setSelectedIssue] = useState<DashIssue | null>(null);
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
   // Load prefs from localStorage on mount
@@ -113,6 +117,36 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     return supabaseRef.current;
   }, []);
 
+  const fetchEnrichment = useCallback(async () => {
+    try {
+      const supabase = await getSupabase();
+      const [costRes, stageRes] = await Promise.all([
+        supabase.from('dash_issue_cost_summary').select('issue_id,total_cost_usd,active_runs'),
+        supabase.from('dash_issue_stage_entry').select('issue_id,entered_at'),
+      ]);
+      const costData = costRes.data ?? [];
+      const stageData = stageRes.data ?? [];
+      const stageMap = new Map(stageData.map((s: { issue_id: number; entered_at: string }) => [s.issue_id, s.entered_at]));
+      const map = new Map<number, IssueEnrichment>();
+      for (const row of costData) {
+        map.set(row.issue_id, {
+          total_cost_usd: Number(row.total_cost_usd ?? 0),
+          active_runs: Number(row.active_runs ?? 0),
+          entered_at: stageMap.get(row.issue_id) ?? null,
+        });
+      }
+      // Also add stage data for issues not in cost table
+      for (const row of stageData) {
+        if (!map.has(row.issue_id)) {
+          map.set(row.issue_id, { total_cost_usd: 0, active_runs: 0, entered_at: row.entered_at });
+        }
+      }
+      setEnrichmentMap(map);
+    } catch (err) {
+      console.error('Failed to fetch enrichment:', err);
+    }
+  }, [getSupabase]);
+
   const fetchLastSync = useCallback(async () => {
     try {
       const res = await fetch('/api/sync/status');
@@ -128,8 +162,10 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
 
   useEffect(() => {
     fetchLastSync();
+    fetchEnrichment();
     let mounted = true;
     let channelCleanup: (() => void) | null = null;
+    let agentRunsChannelCleanup: (() => void) | null = null;
 
     // Supabase Realtime for instant DB change propagation
     getSupabase().then((supabase) => {
@@ -149,6 +185,15 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         })
         .subscribe();
       channelCleanup = () => supabase.removeChannel(channel);
+
+      // Subscribe to agent_runs for real-time cost/status updates
+      const agentRunsChannel = supabase
+        .channel('dash_agent_runs_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'dash_agent_runs' }, () => {
+          fetchEnrichment();
+        })
+        .subscribe();
+      agentRunsChannelCleanup = () => supabase.removeChannel(agentRunsChannel);
     });
 
     // Auto-sync from GitHub every 60s (syncs labels/state changes into DB)
@@ -163,6 +208,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
             setIssues(data.issues ?? []);
           }
           fetchLastSync();
+          fetchEnrichment();
         }
       } catch {
         // Silent fail on auto-sync
@@ -172,9 +218,10 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     return () => {
       mounted = false;
       channelCleanup?.();
+      agentRunsChannelCleanup?.();
       clearInterval(autoSyncInterval);
     };
-  }, [getSupabase, fetchLastSync]);
+  }, [getSupabase, fetchLastSync, fetchEnrichment]);
 
   async function handleSync() {
     setSyncing(true);
@@ -365,8 +412,10 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
                     station={station}
                     issues={getIssuesForStation(station)}
                     draggingIssueIds={draggingIssueIds}
+                    enrichmentMap={enrichmentMap}
                     isCollapsed={prefs.hiddenColumns.includes(station)}
                     onToggleCollapse={() => toggleColumn(station)}
+                    onSelectIssue={setSelectedIssue}
                   />
                 ))}
               </motion.div>
@@ -393,6 +442,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
                       label={col.label}
                       color={col.color}
                       issues={colIssues}
+                      enrichmentMap={enrichmentMap}
+                      onSelectIssue={setSelectedIssue}
                     />
                   );
                 })}
@@ -422,6 +473,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
           onSync={handleSync}
         />
       )}
+
+      <IssueDetailPanel issue={selectedIssue} onClose={() => setSelectedIssue(null)} />
     </div>
   );
 }
@@ -432,11 +485,15 @@ function SimplifiedColumn({
   label,
   color,
   issues,
+  enrichmentMap,
+  onSelectIssue,
 }: {
   id: string;
   label: string;
   color: string;
   issues: DashIssue[];
+  enrichmentMap: EnrichmentMap;
+  onSelectIssue?: (issue: DashIssue) => void;
 }) {
   return (
     <motion.div
@@ -465,7 +522,13 @@ function SimplifiedColumn({
           <EmptyColumnState label={label} />
         ) : (
           issues.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} showStationBadge />
+            <IssueCard
+              key={issue.id}
+              issue={issue}
+              enrichment={enrichmentMap.get(issue.id)}
+              showStationBadge
+              onSelect={onSelectIssue}
+            />
           ))
         )}
       </div>

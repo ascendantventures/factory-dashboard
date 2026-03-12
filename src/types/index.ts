@@ -17,6 +17,7 @@ export interface DashIssue {
   updated_at: string;
   closed_at: string | null;
   synced_at: string | null;
+  github_issue_url?: string | null;
 }
 
 export interface DashStageTransition {
