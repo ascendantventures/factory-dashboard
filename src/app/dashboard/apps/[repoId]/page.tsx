@@ -138,6 +138,21 @@ export default function AppDetailPage({
             <DeploymentPanel repoId={vercelProjectId} />
           </div>
 
+          {/* Designs tab link */}
+          <Link
+            href={`/dashboard/apps/${repoId}/designs`}
+            data-testid="nav-tab-designs"
+            className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+          >
+            🎨 View Designs
+          </Link>
+
           {/* Issues */}
           <div
             className="rounded-xl border p-4"

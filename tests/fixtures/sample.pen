@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "canvas": {
+    "width": 1440,
+    "height": 900,
+    "variables": [
+      { "name": "color.primary", "type": "color", "value": "#E85D4C" },
+      { "name": "color.surface", "type": "color", "value": "#FFFFFF" },
+      { "name": "spacing.base", "type": "spacing", "value": 8 },
+      { "name": "spacing.card", "type": "spacing", "value": 24 }
+    ],
+    "frames": [
+      {
+        "id": "frame-home",
+        "name": "Home Screen",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900,
+        "elements": [
+          {
+            "id": "bg",
+            "type": "rectangle",
+            "x": 0,
+            "y": 0,
+            "width": 1440,
+            "height": 900,
+            "fill": "{color.surface}"
+          },
+          {
+            "id": "header",
+            "type": "rectangle",
+            "x": 0,
+            "y": 0,
+            "width": 1440,
+            "height": 64,
+            "fill": "{color.primary}"
+          },
+          {
+            "id": "title",
+            "type": "text",
+            "x": 32,
+            "y": 18,
+            "width": 300,
+            "height": 28,
+            "content": "Factory Dashboard",
+            "fontFamily": "Instrument Sans",
+            "fontSize": 20,
+            "fontWeight": 600,
+            "color": "#FFFFFF"
+          }
+        ]
+      },
+      {
+        "id": "frame-detail",
+        "name": "Detail View",
+        "x": 1500,
+        "y": 0,
+        "width": 1440,
+        "height": 900,
+        "elements": [
+          {
+            "id": "bg2",
+            "type": "rectangle",
+            "x": 1500,
+            "y": 0,
+            "width": 1440,
+            "height": 900,
+            "fill": "#FDFCFB"
+          },
+          {
+            "id": "card",
+            "type": "rectangle",
+            "x": 1548,
+            "y": 48,
+            "width": 400,
+            "height": 300,
+            "fill": "#FFFFFF",
+            "cornerRadius": 12,
+            "stroke": "#E8E5E1",
+            "strokeWidth": 1
+          },
+          {
+            "id": "card-title",
+            "type": "text",
+            "x": 1572,
+            "y": 72,
+            "width": 352,
+            "height": 24,
+            "content": "Design Details",
+            "fontFamily": "Instrument Sans",
+            "fontSize": 18,
+            "fontWeight": 600,
+            "color": "#1F1E1C"
+          }
+        ]
+      }
+    ]
+  }
+}
