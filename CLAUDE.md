@@ -44,6 +44,7 @@
 - `/dashboard/apps/[repoId]` → App detail page (mobile full page; desktop uses drawer instead)
 - `/dashboard/activity` → Activity feed (reads dash_stage_transitions)
 - `/dashboard/metrics` → Metrics charts
+- `/dashboard/analytics` → Cost Analytics & ROI Dashboard (Issue #25) — charts, ROI metrics, CSV export
 - `/dashboard/costs` → Cost tracking
 - `/dashboard/settings` → Settings
 
@@ -214,6 +215,21 @@
 - **Allowed file types:** PNG, JPG, GIF, SVG, PDF, .pen (application/x-pencil)
 - **Light mode design:** attachment components use inline styles from issue #36 DESIGN.md (white surfaces, #2563EB primary) — intentional contrast within dark dashboard shell
 - **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `attachment-preview`, `attachment-gallery`, `attachment-item`, `delete-attachment-btn`, `pen-file-badge`
+
+## Cost Analytics & ROI Dashboard (Issue #25)
+- **Primary data source:** `dash_agent_runs` (has `estimated_cost_usd`, `model`, `repo`, `station`, `duration_seconds`, `run_status`)
+- **NOTE:** Spec referenced `dash_stage_transitions` for cost data, but actual cost data is on `dash_agent_runs`. Analytics API routes query `dash_agent_runs`.
+- **New API routes (all require authenticated session):**
+  - `GET /api/analytics/costs` — totals (all-time/month/week/today), by_app, by_station, by_model
+  - `GET /api/analytics/roi` — cost_per_issue, avg_time_to_deploy_hours, qa_first_try_rate, issues_completed
+  - `GET /api/analytics/trends` — time-series cost data; granularity: day|week|month
+  - `GET /api/analytics/export` — CSV download with active filters
+- **New components:** `src/app/dashboard/analytics/` — AnalyticsDashboard, TotalsGrid, ROIMetricsGrid, SpendByAppChart, SpendByStationChart, SpendByModelChart, SpendOverTimeChart, FilterBar, ExportButton
+- **Hooks:** `useAnalyticsCosts`, `useAnalyticsROI`, `useAnalyticsTrends` — all in `src/app/dashboard/analytics/hooks/`
+- **Filter state:** persisted in URL search params (from, to, repo, granularity)
+- **Column mapping:** `estimated_cost_usd` (not `cost_usd`), `repo` (not `build_repo`), `started_at` (not `created_at`), `run_status` (not `status`)
+- **ROI QA rate:** (issues without bugfix / total issues) × 100
+- **Migration:** `20260312210000_analytics_indexes.sql` — perf indexes on dash_agent_runs only
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
