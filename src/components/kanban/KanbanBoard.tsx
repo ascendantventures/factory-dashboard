@@ -57,11 +57,15 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     }
   }, []);
 
+  // Auto-sync interval (every 60 seconds)
+  const AUTO_SYNC_INTERVAL_MS = 60_000;
+
   useEffect(() => {
     fetchLastSync();
     let mounted = true;
     let channelCleanup: (() => void) | null = null;
 
+    // Supabase Realtime for instant DB change propagation
     getSupabase().then((supabase) => {
       if (!mounted) return;
       const channel = supabase
@@ -81,9 +85,28 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
       channelCleanup = () => supabase.removeChannel(channel);
     });
 
+    // Auto-sync from GitHub every 60s (syncs labels/state changes into DB)
+    const autoSyncInterval = setInterval(async () => {
+      if (!mounted) return;
+      try {
+        const res = await fetch('/api/sync', { method: 'POST' });
+        if (res.ok) {
+          const issuesRes = await fetch('/api/issues');
+          if (issuesRes.ok) {
+            const data = await issuesRes.json();
+            setIssues(data.issues ?? []);
+          }
+          fetchLastSync();
+        }
+      } catch {
+        // Silent fail on auto-sync
+      }
+    }, AUTO_SYNC_INTERVAL_MS);
+
     return () => {
       mounted = false;
       channelCleanup?.();
+      clearInterval(autoSyncInterval);
     };
   }, [getSupabase, fetchLastSync]);
 
