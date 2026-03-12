@@ -143,6 +143,7 @@
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
+- **dash_issues.github_issue_url does NOT exist as a DB column** — never SELECT it from the DB. Always compute it as `` `https://github.com/${issue.repo}/issues/${issue.issue_number}` `` using the `repo` and `issue_number` fields that are present. Bug fixed in #35.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
 

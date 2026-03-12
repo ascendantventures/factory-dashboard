@@ -63,10 +63,11 @@ _Core: Issue #7_
 _Core: Issue #11_
 
 ### Test Steps
-- [ ] /dashboard/apps lists all build repos as cards
+- [ ] /dashboard/apps lists all build repos as cards (must return 200 — if 500, check for `github_issue_url` column error)
 - [ ] Each card shows: app name, status, live URL
 - [ ] Clicking an app navigates to /dashboard/apps/[repoId]
 - [ ] App detail page loads without errors
+- [ ] GET /api/apps returns 200 (not 500 "column github_issue_url does not exist")
 
 ### Routes
 - /dashboard/apps
