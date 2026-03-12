@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/21
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/20
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -181,3 +181,29 @@
 - The Kanban board auto-syncs every 60s — new features should work with this cycle
 - Sidebar collapse state persists in localStorage('sidebar-collapsed')
 - Add `data-testid="skeleton"` to new skeleton components, `data-testid="empty-state"` to empty states
+
+## Template & Environment Management (CR #20)
+- **New DB tables:**
+  - `dash_templates` — template registry with CRUD; RLS: all authenticated can read, only admin can write; unique index enforces one default per project_type
+  - `dash_key_rotation_log` — audit log for API key rotation events; RLS: admin-only read/insert
+- **New API routes (all under /api/config/):**
+  - `GET /api/config/templates` — list all templates (authenticated)
+  - `POST /api/config/templates` — create template (admin only); 409 if slug taken
+  - `PATCH /api/config/templates/[id]` — update template, handles is_default atomically (admin only)
+  - `DELETE /api/config/templates/[id]` — delete template; 400 if only default for project type (admin only)
+  - `GET /api/config/env-status` — returns env var names + masked_preview + set/missing status; never returns values
+  - `POST /api/config/health-check` — live connectivity tests to GitHub/Supabase/Vercel/Anthropic; not cached
+  - `GET /api/config/keys` — API key status + rotation history; resolves rotated_by UUID to email (admin only)
+  - `POST /api/config/keys/rotate` — logs rotation event to dash_key_rotation_log (admin only)
+- **Settings page refactored** — sidebar tab navigation: General | Users (admin) | Templates | Environment | API Keys (admin)
+- **Components all in SettingsClient.tsx:**
+  - `TemplateRegistryPanel` — table + Add/Edit/Delete modals, role-gated
+  - `TemplateModal` — add or edit form, slug disabled on edit
+  - `DeleteTemplateModal` — confirm delete with error display
+  - `EnvStatusPanel` — env var list + health check grid (2×2)
+  - `ServiceStatusRow` — per-service health indicator with latency
+  - `ApiKeyPanel` — key table + rotation history
+  - `RotateKeyModal` — log rotation with success state
+- **Masking rule:** first 4 + `****...****` + last 3 chars; if <10 chars: `****`
+- **Health check services:** GitHub (`/user`), Supabase (`/rest/v1/`), Vercel (`/v2/user`), Anthropic (`/v1/models`)
+- **data-testid attributes:** `add-template-btn`, `template-table`, `template-row`, `edit-template-btn`, `delete-template-btn`, `env-var-list`, `env-var-row`, `run-health-check-btn`, `health-check-spinner`, `health-check-results`, `service-status-row`, `key-row`, `rotate-key-btn`, `confirm-rotate`
