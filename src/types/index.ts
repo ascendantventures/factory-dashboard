@@ -68,3 +68,27 @@ export interface DashUserRole {
   role: 'operator' | 'admin';
   created_at: string;
 }
+
+export interface DashTemplate {
+  template_id: string;
+  template_slug: string;
+  template_name: string;
+  description: string | null;
+  source_repo: string;
+  deploy_target: string;
+  project_type: string;
+  is_default: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface DashKeyRotationLog {
+  id: string;
+  key_name: string;
+  rotated_by: string | null;
+  rotated_at: string;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+}
