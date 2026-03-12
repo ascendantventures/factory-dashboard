@@ -269,3 +269,6 @@ _Added: 2026-03-12 — Issue #30_
 - POST /api/issues/123/comments without auth → 401 response
 - POST with body > 65536 chars → 400 response
 
+### Prerequisite Check (run before testing comment threading)
+- **VERIFY** `GITHUB_BUILD_REPO` is set in Vercel environment (Production + Preview + Development) — if missing, ALL comment API calls return HTTP 500. Value must be `owner/repo` (e.g. `ascendantventures/factory-dashboard`). This was the root cause of the QA failure for issue #30.
+

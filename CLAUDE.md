@@ -152,6 +152,7 @@
 - **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
 
 ## Known Issues & Gotchas
+- **GITHUB_BUILD_REPO must be set in Vercel** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is not set in the Vercel project env vars. Set to `owner/repo` (e.g. `ascendantventures/factory-dashboard`) for all environments (Production, Preview, Development). Bug confirmed in QA for issue #30.
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
