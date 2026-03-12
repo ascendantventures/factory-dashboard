@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/13
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/12
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -24,7 +24,7 @@
 - **Auth:** Supabase Auth with email/password + magic link. Middleware protects /dashboard/* routes.
 - **API routes:** All under /app/api/ — sync, issues, build-repos, metrics, webhooks
 - **Sync model:** Pull-based — `/api/sync` fetches issues from GitHub, upserts into `dash_issues` table. Auto-syncs every 60s from the Kanban board.
-- **Realtime:** Supabase Realtime subscription on `dash_issues` for instant board updates
+- **Realtime:** Supabase Realtime subscriptions on `dash_issues`, `dash_stage_transitions`, and `dash_agent_runs` for instant updates
 - **Kanban:** Drag-and-drop columns per station (intake → spec → design → build → QA → done). Dragging calls GitHub API to flip labels.
 - **AppShell:** Sidebar (240px/56px collapsed) + Header (56px) + main content. Sidebar collapse state persisted to localStorage('sidebar-collapsed').
 
@@ -71,7 +71,8 @@
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
 - `dash_dashboard_config` — Per-user config (tracked_repos, notification_prefs)
 - `dash_user_roles` — Admin role assignments (user_id + role)
-- `dash_stage_transitions` — Stage change history for metrics (used by Activity page)
+- `dash_stage_transitions` — Stage change history. Realtime enabled (CR #12). Used by Activity feed + metrics.
+- **Realtime publication:** Both `dash_stage_transitions` and `dash_agent_runs` are added to `supabase_realtime` publication (migration 20260312120000).
 - `dash_agent_runs` — Agent execution logs (cost, duration, model). **Columns:** `run_status` (not `status`), `estimated_cost_usd` (not `cost_usd`), `log_summary` (not `logs`).
 - `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
@@ -85,7 +86,13 @@
 - `src/components/layout/Sidebar.tsx` — New collapsible sidebar (replaces old src/components/Sidebar.tsx)
 - `src/components/layout/Header.tsx` — Header bar
 - `src/components/layout/MobileBottomNav.tsx` — Mobile bottom nav
-- `src/components/kanban/KanbanBoard.tsx` — Client-side Kanban with DnD, auto-sync, realtime
+- `src/components/kanban/KanbanBoard.tsx` — Client-side Kanban with DnD, auto-sync, realtime, + Activity sidebar toggle
+- `src/app/api/activity/route.ts` — GET /api/activity — unified feed from dash_stage_transitions + dash_agent_runs, JOINs dash_issues for titles
+- `src/hooks/useActivityFeed.ts` — Initial fetch + 2 Realtime channel subs (activity-transitions, activity-runs), caps at 200 events
+- `src/components/activity/ActivitySidebar.tsx` — Collapsible right panel (w-80), localStorage persistence ('activity_sidebar_open')
+- `src/components/activity/ActivityFeed.tsx` — AnimatePresence slide-in list, loading skeleton, empty state
+- `src/components/activity/ActivityEvent.tsx` — Single event row with icon+color per event_type, data-testid="activity-event" + data-event-type
+- `src/components/activity/ActivityTimestamp.tsx` — Auto-updating relative time (30s interval), title=ISO for a11y
 - `src/components/NewIssueModal.tsx` — Create issue form with Target App dropdown
 - `src/components/TargetAppDropdown.tsx` — Build repo selector populated from completed builds
 - `src/app/api/sync/route.ts` — GitHub → Supabase sync endpoint
@@ -115,6 +122,18 @@
 - **IssueDetailPanel** fetches from `/api/issues/[number]` on open; panel slide-over with framer-motion
 - data-testid attributes: `kanban-card`, `kanban-board`, `kanban-column`, `complexity-badge`, `time-in-stage`, `cost-tracker`, `agent-activity-dot`, `issue-detail-panel`, `close-panel`, `detail-title`, `stage-timeline`, `agent-run-list`, `cost-breakdown`, `column-issue-count`, `column-cost-total`
 - **dash_issues.github_issue_url** — added optional field to DashIssue type (populated by sync if present)
+
+## Activity Feed (CR #12)
+- **ActivityEvent types:** `agent_spawned` (🚀 indigo), `stage_completed` (✅ green), `build_deployed` (🔨 blue), `qa_result` (🧪 green/red), `bug_filed` (🐛 orange), `cost_logged` (💰 yellow)
+- **Sidebar toggle button:** data-testid="activity-toggle-btn" in KanbanBoard toolbar
+- **Sidebar panel:** data-testid="activity-sidebar" — renders when activityOpen=true
+- **Event rows:** data-testid="activity-event", data-event-type={event.event_type}
+- **Timestamps:** data-testid="activity-timestamp", title=ISO, updates every 30s
+- **Empty state:** data-testid="activity-empty"
+- **localStorage key:** 'activity_sidebar_open' (persists open/closed state)
+- **Realtime channels:** 'activity-transitions' (INSERT on dash_stage_transitions), 'activity-runs' (INSERT + UPDATE on dash_agent_runs)
+- **API discriminator logic:** running→agent_spawned; qa+completed/failed→qa_result; cost+completed→cost_logged; done+live_url→build_deployed; else→stage_completed
+- **Issue title resolution:** JOIN in /api/activity; Realtime payloads don't join (title=null on live events)
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
