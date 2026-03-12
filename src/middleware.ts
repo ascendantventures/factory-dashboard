@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/pipeline'))) {
+  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/pipeline') || pathname.startsWith('/uat'))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/auth/login';
     return NextResponse.redirect(loginUrl);
@@ -54,5 +54,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/pipeline/:path*', '/auth/login'],
+  matcher: ['/', '/dashboard/:path*', '/pipeline/:path*', '/uat/:path*', '/auth/login'],
 };

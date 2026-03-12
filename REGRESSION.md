@@ -287,3 +287,33 @@ _Added: 2026-03-12_
 - GET /api/apps/[repoId]/stats
 - GET /api/apps/[repoId]/timeline
 - POST /api/apps/[repoId]/issues
+
+## [UAT Attachment Upload Feature] (Issue #49)
+_Added: 2026-03-12_
+
+### Test Steps
+- [ ] [auth] Navigate to `/uat/attachments` — should redirect to `/auth/login` if not authenticated
+- [ ] [auth] Log in, then navigate to `/uat/attachments?issue=49` — page loads with split-pane layout
+- [ ] Upload a PNG file: click the dropzone or drag-drop a PNG → should appear in the left-pane list under the correct file name
+- [ ] Upload a PDF file: click the dropzone → select a .pdf → should appear in the list with red PDF badge
+- [ ] Upload an unsupported file (e.g., .txt): should show `data-testid="error-msg"` with "Unsupported file type"
+- [ ] Click an uploaded PNG in the list → right pane shows `<img data-testid="preview-image">` with the image
+- [ ] Click an uploaded PDF in the list → right pane shows `<iframe data-testid="preview-pdf">`
+- [ ] Hover over a list row → Delete (Trash2) icon appears; click it → `DeleteConfirmModal` opens
+- [ ] In `DeleteConfirmModal` click "Cancel" → modal closes, attachment NOT deleted
+- [ ] In `DeleteConfirmModal` click "Delete" (`data-testid="confirm-delete"`) → attachment removed from list
+- [ ] Navigate to `/uat/attachments/[id]` with a valid attachment ID → detail page shows full preview
+- [ ] Press Escape key in delete modal → modal closes without deleting
+- [ ] `GET /api/uat/attachments?issue=49` returns JSON array (empty or items); 401 if no session
+- [ ] `POST /api/uat/attachments/upload` with PNG + issue number → 200 with `{id, file_url, file_name, file_type}`
+- [ ] `POST /api/uat/attachments/upload` with .txt → 400 with `{"error":"Unsupported file type"}`
+- [ ] `DELETE /api/uat/attachments/:id` for own attachment → 200 `{"success":true}`
+
+### Routes/Endpoints
+- `/uat/attachments` — main list + upload + preview page
+- `/uat/attachments/[id]` — detail/preview page
+- `POST /api/uat/attachments/upload` — file upload
+- `GET /api/uat/attachments?issue=N` — list attachments
+- `GET /api/uat/attachments/[id]` — single attachment
+- `DELETE /api/uat/attachments/[id]` — delete attachment
+

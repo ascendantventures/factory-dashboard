@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/35
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/49
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -214,6 +214,32 @@
 - **Allowed file types:** PNG, JPG, GIF, SVG, PDF, .pen (application/x-pencil)
 - **Light mode design:** attachment components use inline styles from issue #36 DESIGN.md (white surfaces, #2563EB primary) — intentional contrast within dark dashboard shell
 - **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `attachment-preview`, `attachment-gallery`, `attachment-item`, `delete-attachment-btn`, `pen-file-badge`
+
+## UAT Attachment Upload Feature (Issue #49)
+- **New routes:** `/uat/attachments` (list+upload+preview split pane), `/uat/attachments/[id]` (detail view)
+- **New API routes (all require Supabase Auth session):**
+  - `POST /api/uat/attachments/upload` — multipart upload (PNG/PDF only); validates type+size; stores to Supabase Storage, inserts into `uat_attachments`; uses `upsert()` per spec requirement
+  - `GET /api/uat/attachments?issue=N` — list attachments filtered by issue number, ordered by `created_at` DESC
+  - `GET /api/uat/attachments/[id]` — single attachment by ID
+  - `DELETE /api/uat/attachments/[id]` — ownership check (uploaded_by = auth.uid()), removes Storage object + DB row
+- **New DB table:** `uat_attachments` — prefixed with `uat_` to avoid collision; columns: id, github_issue_number, attachment_id, file_url, file_name, file_type (png|pdf|other), file_size_bytes, uploaded_by, created_at, updated_at
+  - RLS: authenticated SELECT all; INSERT with uploaded_by=auth.uid(); UPDATE/DELETE own rows only
+  - Migration: `20260312202000_uat_attachments.sql`
+- **Storage bucket:** `uat-attachments` — private; path: `issue-{N}/{uuid}.{ext}`; 10MB PNG / 25MB PDF limits; uses signed URLs (1yr) for file_url
+- **lib/storage.ts:** Added `UAT_ATTACHMENTS_BUCKET = 'uat-attachments'` constant
+- **Middleware:** Updated to protect `/uat/*` routes (redirect unauthenticated to /auth/login)
+- **Components in `src/components/uat/`:**
+  - `IssueAttachmentsPanel.tsx` — orchestrates split pane (400px list + flex preview), data fetching, delete flow
+  - `AttachmentUploader.tsx` — drag-and-drop zone, PNG/PDF validation, progress bar, success/error states
+  - `AttachmentList.tsx` — scrollable list with empty state (Paperclip icon)
+  - `AttachmentRow.tsx` — single row with type icon, name, size/date meta, FileTypeBadge, Download + Delete actions (reveal on hover)
+  - `AttachmentPreview.tsx` — right pane: PNG as `<img>`, PDF as `<iframe>`; metadata footer; "Select a file" empty state
+  - `DeleteConfirmModal.tsx` — alertdialog with focus trap, Escape key, confirm/cancel
+  - `FileTypeBadge.tsx` — PNG (blue), PDF (red), OTHER (gray) badges
+- **Test fixtures:** `tests/fixtures/mockup.png` (1×1 PNG), `tests/fixtures/test.txt`
+- **E2E tests:** `tests/uat-attachments.spec.ts` — 5 tests covering all REQs
+- **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `upload-btn`, `attachment-list`, `attachment-item`, `file-name`, `file-badge`, `delete-btn`, `confirm-delete`, `attachment-preview`, `preview-image`, `preview-pdf`, `error-msg`, `empty-state`, `back-btn`
+- **Key gotcha:** Storage bucket `uat-attachments` is private — `getPublicUrl()` returns non-working URL; use `createSignedUrl()` with long TTL instead. Migration includes storage bucket insert (may need manual creation via Supabase dashboard if INSERT policy blocks migration user).
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
