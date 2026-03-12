@@ -60,13 +60,9 @@ async function refreshBuildRepos(): Promise<BuildRepo[]> {
       if (githubRepo && !seenRepos.has(githubRepo)) {
         seenRepos.add(githubRepo);
 
-        // Parse display name: "repo-slug — Issue Title"
-        const repoSlug = githubRepo.split('/')[1] ?? githubRepo;
-        const truncatedTitle =
-          (issue.title as string).length > 35
-            ? (issue.title as string).slice(0, 35) + '…'
-            : (issue.title as string);
-        const displayName = `${repoSlug} — ${truncatedTitle}`;
+        // Display name: use issue title before any dash separator, or full title
+        const fullTitle = (issue.title as string).split(' — ')[0].split(' - ')[0].trim();
+        const displayName = fullTitle.length > 50 ? fullTitle.slice(0, 50) + '…' : fullTitle;
 
         await admin.from('dash_build_repos').upsert(
           {
