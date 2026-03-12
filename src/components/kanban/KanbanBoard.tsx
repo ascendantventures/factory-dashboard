@@ -7,6 +7,7 @@ import { KanbanColumn } from './KanbanColumn';
 import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
 import { IssueDetailPanel } from './IssueDetailPanel';
+import { SpecReviewPanel } from '@/components/spec-review/SpecReviewPanel';
 import { RefreshCw, Loader2, Plus, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
 import { ActivitySidebar } from '@/components/activity/ActivitySidebar';
 import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
@@ -522,7 +523,18 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         />
       )}
 
-      <IssueDetailPanel issue={selectedIssue} onClose={() => setSelectedIssue(null)} />
+      {selectedIssue && selectedIssue.station === 'spec' ? (
+        <SpecReviewPanel
+          issue={selectedIssue}
+          onClose={() => setSelectedIssue(null)}
+          onStationChange={() => {
+            setSelectedIssue(null);
+            handleSync();
+          }}
+        />
+      ) : (
+        <IssueDetailPanel issue={selectedIssue} onClose={() => setSelectedIssue(null)} />
+      )}
     </div>
   );
 }

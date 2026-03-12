@@ -63,7 +63,7 @@ export function KanbanColumn({ station, issues, draggingIssueIds, enrichmentMap,
       ) : (
         <motion.div
           key="expanded"
-          data-testid="kanban-column"
+          data-testid={`kanban-column-station-${station}`}
           data-column={station}
           className="flex flex-col rounded-xl border overflow-hidden transition-colors flex-shrink-0"
           style={{

@@ -103,6 +103,7 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
       ref={isOverlay ? undefined : setNodeRef}
       style={cardStyle}
       data-testid="kanban-card"
+      data-issue-number={issue.issue_number}
       className="rounded-xl border transition-colors"
       whileHover={isOverlay ? {} : {
         borderColor: 'rgba(99,102,241,0.3)',
