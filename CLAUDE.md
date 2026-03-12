@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/12
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/11
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -38,7 +38,8 @@
 
 ## Navigation Routes
 - `/dashboard` → Kanban Board (Dashboard)
-- `/dashboard/apps` → Apps page (shows empty state, no apps data yet)
+- `/dashboard/apps` → Apps Portfolio page — responsive grid of app cards with status badges, issue counts, deploy info
+- `/dashboard/apps/[repoId]` → App detail page (mobile full page; desktop uses drawer instead)
 - `/dashboard/activity` → Activity feed (reads dash_stage_transitions)
 - `/dashboard/metrics` → Metrics charts
 - `/dashboard/costs` → Cost tracking
@@ -77,6 +78,7 @@
 - `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
+- `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
 ## Key Files
@@ -104,6 +106,16 @@
 - `src/lib/github.ts` — GitHub API helpers
 - `src/lib/enrichment.ts` — IssueEnrichment type, EnrichmentMap, formatTimeInStage/formatCost/getIssueType helpers
 - `src/components/kanban/IssueDetailPanel.tsx` — Slide-over panel with stage timeline, agent runs table, cost breakdown
+- `src/app/api/apps/route.ts` — GET /api/apps — returns all apps with computed status, issue counts, tech stack
+- `src/app/api/apps/[repoId]/route.ts` — GET /api/apps/[repoId] — returns app detail with issues, transitions, deployments
+- `src/app/api/apps/refresh-deployments/route.ts` — POST /api/apps/refresh-deployments — admin-only Vercel cache refresh
+- `src/components/apps/AppCard.tsx` — App card with framer-motion hover animation
+- `src/components/apps/AppStatusBadge.tsx` — Status pill: Active (green) | Idle (gray) | Error (red)
+- `src/components/apps/AppGrid.tsx` — Responsive grid 1/2/3 col wrapper
+- `src/components/apps/AppDetailDrawer.tsx` — Slide-in drawer for app detail (desktop), fetches /api/apps/[id]
+- `src/components/apps/AppIssueList.tsx` — Issues grouped by station in pipeline order
+- `src/components/apps/AppTechStack.tsx` — Tech stack tag pills
+- `src/components/apps/DeploymentHistory.tsx` — Last deploy row with relative time
 
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
@@ -111,7 +123,8 @@
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
-- **Apps page** (`/dashboard/apps`) — currently shows empty state only. No backend for connected apps exists yet.
+- **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
+- **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
 
