@@ -69,6 +69,7 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key (client-side)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
+- `WEBHOOK_SECRET_ENCRYPTION_KEY` — AES-GCM 32-byte key for encrypting webhook signing secrets (Issue #29). Pad to 32 chars if shorter. Required for HMAC signing dispatch.
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -81,6 +82,8 @@
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
+- `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
+- `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
 ## Key Files
@@ -118,6 +121,22 @@
 - `src/components/apps/AppIssueList.tsx` — Issues grouped by station in pipeline order
 - `src/components/apps/AppTechStack.tsx` — Tech stack tag pills
 - `src/components/apps/DeploymentHistory.tsx` — Last deploy row with relative time
+
+## Webhook & Integration Configuration (Issue #29)
+- **New routes:** `/dashboard/settings/webhooks`, `/dashboard/settings/webhooks/new`, `/dashboard/settings/webhooks/[id]`
+- **API routes:**
+  - `GET /api/settings/webhooks` — list user's webhooks (no secret_hash)
+  - `POST /api/settings/webhooks` — create webhook (URL validation, encrypt secret, require HTTPS)
+  - `PATCH /api/settings/webhooks/[id]` — update webhook (partial)
+  - `DELETE /api/settings/webhooks/[id]` — delete webhook (RLS-scoped)
+  - `POST /api/settings/webhooks/[id]/test` — fire test payload, log delivery
+  - `GET /api/settings/webhooks/[id]/deliveries` — last 50 deliveries ordered by sent_at DESC
+- **Lib files:**
+  - `src/lib/webhook-events.ts` — PIPELINE_EVENTS array, EVENT_CATEGORIES, PipelineEvent type
+  - `src/lib/webhook-dispatcher.ts` — `dispatchEvent()` (server-only), `encryptSecret()`/`decryptSecret()` using AES-GCM, HMAC-SHA-256 header `X-Factory-Signature`
+- **Components:** `src/components/webhooks/` — WebhookForm.tsx, WebhookCard.tsx, DeliveryLog.tsx, TestWebhookButton.tsx, IntegrationPresets.tsx
+- **Secret storage:** AES-GCM encrypted with `WEBHOOK_SECRET_ENCRYPTION_KEY` env var. NOT a plain hash — raw secret needed for HMAC at dispatch time.
+- **data-testid attributes:** `webhook-card`, `enabled-toggle`, `delete-webhook-btn`, `confirm-delete-btn`, `test-webhook-btn`, `test-result`, `delivery-log`, `delivery-row`, `url-error`, `event-{eventName}` (e.g. `event-build.completed`), `preset-discord`, `preset-slack`
 
 ## Pipeline Control Panel (CR #19)
 - **New route:** `/pipeline` — protected by middleware, uses AppShell, polls every 5s
