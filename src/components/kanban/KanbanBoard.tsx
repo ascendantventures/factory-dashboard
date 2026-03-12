@@ -7,7 +7,8 @@ import { KanbanColumn } from './KanbanColumn';
 import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
 import { IssueDetailPanel } from './IssueDetailPanel';
-import { RefreshCw, Loader2, Plus, LayoutGrid, Layers3, RotateCcw } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
+import { ActivitySidebar } from '@/components/activity/ActivitySidebar';
 import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NewIssueModal } from '@/components/NewIssueModal';
@@ -33,6 +34,22 @@ interface KanbanPrefs {
 
 const DEFAULT_PREFS: KanbanPrefs = { hiddenColumns: [], viewMode: 'full' };
 const PREFS_KEY = 'kanban_column_prefs';
+const ACTIVITY_SIDEBAR_KEY = 'activity_sidebar_open';
+
+function loadActivitySidebarOpen(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(ACTIVITY_SIDEBAR_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function saveActivitySidebarOpen(open: boolean) {
+  try {
+    localStorage.setItem(ACTIVITY_SIDEBAR_KEY, String(open));
+  } catch {}
+}
 
 function loadPrefs(): KanbanPrefs {
   if (typeof window === 'undefined') return DEFAULT_PREFS;
@@ -73,11 +90,13 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [prefs, setPrefs] = useState<KanbanPrefs>(DEFAULT_PREFS);
   const [enrichmentMap, setEnrichmentMap] = useState<EnrichmentMap>(new Map());
   const [selectedIssue, setSelectedIssue] = useState<DashIssue | null>(null);
+  const [activityOpen, setActivityOpen] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
   // Load prefs from localStorage on mount
   useEffect(() => {
     setPrefs(loadPrefs());
+    setActivityOpen(loadActivitySidebarOpen());
   }, []);
 
   const updatePrefs = useCallback((updater: (p: KanbanPrefs) => KanbanPrefs) => {
@@ -301,6 +320,14 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
 
   const hasHiddenColumns = prefs.hiddenColumns.length > 0;
 
+  function toggleActivity() {
+    setActivityOpen((prev) => {
+      const next = !prev;
+      saveActivitySidebarOpen(next);
+      return next;
+    });
+  }
+
   return (
     <div className="flex flex-col h-full" data-testid="kanban-board">
       {/* Toolbar */}
@@ -388,82 +415,103 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
             {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Sync
           </button>
+
+          {/* Activity toggle */}
+          <button
+            data-testid="activity-toggle-btn"
+            onClick={toggleActivity}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{
+              background: activityOpen ? 'rgba(99,102,241,0.15)' : 'transparent',
+              color: activityOpen ? '#A5B4FC' : '#71717A',
+              border: `1px solid ${activityOpen ? '#6366F1' : '#27272A'}`,
+            }}
+          >
+            <Radio className="w-4 h-4" />
+            <span className="hidden sm:inline">Activity</span>
+          </button>
         </div>
       </div>
 
-      {/* Desktop Board */}
-      <div className="hidden sm:block flex-1 overflow-x-auto p-4" style={{ overflowY: 'hidden' }}>
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <AnimatePresence mode="wait">
-            {prefs.viewMode === 'full' ? (
-              <motion.div
-                key="full-view"
-                data-testid="kanban-grid"
-                className="flex gap-3 h-full"
-                style={{ minHeight: 'calc(100vh - 140px)' }}
-                variants={viewModeVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {STATIONS.map((station) => (
-                  <KanbanColumn
-                    key={station}
-                    station={station}
-                    issues={getIssuesForStation(station)}
-                    draggingIssueIds={draggingIssueIds}
-                    enrichmentMap={enrichmentMap}
-                    isCollapsed={prefs.hiddenColumns.includes(station)}
-                    onToggleCollapse={() => toggleColumn(station)}
-                    onSelectIssue={setSelectedIssue}
-                  />
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="simplified-view"
-                data-testid="kanban-grid"
-                className="grid h-full gap-4"
-                style={{
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  minHeight: 'calc(100vh - 140px)',
-                }}
-                variants={viewModeVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {SIMPLIFIED_COLUMNS.map((col) => {
-                  const colIssues = col.sources.flatMap((s) => getIssuesForStation(s));
-                  return (
-                    <SimplifiedColumn
-                      key={col.id}
-                      id={col.id}
-                      label={col.label}
-                      color={col.color}
-                      issues={colIssues}
+      {/* Board + Activity Sidebar Row */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop Board */}
+        <div className="hidden sm:block flex-1 overflow-x-auto p-4" style={{ overflowY: 'hidden' }}>
+          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <AnimatePresence mode="wait">
+              {prefs.viewMode === 'full' ? (
+                <motion.div
+                  key="full-view"
+                  data-testid="kanban-grid"
+                  className="flex gap-3 h-full"
+                  style={{ minHeight: 'calc(100vh - 140px)' }}
+                  variants={viewModeVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {STATIONS.map((station) => (
+                    <KanbanColumn
+                      key={station}
+                      station={station}
+                      issues={getIssuesForStation(station)}
+                      draggingIssueIds={draggingIssueIds}
                       enrichmentMap={enrichmentMap}
+                      isCollapsed={prefs.hiddenColumns.includes(station)}
+                      onToggleCollapse={() => toggleColumn(station)}
                       onSelectIssue={setSelectedIssue}
                     />
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="simplified-view"
+                  data-testid="kanban-grid"
+                  className="grid h-full gap-4"
+                  style={{
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    minHeight: 'calc(100vh - 140px)',
+                  }}
+                  variants={viewModeVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  {SIMPLIFIED_COLUMNS.map((col) => {
+                    const colIssues = col.sources.flatMap((s) => getIssuesForStation(s));
+                    return (
+                      <SimplifiedColumn
+                        key={col.id}
+                        id={col.id}
+                        label={col.label}
+                        color={col.color}
+                        issues={colIssues}
+                        enrichmentMap={enrichmentMap}
+                        onSelectIssue={setSelectedIssue}
+                      />
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <DragOverlay dropAnimation={null}>
-            {activeIssue ? (
-              <div data-testid="drag-overlay" style={{ width: '280px' }}>
-                <IssueCard issue={activeIssue} isOverlay isDragDisabled={false} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
+            <DragOverlay dropAnimation={null}>
+              {activeIssue ? (
+                <div data-testid="drag-overlay" style={{ width: '280px' }}>
+                  <IssueCard issue={activeIssue} isOverlay isDragDisabled={false} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
 
-      {/* Mobile view */}
-      <div className="block sm:hidden flex-1 overflow-hidden">
-        <MobileView issues={issues} />
+        {/* Mobile view */}
+        <div className="block sm:hidden flex-1 overflow-hidden">
+          <MobileView issues={issues} />
+        </div>
+
+        {/* Activity Sidebar */}
+        <ActivitySidebar isOpen={activityOpen} onToggle={toggleActivity} />
       </div>
 
       {showNewIssueModal && (
