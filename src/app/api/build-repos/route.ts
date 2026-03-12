@@ -3,6 +3,7 @@ import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/sup
 import { fetchIssueComments } from '@/lib/github';
 
 const REPO_PATTERN = /Build repo:\s*https:\/\/github\.com\/([\w.-]+\/[\w.-]+)/i;
+const REPO_CORRECTION_PATTERN = /source code is in \*\*([\w.-]+\/[\w.-]+)\*\*/i;
 const LIVE_URL_PATTERN = /Live URL:\s*(https:\/\/[^\s]+)/i;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -25,6 +26,7 @@ async function refreshBuildRepos(): Promise<BuildRepo[]> {
   if (error || !doneIssues) return [];
 
   const results: BuildRepo[] = [];
+  const seenRepos = new Set<string>();
 
   for (const issue of doneIssues) {
     const [owner, repo] = (issue.repo as string).split('/');
@@ -33,13 +35,30 @@ async function refreshBuildRepos(): Promise<BuildRepo[]> {
     try {
       const comments = await fetchIssueComments(owner, repo, issue.issue_number as number);
 
-      for (const comment of comments) {
-        const repoMatch = REPO_PATTERN.exec(comment.body);
-        if (!repoMatch) continue;
+      let githubRepo: string | null = null;
+      let liveUrl: string | null = null;
 
-        const githubRepo = repoMatch[1];
-        const liveMatch = LIVE_URL_PATTERN.exec(comment.body);
-        const liveUrl = liveMatch ? liveMatch[1] : null;
+      // Scan all comments — correction comments override BUILD COMPLETE
+      for (const comment of comments) {
+        const correctionMatch = REPO_CORRECTION_PATTERN.exec(comment.body);
+        if (correctionMatch) {
+          githubRepo = correctionMatch[1];
+          const liveMatch = LIVE_URL_PATTERN.exec(comment.body);
+          if (liveMatch) liveUrl = liveMatch[1];
+          // Correction is authoritative — stop scanning
+          break;
+        }
+
+        const repoMatch = REPO_PATTERN.exec(comment.body);
+        if (repoMatch && !githubRepo) {
+          githubRepo = repoMatch[1];
+          const liveMatch = LIVE_URL_PATTERN.exec(comment.body);
+          liveUrl = liveMatch ? liveMatch[1] : null;
+        }
+      }
+
+      if (githubRepo && !seenRepos.has(githubRepo)) {
+        seenRepos.add(githubRepo);
 
         // Parse display name: "repo-slug — Issue Title"
         const repoSlug = githubRepo.split('/')[1] ?? githubRepo;
@@ -67,7 +86,6 @@ async function refreshBuildRepos(): Promise<BuildRepo[]> {
           live_url: liveUrl,
           issue_number: issue.issue_number as number,
         });
-        break; // Only take first BUILD COMPLETE comment per issue
       }
     } catch {
       // Skip issues we can't fetch comments for
