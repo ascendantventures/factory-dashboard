@@ -224,3 +224,74 @@ _Issue #36 — Added: 2026-03-12_
 - DELETE /api/issues/[number]/attachments/[id]
 - GET /api/attachments/[id]
 - GET /api/issues/[number]/attachment-context
+
+---
+
+## Issue Templates & Quick Create (Issue #27)
+_Added: 2026-03-12_
+
+### Template Library Page [auth]
+- [ ] Navigate to /dashboard/templates — page loads, grid of 6 default templates appears
+- [ ] Verify template names: "SaaS Application", "Landing Page", "API Service", "Internal Dashboard", "E-commerce Store", "Portfolio / Showcase" are all visible
+- [ ] Verify each template card has `data-testid="template-card"`
+- [ ] Verify complexity badges appear: simple=green, medium=yellow, complex=red
+- [ ] Verify "Default" badge appears on all 6 seeded templates
+- [ ] Verify estimated cost is shown on each card (e.g., "~3-5 credits", "~15-25 credits")
+- [ ] Verify left border color matches complexity (green/yellow/red)
+
+### Template Preview [auth]
+- [ ] Click "Preview" on any template card — TemplatePreviewModal opens
+- [ ] Modal shows template name, complexity badge, estimated cost, body_template content
+- [ ] Modal shows "System template" badge for default templates
+- [ ] Click "Use this template" button in modal — modal closes, QuickCreateModal opens on Step 1 with that template pre-selected
+
+### Quick Create Modal — Header Button [auth]
+- [ ] Click "New Issue" button in dashboard header — QuickCreateModal opens
+- [ ] Step 1 shows all 6 templates + "Start blank" option
+- [ ] Step indicator shows 4 steps: Template → Details → Review → Submit
+
+### Quick Create Modal — Template Flow [auth]
+- [ ] Select "SaaS Application" template — card gets indigo border, Next button enables
+- [ ] Click Next — Step 2 shows title input (empty, since title_prefix is empty) and description textarea
+- [ ] Fill in description "Test SaaS app" — text entered
+- [ ] Click Next — Step 3 shows rendered body with "Test SaaS app" in place of {{description}}, {{description}} placeholder NOT visible
+- [ ] Labels section shows "complexity:complex" badge
+- [ ] Click "Create issue" — Step 4 shows loading spinner
+- [ ] On success: shows CheckCircle2 icon, "Issue created!" heading, link "View issue #N on GitHub"
+- [ ] Click "Create another" — resets to Step 1
+
+### Quick Create Modal — Start Blank [auth]
+- [ ] Select "Start blank" in Step 1 — dashed card gets selected state, Next enables
+- [ ] Click Next — Step 2 title field is empty
+- [ ] Fill title and description, proceed through Steps 3 and 4 normally
+
+### Admin: New Template Button [auth]
+- [ ] If logged in as admin, "/dashboard/templates" page shows "+ New Template" button in top-right
+- [ ] Click "+ New Template" — TemplateFormModal opens with empty fields, title "Create template"
+- [ ] Submit with empty name — shows inline error "name is required" (or similar)
+- [ ] Fill name "Test Template", body template "## Overview\n{{description}}", click Save/Create
+- [ ] New template appears in the grid
+
+### Admin: Edit Template [auth]
+- [ ] As admin, click Edit icon (pencil) on a custom template — TemplateFormModal opens pre-filled
+- [ ] Change the description, click Save — card updates in place
+- [ ] Modal closes after save
+
+### Admin: Delete Template [auth]
+- [ ] As admin, click Delete icon (trash) on a custom template — DeleteConfirmModal opens
+- [ ] Modal shows template name, "Delete" (red) and "Keep template" buttons
+- [ ] Click "Delete" — template is removed from the grid
+- [ ] Try to delete a system default template — show error "System templates cannot be deleted."
+
+### API Routes
+- GET /api/templates — returns { templates: [...] } with 6+ items
+- POST /api/templates — admin only, 403 for non-admin
+- PATCH /api/templates/[id] — admin only, 403 for non-admin
+- DELETE /api/templates/[id] — admin only, 403 for system defaults
+
+### Routes
+- /dashboard/templates
+- GET /api/templates
+- POST /api/templates
+- PATCH /api/templates/[id]
+- DELETE /api/templates/[id]

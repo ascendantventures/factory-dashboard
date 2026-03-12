@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/27
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -134,6 +134,16 @@
 - **Audit log polling:** page queries `pipeline_audit_log` via Supabase browser client on same 5s cycle
 - **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
+
+## Issue Templates & Quick Create (CR #27)
+- **New table:** `fd_issue_templates` — 6 seeded default templates (SaaS App, Landing Page, API Service, Internal Dashboard, E-commerce, Portfolio). Admin-only write via `dash_user_roles` table check. Migration: `20260313200000_fd_issue_templates.sql`
+- **New API routes:** `GET/POST /api/templates`, `PATCH/DELETE /api/templates/[id]`
+- **New page:** `/dashboard/templates` — staggered card grid, admin CRUD, preview/use modals
+- **QuickCreateModal:** 4-step wizard (choose template → fill details → review interpolated body → submit). Replaces old flat `NewIssueModal` in `NewIssueButton`. Body interpolation: `{{description}}` → user description text.
+- **Admin check:** All admin-gated routes check `dash_user_roles` table (not `raw_user_meta_data`).
+- **System templates guard:** `DELETE /api/templates/[id]` returns 403 if `is_default=true`.
+- **NewIssueButton** now opens `QuickCreateModal` — old `NewIssueModal` component still exists but is no longer used by the button. Safe to remove in future CR.
+- **Templates nav item:** `LayoutTemplate` icon added to Sidebar between Dashboard and Activity.
 
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
