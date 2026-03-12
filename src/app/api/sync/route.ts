@@ -43,6 +43,7 @@ export async function POST() {
             .filter((n): n is string => !!n);
 
           const record = {
+            id: ghIssue.number,
             issue_number: ghIssue.number,
             repo: repoPath,
             title: ghIssue.title,
