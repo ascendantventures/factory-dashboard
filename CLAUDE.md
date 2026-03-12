@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/35
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -345,3 +345,32 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## Enhanced App Management — Issue History (CR #35)
+- **Route:** `/dashboard/apps/[repoId]` — extended with tab navigation (Overview | Issues | Timeline)
+- **New API routes:**
+  - `GET /api/apps/[repoId]/issues` — paginated issues for app, filters: station, complexity, from, to, sort, order
+  - `GET /api/apps/[repoId]/stats` — aggregated stats: total_issues, total_cost_usd, avg_cost_usd, success_rate, active_issues, last_deployed_at
+  - `GET /api/apps/[repoId]/timeline` — fadash_timeline_events for all submissions in app
+  - `POST /api/apps/[repoId]/issues` — creates GitHub issue + fires sync
+- **New DB table:** `fadash_timeline_events` — migration `20260312210000_fadash_timeline_events.sql`
+  - PK: uuid, FK: submission_id → dash_issues.id (bigint), event_type check constraint
+  - RLS: authenticated SELECT; service_role INSERT/UPDATE/DELETE
+- **New components in `src/app/dashboard/apps/[repoId]/components/`:**
+  - `AppTabNav.tsx` — Overview/Issues/Timeline tab nav
+  - `AppStatsBar.tsx` — 6 stat cards (Total Issues, Total Cost, Avg Cost, Success Rate, Active Issues, Last Deployed)
+  - `IssueHistoryTab.tsx` — filter state owner, renders IssueFilterBar + IssueHistoryTable
+  - `IssueHistoryTable.tsx` — sortable/filterable table of dash_issues; empty states for no-data and no-filter-match
+  - `IssueFilterBar.tsx` — station/complexity/date-range filter controls
+  - `CreateIssueModal.tsx` — modal with quick-type buttons (Bug/Feature/Design/Performance), pre-filled repo
+  - `TimelineTab.tsx` — fetches /api/apps/[repoId]/timeline, renders vertical timeline
+  - `TimelineEvent.tsx` — single event card with station badge, duration, event type color
+  - `StationBadge.tsx` — colored pill per station (intake→spec→design→build→test→done→failed)
+  - `ComplexityBadge.tsx` — colored pill per complexity (simple/medium/complex)
+- **Design system for these components:** Amber/gold primary (#D4A012), warm near-black background (#0F0E0D), Plus Jakarta Sans + JetBrains Mono — see issue #35 DESIGN.md
+- **Issue linking:** Issues linked to apps via `dash_issues.repo` matching `dash_build_repos.github_repo`
+- **Cost data:** Comes from `dash_issue_cost_summary` view (JOIN on dash_issues.id)
+- **github_issue_url:** Computed as `https://github.com/${repo}/issues/${issue_number}` (not stored in DB)
+- **fadash_timeline_events:** Phase 1 — table exists, UI handles empty state gracefully; Phase 2 will auto-populate from pipeline worker
+- **data-testid attributes:** `app-stats-bar`, `stat-total-issues`, `stat-total-cost`, `stat-avg-cost`, `stat-success-rate`, `stat-active-issues`, `stat-last-deployed`, `filter-bar`, `filter-station`, `filter-complexity`, `issue-history-table`, `issue-row`, `station-badge`, `timeline-view`, `timeline-empty-state`, `create-issue-modal`, `create-issue-repo`, `issue-history-empty-state`
+- **E2E tests:** `tests/e2e/app-management.spec.ts`

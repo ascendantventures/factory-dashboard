@@ -224,3 +224,66 @@ _Issue #36 — Added: 2026-03-12_
 - DELETE /api/issues/[number]/attachments/[id]
 - GET /api/attachments/[id]
 - GET /api/issues/[number]/attachment-context
+
+---
+
+## Enhanced App Management — Issue History, Stats, Timeline, Create Issue (Issue #35)
+_Added: 2026-03-12_
+
+### Test Steps
+
+#### App Detail Page — Stats Bar [auth]
+- [ ] Navigate to /dashboard/apps — click on any app card
+- [ ] Verify stats bar appears below page header with 6 stat cards: Total Issues, Total Cost, Avg Cost, Success Rate, Active Issues, Last Deployed
+- [ ] `data-testid="app-stats-bar"` is visible; `data-testid="stat-total-issues"` shows a number
+- [ ] Stats bar shows "0", "$0.00", "—" gracefully for apps with no issues (no error/crash)
+
+#### App Detail Page — Tab Navigation [auth]
+- [ ] Three tabs are visible: "Overview", "Issues", "Timeline"
+- [ ] Clicking "Overview" shows existing content (GitHub link, deployment panel, designs link)
+- [ ] Clicking "Issues" shows the issue history table and filter bar
+- [ ] Clicking "Timeline" shows the timeline view or empty state
+
+#### Issue History Tab [auth]
+- [ ] `data-testid="issue-history-table"` visible when on Issues tab
+- [ ] `data-testid="filter-bar"` visible with Station, Complexity, date range controls
+- [ ] Issues table shows columns: Issue #, Title, Station, Complexity, Cost, Date
+- [ ] Station column shows colored badges (e.g., blue for "spec", cyan for "build", green for "done")
+- [ ] Clicking Station filter dropdown and selecting a station filters the table (only that station shown)
+- [ ] "Clear filters" button appears when any filter is applied; clicking it resets all filters
+- [ ] Clicking a column header (Cost, Date, Station, Complexity) sorts the table
+- [ ] Clicking an issue row opens the GitHub issue URL in a new tab
+- [ ] When no issues match filters: `data-testid="issue-history-empty-state"` appears with "No issues found" heading
+- [ ] When app has no issues at all: "No issues yet" empty state with "Create first issue" button
+
+#### Create Issue Modal [auth]
+- [ ] "New Issue" button visible in page header (amber/gold, Plus icon)
+- [ ] Clicking "New Issue" opens the create issue modal (`data-testid="create-issue-modal"`)
+- [ ] `data-testid="create-issue-repo"` is pre-filled with app's repo and is disabled/read-only
+- [ ] Four quick-type buttons visible: Bug Report, Feature Request, Design Change, Performance Fix
+- [ ] Clicking a quick-type button selects it (amber background), clicking again deselects
+- [ ] Title field is required — submitting empty title shows error "Title is required"
+- [ ] Clicking Cancel closes the modal without creating an issue
+- [ ] Pressing Escape closes the modal
+- [ ] Clicking modal backdrop (outside) closes the modal
+
+#### Timeline Tab [auth]
+- [ ] Clicking "Timeline" tab shows `data-testid="timeline-view"`
+- [ ] If `fadash_timeline_events` is empty: `data-testid="timeline-empty-state"` visible with "No timeline events" heading
+- [ ] If events exist: vertical timeline with event cards; each card shows event type, station badge, timestamp
+- [ ] Failure events (event_type=failure) have red left border highlight
+- [ ] Bugfix loop events have orange left border highlight
+
+#### API Endpoints [auth]
+- [ ] GET /api/apps/{repoId}/issues returns 200 with `{ issues: [...], total: N }` for authenticated user
+- [ ] GET /api/apps/{repoId}/issues?station=build returns only build-station issues
+- [ ] GET /api/apps/{repoId}/stats returns 200 with `{ total_issues, total_cost_usd, ... }`
+- [ ] GET /api/apps/{repoId}/timeline returns 200 with `{ events: [...] }`
+- [ ] All routes return 401 for unauthenticated requests
+
+### Routes/Endpoints
+- /dashboard/apps/[repoId] (updated — now has tabs)
+- GET /api/apps/[repoId]/issues
+- GET /api/apps/[repoId]/stats
+- GET /api/apps/[repoId]/timeline
+- POST /api/apps/[repoId]/issues
