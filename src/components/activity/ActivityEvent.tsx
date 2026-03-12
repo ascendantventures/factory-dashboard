@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ActivityTimestamp } from './ActivityTimestamp';
 import type { ActivityEvent as ActivityEventType } from '@/hooks/useActivityFeed';
+import { LogViewer } from '@/components/agents/LogViewer';
 
 const EVENT_CONFIG: Record<
   ActivityEventType['event_type'],
@@ -21,7 +23,7 @@ function truncate(str: string | null | undefined, max: number): string {
   return str.length > max ? str.slice(0, max) + '…' : str;
 }
 
-function renderDescription(event: ActivityEventType): React.ReactNode {
+function renderDescription(event: ActivityEventType, onWatch?: () => void): React.ReactNode {
   switch (event.event_type) {
     case 'agent_spawned':
       return (
@@ -29,6 +31,29 @@ function renderDescription(event: ActivityEventType): React.ReactNode {
           Agent spawned
           {event.station && (
             <> · <span className="font-medium">{event.station}</span></>
+          )}
+          {event.source === 'run' && onWatch && (
+            <>
+              {' · '}
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onWatch(); }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#E5A830',
+                  fontSize: 'inherit',
+                  fontFamily: 'inherit',
+                  fontWeight: 500,
+                  padding: 0,
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'; }}
+              >
+                Watch
+              </button>
+            </>
           )}
         </>
       );
@@ -103,10 +128,13 @@ interface ActivityEventProps {
 }
 
 export function ActivityEventRow({ event }: ActivityEventProps) {
+  const [showLogViewer, setShowLogViewer] = useState(false);
   const config = EVENT_CONFIG[event.event_type] ?? EVENT_CONFIG.stage_completed;
   const isQaFail = event.event_type === 'qa_result' && event.run_status === 'failed';
   const effectiveColor = isQaFail ? '#F87171' : config.color;
   const effectiveBg = isQaFail ? 'rgba(239,68,68,0.12)' : config.bg;
+
+  const isAgentSpawned = event.event_type === 'agent_spawned' && event.source === 'run';
 
   const inner = (
     <div
@@ -132,7 +160,7 @@ export function ActivityEventRow({ event }: ActivityEventProps) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-xs leading-relaxed" style={{ color: '#D4D4D8' }}>
-          {renderDescription(event)}
+          {renderDescription(event, isAgentSpawned ? () => setShowLogViewer(prev => !prev) : undefined)}
         </p>
         {event.issue_title && (
           <p className="text-xs mt-0.5 truncate" style={{ color: '#71717A' }}>
@@ -146,18 +174,39 @@ export function ActivityEventRow({ event }: ActivityEventProps) {
     </div>
   );
 
-  // Wrap in Link if there's an issue_number
-  if (event.issue_number) {
-    return (
-      <Link
-        href={`/dashboard/issues/${event.issue_number}`}
-        className="block"
-        data-testid="activity-event-link"
-      >
-        {inner}
-      </Link>
-    );
-  }
+  return (
+    <div>
+      {/* Wrap in Link if there's an issue_number, but only for non-agent-spawned events */}
+      {event.issue_number && !isAgentSpawned ? (
+        <Link
+          href={`/dashboard/issues/${event.issue_number}`}
+          className="block"
+          data-testid="activity-event-link"
+        >
+          {inner}
+        </Link>
+      ) : (
+        inner
+      )}
 
-  return inner;
+      {/* Log viewer for agent_spawned events */}
+      {showLogViewer && isAgentSpawned && (
+        <div style={{ padding: '8px 12px' }}>
+          <LogViewer
+            run={{
+              id: event.source_id,
+              station: event.station,
+              model: event.model,
+              pid: null,
+              started_at: event.occurred_at,
+              estimated_cost_usd: event.estimated_cost_usd,
+              run_status: event.run_status ?? 'running',
+            }}
+            onClose={() => setShowLogViewer(false)}
+            mode="embedded"
+          />
+        </div>
+      )}
+    </div>
+  );
 }

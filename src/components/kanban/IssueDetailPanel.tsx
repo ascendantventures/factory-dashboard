@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, ExternalLink, GitCommit, Activity, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { X, ExternalLink, GitCommit, Activity, Play, CheckCircle, XCircle, Loader2, Eye } from 'lucide-react';
 import { DashIssue, DashStageTransition, DashAgentRun } from '@/types';
 import { formatCost } from '@/lib/enrichment';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LogViewer } from '@/components/agents/LogViewer';
 
 interface IssueDetail {
   issue: DashIssue;
@@ -53,6 +54,7 @@ function RunStatusBadge({ status }: { status: string | null }) {
 export function IssueDetailPanel({ issue, onClose }: IssueDetailPanelProps) {
   const [detail, setDetail] = useState<IssueDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeLogRun, setActiveLogRun] = useState<DashAgentRun | null>(null);
 
   const fetchDetail = useCallback(async (iss: DashIssue) => {
     setLoading(true);
@@ -224,17 +226,18 @@ export function IssueDetailPanel({ issue, onClose }: IssueDetailPanelProps) {
                       <EmptyState icon={<Activity style={{ width: 24, height: 24 }} />} text="No agent runs recorded" />
                     ) : (
                       <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #27272A' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 70px 70px', padding: '10px 12px', background: '#27272A', fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Inter, sans-serif' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 70px 70px 48px', padding: '10px 12px', background: '#27272A', fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Inter, sans-serif' }}>
                           <div>Station</div>
                           <div>Status</div>
                           <div>Cost</div>
                           <div>Duration</div>
+                          <div>Logs</div>
                         </div>
                         {detail.runs.map((run, i) => (
                           <div key={run.id} style={{
-                            display: 'grid', gridTemplateColumns: '1fr 80px 70px 70px',
+                            display: 'grid', gridTemplateColumns: '1fr 80px 70px 70px 48px',
                             padding: '12px', fontSize: 13,
-                            background: i % 2 === 1 ? 'rgba(39,39,42,0.5)' : '#18181B',
+                            background: run.run_status === 'running' ? 'rgba(26,29,37,1)' : (i % 2 === 1 ? 'rgba(39,39,42,0.5)' : '#18181B'),
                             borderBottom: i < detail.runs.length - 1 ? '1px solid #27272A' : 'none',
                           }}>
                             <div style={{ color: '#FAFAFA', textTransform: 'capitalize' }}>{run.station ?? '—'}</div>
@@ -245,11 +248,57 @@ export function IssueDetailPanel({ issue, onClose }: IssueDetailPanelProps) {
                             <div style={{ fontFamily: 'JetBrains Mono, monospace', color: '#71717A' }}>
                               {formatDuration(run.duration_seconds)}
                             </div>
+                            <div>
+                              <button
+                                data-testid="view-logs-btn"
+                                onClick={() => setActiveLogRun(activeLogRun?.id === run.id ? null : run)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: activeLogRun?.id === run.id ? '#E5A830' : '#6B7280',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '2px 4px',
+                                  borderRadius: 4,
+                                }}
+                                onMouseEnter={(e) => {
+                                  (e.currentTarget as HTMLButtonElement).style.color = '#E5A830';
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.currentTarget as HTMLButtonElement).style.color = activeLogRun?.id === run.id ? '#E5A830' : '#6B7280';
+                                }}
+                                title="View logs"
+                                aria-label="View logs for this run"
+                              >
+                                <Eye style={{ width: 14, height: 14 }} />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+
+                  {/* Inline LogViewer */}
+                  {activeLogRun && (
+                    <div style={{ marginTop: 12 }}>
+                      <LogViewer
+                        run={{
+                          id: activeLogRun.id,
+                          station: activeLogRun.station,
+                          model: activeLogRun.model,
+                          pid: null,
+                          started_at: activeLogRun.started_at,
+                          estimated_cost_usd: activeLogRun.estimated_cost_usd,
+                          run_status: activeLogRun.run_status ?? 'completed',
+                          exit_code: activeLogRun.exit_code,
+                        }}
+                        onClose={() => setActiveLogRun(null)}
+                        mode="embedded"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Cost Breakdown */}

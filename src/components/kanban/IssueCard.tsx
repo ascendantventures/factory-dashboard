@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { Sparkles, Bug, Wrench, Clock, DollarSign, GitBranch, ExternalLink, GripVertical } from 'lucide-react';
 import { DashIssue } from '@/types';
 import { IssueEnrichment, formatTimeInStage, formatCost, getIssueType } from '@/lib/enrichment';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogViewer } from '@/components/agents/LogViewer';
 
 interface IssueCardProps {
   issue: DashIssue;
@@ -51,7 +53,19 @@ function ComplexityBadge({ complexity }: { complexity: string }) {
   );
 }
 
+interface ActiveRun {
+  id: string;
+  station: string | null;
+  model: string | null;
+  pid: number | null;
+  started_at: string | null;
+  estimated_cost_usd: number | null;
+  run_status: string;
+}
+
 export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay = false, showStationBadge = false, onSelect }: IssueCardProps) {
+  const [showLogViewer, setShowLogViewer] = useState(false);
+  const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
   const {
     attributes, listeners, setNodeRef,
     transform, transition, isDragging,
@@ -98,19 +112,68 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
       whileTap={isOverlay ? {} : { scale: 0.98 }}
       transition={{ duration: 0.2 }}
     >
-      {/* Agent activity dot */}
+      {/* Agent activity dot — clickable to open log viewer */}
       {isAgentActive && (
-        <div
+        <button
           data-testid="agent-activity-dot"
-          className="motion-safe:animate-agent-pulse"
-          style={{
-            position: 'absolute', top: 14, right: 14,
-            width: 10, height: 10, borderRadius: '50%',
-            background: '#22C55E',
-            boxShadow: '0 0 0 3px rgba(34,197,94,0.2)',
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (showLogViewer) {
+              setShowLogViewer(false);
+              return;
+            }
+            // Fetch active run for this issue
+            try {
+              const res = await fetch(`/api/agents/active`);
+              if (res.ok) {
+                const data = await res.json() as { runs: ActiveRun[] };
+                const run = data.runs.find(r => r.run_status === 'running');
+                if (run) {
+                  setActiveRun(run);
+                  setShowLogViewer(true);
+                }
+              }
+            } catch {
+              // If fetch fails, still toggle
+              setShowLogViewer(true);
+            }
           }}
-          aria-label="Agent actively running"
-        />
+          style={{
+            position: 'absolute', top: 10, right: 10,
+            width: 20, height: 20,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2,
+          }}
+          aria-label="View agent logs"
+          title="View agent logs"
+        >
+          <div style={{ position: 'relative', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                position: 'absolute',
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                border: '2px solid rgba(229, 168, 48, 0.3)',
+                animation: 'pulse-ring 1.5s ease-out infinite',
+              }}
+            />
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#E5A830',
+              }}
+            />
+          </div>
+        </button>
       )}
 
       <div className="flex items-stretch">
@@ -226,6 +289,26 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
           </div>
         </div>
       </div>
+
+      {/* Log viewer panel — shown below card when agent dot is clicked */}
+      <AnimatePresence>
+        {showLogViewer && activeRun && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: 'hidden', marginTop: 4 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LogViewer
+              run={activeRun}
+              onClose={() => setShowLogViewer(false)}
+              mode="embedded"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

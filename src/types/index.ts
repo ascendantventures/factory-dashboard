@@ -47,6 +47,8 @@ export interface DashAgentRun {
   exit_code: number | null;
   log_summary: string | null;
   estimated_cost_usd: number | null;
+  log_file_path: string | null;
+  pid: number | null;
   created_at: string;
   updated_at: string;
 }
