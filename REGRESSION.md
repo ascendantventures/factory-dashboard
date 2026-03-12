@@ -224,3 +224,35 @@ _Issue #36 — Added: 2026-03-12_
 - DELETE /api/issues/[number]/attachments/[id]
 - GET /api/attachments/[id]
 - GET /api/issues/[number]/attachment-context
+
+---
+
+## Cost Analytics & ROI Dashboard (Issue #25)
+_Added: 2026-03-12_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/analytics — page renders with "Analytics" H1, no JS errors
+- [ ] Verify 4 totals cards visible: All-Time Spend, This Month, This Week, Today — each shows $X.XXXX format (data-testid: total-all-time, total-this-month, total-this-week, total-today)
+- [ ] Verify ROI metrics grid visible: Cost per Issue, Avg Time-to-Deploy, QA First-Try Rate, Issues Completed (data-testid: roi-cost-per-issue, roi-time-to-deploy, roi-qa-first-try, roi-issues-completed)
+- [ ] Verify Spend Over Time line chart renders (data-testid: chart-spend-over-time)
+- [ ] Verify Spend by Station pie chart renders (data-testid: chart-spend-by-station)
+- [ ] Verify Spend by App bar chart renders (data-testid: chart-spend-by-app)
+- [ ] Verify Spend by Model horizontal bar chart renders (data-testid: chart-spend-by-model)
+- [ ] Click "Week" granularity toggle — chart re-renders for weekly data; button has aria-pressed="true"
+- [ ] Click "Month" granularity toggle — chart re-renders; button shows monthly view
+- [ ] Change date range (From/To inputs) — all charts and totals refresh with new range
+- [ ] Select a repo from the repo dropdown (filter-repo) — URL updates with ?repo=..., charts filter to that repo
+- [ ] Click "Reset filters" — from/to/repo/granularity reset to defaults
+- [ ] Verify filter state persists in URL (copy URL, paste in new tab — same filters applied)
+- [ ] Click "Export CSV" button — file download triggers, filename matches analytics-export-YYYY-MM-DD.csv
+- [ ] Verify CSV has header row: id,submission_id,station,model,build_repo,cost_usd,duration_seconds,status,created_at
+- [ ] Navigate to /dashboard/analytics without auth (incognito) — redirected to /auth/login
+- [ ] Verify "Analytics" link appears in sidebar navigation
+- [ ] Click Analytics sidebar link — navigates to /dashboard/analytics
+
+### Routes/Endpoints
+- /dashboard/analytics — main analytics page
+- GET /api/analytics/costs?from=&to=&repo= — cost aggregations
+- GET /api/analytics/roi?from=&to=&repo= — ROI metrics
+- GET /api/analytics/trends?from=&to=&repo=&granularity= — time-series data
+- GET /api/analytics/export?from=&to=&repo= — CSV download
