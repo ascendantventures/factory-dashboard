@@ -14,14 +14,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="antialiased">
         {children}
         <Toaster
           position="bottom-right"
           toastOptions={{
             style: {
-              background: '#141414',
-              border: '1px solid #262626',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
               color: '#FAFAFA',
               fontFamily: 'Inter, sans-serif',
               fontSize: '14px',
