@@ -6,7 +6,7 @@
 - **Live URL:** https://build-work-blond.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/11
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/21
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -147,6 +147,30 @@
 - **Realtime channels:** 'activity-transitions' (INSERT on dash_stage_transitions), 'activity-runs' (INSERT + UPDATE on dash_agent_runs)
 - **API discriminator logic:** running→agent_spawned; qa+completed/failed→qa_result; cost+completed→cost_logged; done+live_url→build_deployed; else→stage_completed
 - **Issue title resolution:** JOIN in /api/activity; Realtime payloads don't join (title=null on live events)
+
+## Live Agent Log Viewer (CR #21)
+- **Storage bucket:** `dash-agent-logs` — must be created in Supabase; logs stored as `{run_id}.log`
+- **New DB columns on dash_agent_runs:** `log_file_path` (text), `pid` (integer) — added via migration 20260313000000
+- **New API routes:**
+  - `GET /api/agents/active` — returns all running agent runs with log_file_path + pid
+  - `GET /api/agents/logs/[runId]` — SSE stream: polls Storage every 1.5s for active runs; serves full log for completed runs
+  - `GET /api/agents/logs/[runId]/raw` — full log as plain text for copy button
+- **New components in `src/components/agents/`:**
+  - `LogViewer.tsx` — terminal panel (bg `#0D0E12`), accepts `run: AgentRunMeta`, `mode: 'panel' | 'embedded'`
+  - `AgentMetadataBar.tsx` — station badge + model badge + PID + elapsed + cost
+  - `AgentStatusDot.tsx` — pulsing amber dot (running), green (completed), red (failed)
+  - `LogViewerLine.tsx` — single log line with color coding: blue (commands), red (errors), green (success)
+  - `LogViewerToolbar.tsx` — search input + scroll-lock toggle + copy button
+- **New hooks:**
+  - `useAgentLogStream.ts` — EventSource management, reconnect at last offset on error
+  - `useElapsedTime.ts` — tick-based elapsed time string, updates every second
+- **Integration points:**
+  - `IssueCard.tsx` — amber agent dot is now clickable; fetches active run from `/api/agents/active` + opens LogViewer
+  - `IssueDetailPanel.tsx` — Agent Runs table has new "Logs" column with Eye icon button; click toggles inline LogViewer
+  - `ActivityEvent.tsx` — `agent_spawned` events show "Watch" link that toggles inline LogViewer
+- **Design:** Warm amber (`#E5A830`) primary for log viewer UI; dark terminal bg `#0D0E12`; JetBrains Mono for log lines; Outfit for UI text
+- **data-testid attributes:** `log-viewer`, `log-content`, `log-line`, `log-search-input`, `scroll-lock-toggle`, `copy-log-btn`, `view-logs-btn`, `agent-station`, `agent-model`, `agent-elapsed`, `log-viewer-close`
+- **Harness upload note:** Log streaming only works if harness uploads log chunks to `dash-agent-logs/{run_id}.log` in Supabase Storage. Dev fallback reads from `/tmp/factory-agent-logs/{run_id}.log`.
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
