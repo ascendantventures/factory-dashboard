@@ -2,13 +2,23 @@ export const STATIONS = ['intake', 'spec', 'design', 'build', 'qa', 'bugfix', 'd
 export type Station = typeof STATIONS[number];
 
 export const STATION_COLORS: Record<Station, string> = {
-  intake: '#6B7280',
-  spec: '#3B82F6',
-  design: '#A855F7',
-  build: '#F59E0B',
-  qa: '#06B6D4',
+  intake: '#F59E0B',
+  spec: '#8B5CF6',
+  design: '#EC4899',
+  build: '#3B82F6',
+  qa: '#14B8A6',
   bugfix: '#EF4444',
   done: '#22C55E',
+};
+
+export const STATION_BG_COLORS: Record<Station, string> = {
+  intake: '#92400E',
+  spec: '#5B21B6',
+  design: '#9D174D',
+  build: '#1E40AF',
+  qa: '#115E59',
+  bugfix: '#991B1B',
+  done: '#166534',
 };
 
 export const STATION_LABELS: Record<Station, string> = {
@@ -32,7 +42,7 @@ export const COMPLEXITY_LABELS: Record<string, string> = {
 export const COMPLEXITY_COLORS: Record<string, string> = {
   xs: '#22C55E',
   sm: '#06B6D4',
-  md: '#3B82F6',
-  lg: '#F59E0B',
+  md: '#F59E0B',
+  lg: '#EF4444',
   xl: '#EF4444',
 };
