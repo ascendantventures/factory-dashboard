@@ -50,6 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_dash_issues_spec_approved
 ALTER TABLE factory_spec_activities ENABLE ROW LEVEL SECURITY;
 
 -- Authenticated users can read all activities
+DROP POLICY IF EXISTS "factory_spec_activities_select_authenticated" ON factory_spec_activities;
 CREATE POLICY "factory_spec_activities_select_authenticated"
   ON factory_spec_activities
   FOR SELECT
@@ -57,6 +58,7 @@ CREATE POLICY "factory_spec_activities_select_authenticated"
   USING (true);
 
 -- Authenticated users can insert their own activities
+DROP POLICY IF EXISTS "factory_spec_activities_insert_authenticated" ON factory_spec_activities;
 CREATE POLICY "factory_spec_activities_insert_authenticated"
   ON factory_spec_activities
   FOR INSERT
