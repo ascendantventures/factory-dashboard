@@ -3,10 +3,10 @@
 ## Project
 - **Name:** Factory Dashboard
 - **Description:** Pipeline operations UI for the Foundry agentic harness — Kanban board, metrics, issue creation, GitHub sync, enterprise nav & layout
-- **Live URL:** https://build-work-blond.vercel.app
+- **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/31
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/37
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -293,4 +293,28 @@
 - **data-testid attributes:** `production-status-badge`, `production-deployment-url`, `deployment-row`, `build-log-drawer`, `build-log-content`, `commit-sha`, `commit-author`, `redeploy-button`, `domain-row`, `copy-url-button`, `env-var-list`, `build-time-chart`, `bundle-size-chart`
 - **Design:** Uses the existing dark color system (surface #141419 = var(--surface), border #2A2A36 = var(--border)); primary blue #3B82F6 for this panel (Vercel-aligned); BUILDING status shows yellow spinner
 - **Animations added to globals.css:** `@keyframes shimmer`, `@keyframes vercel-dot-pulse`, `@keyframes spin`
-- **Live URL:** https://build-work-blond.vercel.app
+- **Live URL:** https://factory-dashboard-tau.vercel.app
+
+## Pencil.dev Design Integration (CR #37)
+- **New routes:**
+  - `/dashboard/apps/[repoId]/designs` — Design gallery per app (all .pen files across issues)
+  - `/dashboard/apps/[repoId]/designs/[issueNumber]` — Design detail viewer for a specific issue
+- **New API routes (all require authentication):**
+  - `GET /api/designs/[repoId]` — list all .pen designs for a repo
+  - `GET /api/designs/[repoId]/[issueNumber]` — latest design for an issue (user > pipeline)
+  - `GET /api/designs/attachment/[attachmentId]` — signed URL (60s) for user-uploaded .pen
+  - `POST /api/designs/parse` — validate + summarize .pen JSON (frame count, tokens)
+  - `POST /api/designs/upload` — upload user .pen; stores in Supabase Storage + adds has-design-reference label
+- **New DB tables:**
+  - `pencil_designs` — repo_id, issue_number, file_url, commit_sha, version, source ('pipeline'|'user'). Service role inserts pipeline; authenticated inserts user.
+  - `pencil_design_attachments` — user-uploaded metadata: repo_id, issue_number, storage_path, file_name, file_size, uploaded_by (auth.uid()).
+  - Migration: `20260312170000_pencil_designs.sql`
+- **Storage bucket:** `pencil-designs` (private) — user .pen files at `{repoId}/{issueNumber}/{filename}`
+- **Lib files:** `src/lib/storage.ts` (BUCKETS), `src/lib/pen-types.ts` (all .pen types)
+- **Hooks:** `src/hooks/usePenParser.ts`, `src/hooks/useDesigns.ts`
+- **Components in `src/components/pencil/`:** PenFrameCanvas (HTML Canvas renderer), PenFrameGrid, PenFrameDetail, PenDesignTokens, PenOpenButton, PenDownloadButton, PenFileViewer, DesignGallery, DesignVersionHistory, DesignUploadButton, DesignReferenceTag, EmptyGallery
+- **Variable resolution:** `{variable.name}` tokens in fill/stroke/color resolved from canvas.variables; missing vars fall back to #cccccc
+- **Design system:** Pencil pages use light mode (#FDFCFB bg, #E85D4C primary) via inline styles — dashboard shell remains dark
+- **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
+- **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
+- **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
