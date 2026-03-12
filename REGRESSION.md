@@ -224,3 +224,63 @@ _Issue #36 — Added: 2026-03-12_
 - DELETE /api/issues/[number]/attachments/[id]
 - GET /api/attachments/[id]
 - GET /api/issues/[number]/attachment-context
+
+---
+
+## In-App Notification Center (Issue #26)
+_Added: 2026-03-12_
+
+### Notification Bell [auth]
+- [ ] Navigate to /dashboard — notification bell (data-testid="notification-bell") is visible in header
+- [ ] With no unread notifications — notification badge (data-testid="notification-badge") is NOT visible
+- [ ] POST /api/notifications/create with x-factory-secret header: `{"user_id": "<test-user-id>", "type": "spec_ready", "title": "Test notification", "body": "Test body", "link": "/dashboard"}` — returns 200 with `{id: "..."}
+- [ ] Refresh /dashboard — notification badge shows "1" in red pill
+- [ ] Click bell icon — notification panel (data-testid="notification-panel") opens below bell
+- [ ] Click outside the panel — panel closes
+- [ ] Press Escape key while panel is open — panel closes
+
+### Notification Panel [auth]
+- [ ] Open panel — shows notification item (data-testid="notification-item") with type icon, title, body text, relative timestamp
+- [ ] Unread notification has left teal border and unread dot (data-testid="unread-dot") visible
+- [ ] Click a notification — marks it as read (unread dot disappears), navigates to notification's link
+- [ ] Return to /dashboard, open bell — unread count decremented, badge hidden if count = 0
+- [ ] POST 3 more notifications, open panel — shows "Mark all read" button (data-testid="mark-all-read-btn")
+- [ ] Click "Mark all read" — all notifications show as read, badge disappears, unread dot hidden on all items
+- [ ] With no notifications — panel shows "All caught up" empty state with Inbox icon
+- [ ] Panel footer shows "Notification settings" link — clicking navigates to /dashboard/settings/notifications
+
+### Real-time Delivery [auth]
+- [ ] Open notification panel, then POST a new notification via /api/notifications/create — new notification appears in panel within 2 seconds WITHOUT page refresh
+- [ ] Unread badge count increments immediately on real-time notification arrival
+
+### Notification Preferences Page [auth]
+- [ ] Navigate to /dashboard/settings/notifications — page loads with title "Notification Preferences"
+- [ ] Sidebar nav shows "Notifications" link with Bell icon — link is highlighted when on this page
+- [ ] Page renders 7 toggle rows (data-testid="notif-type-toggle"): spec_ready, build_complete, qa_passed, qa_failed, deploy_complete, agent_stalled, pipeline_error
+- [ ] All 7 toggles are ON by default for a new user
+- [ ] Toggle OFF "QA failed" (data-testid="notif-toggle-qa_failed") — toggle turns gray, "Saved" indicator appears
+- [ ] Reload page — qa_failed toggle is still OFF (persisted to DB)
+- [ ] Toggle qa_failed back ON — "Saved" indicator appears again
+- [ ] POST /api/notifications/create with type=qa_failed for a user who has qa_failed=false — returns `{skipped: true, reason: "type_disabled"}`
+
+### Quiet Hours [auth]
+- [ ] On preferences page — "Enable quiet hours" toggle is visible, OFF by default
+- [ ] Toggle ON quiet hours — start time + end time inputs appear (default 10:00 PM and 08:00 AM)
+- [ ] Change start time to "23:00" — "Saved" indicator appears, change persists on reload
+- [ ] Toggle quiet hours OFF — time inputs disappear
+- [ ] With quiet hours active covering current time, POST /api/notifications/create — returns `{skipped: true, reason: "quiet_hours"}`
+
+### Internal Create API
+- [ ] POST /api/notifications/create WITHOUT x-factory-secret header — returns 401
+- [ ] POST /api/notifications/create with wrong secret — returns 401
+- [ ] POST /api/notifications/create with valid secret and valid body — returns 200 with `{id: "..."}`
+- [ ] POST /api/notifications/create with invalid type "unknown_type" — returns 400
+
+### Routes/Endpoints
+- GET /api/notifications
+- PATCH /api/notifications/[id]/read
+- POST /api/notifications/read-all
+- GET /api/notifications/preferences
+- PATCH /api/notifications/preferences
+- POST /api/notifications/create (internal)
+- /dashboard/settings/notifications (page)

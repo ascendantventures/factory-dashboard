@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -77,6 +77,33 @@ h1, h2, h3, h4, h5, h6 {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ── Notification Center CSS vars ── */
+:root {
+  --fn-primary: #0D9488;
+  --fn-primary-dark: #0F766E;
+  --fn-primary-light: #CCFBF1;
+  --fn-bg: #FAFAF9;
+  --fn-surface: #FFFFFF;
+  --fn-surface-alt: #F5F5F4;
+  --fn-border: #E7E5E4;
+  --fn-border-subtle: #F0EFED;
+  --fn-text-primary: #1C1917;
+  --fn-text-secondary: #44403C;
+  --fn-text-muted: #A8A29E;
+  --fn-success: #16A34A;
+  --fn-warning: #CA8A04;
+  --fn-error: #DC2626;
+  --fn-info: #2563EB;
+  --font-ui: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+}
+
+/* ── Notification skeleton animation ── */
+@keyframes skeleton-notif-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── Custom animations for Enhanced Kanban Cards ── */

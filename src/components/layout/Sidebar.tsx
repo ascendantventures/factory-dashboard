@@ -14,6 +14,7 @@ import {
   Cpu,
   BookOpen,
   Radio,
+  Bell,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -25,7 +26,8 @@ const NAV_ITEMS = [
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
   { href: '/dashboard/docs', label: 'API Docs', icon: BookOpen, exact: false },
   { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: true },
+  { href: '/dashboard/settings/notifications', label: 'Notifications', icon: Bell, exact: false },
 ];
 
 const STORAGE_KEY = 'sidebar-collapsed';

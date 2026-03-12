@@ -143,7 +143,7 @@
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
-- **Notification bell** — static placeholder, no real notification data wired up.
+- **Notification bell** — FULLY IMPLEMENTED in CR #26 (fd_notifications + fd_notification_preferences). See section below.
 - **Global search** — static UI only, no real search backend connected yet.
 
 ## Enhanced Kanban Cards (CR #13)
@@ -345,3 +345,33 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## In-App Notification Center (Issue #26)
+- **Route:** `/dashboard/settings/notifications` — Notification preferences page
+- **DB tables:** `fd_notifications`, `fd_notification_preferences` (migration: `20260312160000_fd_notifications.sql`)
+- **Notification types (7):** `spec_ready`, `build_complete`, `qa_passed`, `qa_failed`, `deploy_complete`, `agent_stalled`, `pipeline_error`
+- **Realtime:** `fd_notifications` is added to `supabase_realtime` publication; `useNotifications.ts` subscribes via Supabase channel filtered by `user_id=eq.{uid}`
+- **Fallback polling:** 30s interval on WS error/timeout
+- **Internal agent endpoint:** `POST /api/notifications/create` — requires `x-factory-secret` header matching `FACTORY_SECRET` env var; checks user preferences + quiet hours before inserting
+- **Key files:**
+  - `src/lib/notification-types.ts` — TypeScript types, enums, color mappings
+  - `src/lib/motion.ts` — framer-motion variants (panelVariants, notificationItemVariants, staggerContainer, badgeVariants, savedIndicatorVariants added to existing file)
+  - `src/hooks/useNotifications.ts` — Realtime subscription + polling fallback + mark read/all
+  - `src/hooks/useNotificationPreferences.ts` — fetch + debounced PATCH + saved indicator state
+  - `src/components/ui/NotificationBell.tsx` — bell icon + red badge + toggle panel; uses `useNotifications`
+  - `src/components/notifications/NotificationPanel.tsx` — dropdown with list, header, footer link, skeleton, empty state
+  - `src/components/notifications/NotificationItem.tsx` — type icon, unread left-border indicator, click→mark read + navigate
+  - `src/components/notifications/NotificationPreferencesForm.tsx` — 7 type toggles + quiet hours + saved indicator
+  - `src/app/dashboard/settings/notifications/page.tsx` — preferences page (light mode surface within dark shell)
+  - `src/app/api/notifications/route.ts` — GET (list + unread count)
+  - `src/app/api/notifications/[id]/read/route.ts` — PATCH (mark single read)
+  - `src/app/api/notifications/read-all/route.ts` — POST (mark all read)
+  - `src/app/api/notifications/preferences/route.ts` — GET + PATCH (upsert on conflict user_id)
+  - `src/app/api/notifications/create/route.ts` — POST (internal agent endpoint, x-factory-secret auth)
+- **CRITICAL: Use upsert on fd_notification_preferences** — `ON CONFLICT (user_id)` pattern; NEVER plain insert
+- **Auth trigger:** `fd_on_auth_user_created_notif_prefs` auto-creates default preferences row on new user signup
+- **Updated trigger:** `fd_set_notif_prefs_updated_at` fires on UPDATE to set `updated_at = now()`
+- **Sidebar nav:** Added `Bell` icon + `/dashboard/settings/notifications` link to Sidebar.tsx NAV_ITEMS
+- **Design system:** Notification components use spec's light-mode colors inline (#0D9488 primary, #FAFAF9 bg) — embedded within existing dark dashboard shell (same pattern as CR #36, #31, #37)
+- **data-testid attributes:** `notification-bell`, `notification-badge`, `notification-panel`, `notification-item`, `unread-dot`, `mark-all-read-btn`, `notif-type-toggle`, `notif-toggle-{type}` (e.g., `notif-toggle-qa_failed`)
+- **New env var:** `FACTORY_SECRET` — already in pipeline env; needed by `/api/notifications/create`
