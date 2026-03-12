@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/37
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -19,6 +19,8 @@
 - Lucide React (icons)
 - Sonner (toast notifications)
 - framer-motion (animations)
+- yet-another-react-lightbox (CR #36 — image lightbox for attachment gallery)
+- uuid (CR #36 — UUIDs for storage paths)
 
 ## Architecture
 - **Auth:** Supabase Auth with email/password + magic link. Middleware protects /dashboard/* routes.
@@ -187,6 +189,31 @@
 - **Design:** Warm amber (`#E5A830`) primary for log viewer UI; dark terminal bg `#0D0E12`; JetBrains Mono for log lines; Outfit for UI text
 - **data-testid attributes:** `log-viewer`, `log-content`, `log-line`, `log-search-input`, `scroll-lock-toggle`, `copy-log-btn`, `view-logs-btn`, `agent-station`, `agent-model`, `agent-elapsed`, `log-viewer-close`
 - **Harness upload note:** Log streaming only works if harness uploads log chunks to `dash-agent-logs/{run_id}.log` in Supabase Storage. Dev fallback reads from `/tmp/factory-agent-logs/{run_id}.log`.
+
+## Image & Design Attachment System (CR #36)
+- **New DB table:** `fd_issue_attachments` — id (uuid PK), issue_number (int), filename, file_type, storage_path, url, uploaded_by (auth.uid FK), created_at
+  - RLS: all authenticated can SELECT; uploader-only INSERT; uploader+admin DELETE
+  - Migration: `20260312200000_issue_attachments.sql`
+- **Storage bucket:** `issue-attachments` — public, 10MB limit, path: `issues/{issue_number}/{uuid}.{ext}`
+- **lib/storage.ts BUCKETS:** `issueAttachments: 'issue-attachments'` (alongside existing pencilDesigns)
+- **lib/attachments.ts:** Client helpers — `uploadAttachment()`, `listAttachments()`, `deleteAttachment()`, type validators
+- **New API routes:**
+  - `POST /api/issues/[number]/attachments` — multipart upload, validates type+size+count limit (10 files, 10MB each)
+  - `GET /api/issues/[number]/attachments` — list all attachments for an issue
+  - `DELETE /api/issues/[number]/attachments/[id]` — deletes from Storage + DB; 403 for non-owner non-admin
+  - `GET /api/attachments/[id]` — redirects to signed URL (60s) for download
+  - `GET /api/issues/[number]/attachment-context` — returns formatted markdown string for pipeline agent prompt injection
+- **Components in `src/components/attachments/`:**
+  - `AttachmentUploader.tsx` — drag-and-drop zone, file preview, upload progress, multi-file queue; uses `BUCKETS.issueAttachments`
+  - `AttachmentGallery.tsx` — image grid + yet-another-react-lightbox, PDF iframe modal, .pen badge, delete confirm, "Add file" button
+  - `AttachmentItem.tsx` — single thumbnail card with hover overlay (zoom/download/delete); non-image shows FileText icon + type badge
+  - `PenFileBadge.tsx` — .pen file display with violet styling, "Open in Pencil" deep link (`pencil://open?url=...`), download button
+- **NewIssueModal integration:** Added `ModalFileQueue` component (inline file queue, deferred upload); files are stored as `File[]` state then uploaded after GitHub issue creation using the returned `result.number`
+- **Issue detail page integration:** `AttachmentGallery` added inside the Description card, below `IssueBody`, passes `currentUserId` + `isAdmin` from server component
+- **Pipeline context injection:** `GET /api/issues/[number]/attachment-context` returns formatted `## Attached Files` block; pipeline orchestrator calls this before dispatching SPEC/DESIGN/BUILD agents
+- **Allowed file types:** PNG, JPG, GIF, SVG, PDF, .pen (application/x-pencil)
+- **Light mode design:** attachment components use inline styles from issue #36 DESIGN.md (white surfaces, #2563EB primary) — intentional contrast within dark dashboard shell
+- **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `attachment-preview`, `attachment-gallery`, `attachment-item`, `delete-attachment-btn`, `pen-file-badge`
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
