@@ -28,6 +28,12 @@ export default function MobileBottomNav() {
     if (href.includes('?tab=templates')) {
       return pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates';
     }
+    // /dashboard/settings should not appear active when the templates tab is open
+    if (href === '/dashboard/settings' && !exact) {
+      if (pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates') {
+        return false;
+      }
+    }
     return exact ? pathname === href : pathname.startsWith(href);
   }
 
