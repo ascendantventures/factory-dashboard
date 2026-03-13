@@ -3,26 +3,25 @@
 import { useState, useEffect, useRef as useRefFQ, DragEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { X, Plus, Loader2, AlertCircle, FolderOpen, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
+import { X, Plus, Loader2, AlertCircle, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
 import { TargetAppDropdown } from './TargetAppDropdown';
+import { RepositorySelector } from './ui/RepositorySelector';
 import type { IssueAttachment } from '@/lib/attachments';
 import { isAllowedFileType, MAX_FILE_SIZE, formatFileSize } from '@/lib/attachments';
 
 interface FormData {
   title: string;
   description: string;
-  repo: string;
   complexityHint: string;
   issueType: string;
 }
 
 interface NewIssueModalProps {
-  trackedRepos: string[];
   onClose: () => void;
   onSync?: () => void;
 }
 
-export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalProps) {
+export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
   const {
     register,
     handleSubmit,
@@ -34,9 +33,12 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [selectedTargetApp, setSelectedTargetApp] = useState<string>('');
+  const [selectedRepo, setSelectedRepo] = useState<string>('');
+  const [repoError, setRepoError] = useState<string>('');
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [uploadedAttachments, setUploadedAttachments] = useState<IssueAttachment[]>([]);
+  const [step, setStep] = useState<1 | 2>(1);
 
   function handleRepoSelect(repo: string | null) {
     const currentDesc = watch('description') ?? '';
@@ -60,7 +62,23 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  async function handleNext() {
+    const title = watch('title');
+    const description = watch('description');
+    if (!title || !description) {
+      // Trigger validation by submitting — react-hook-form will surface errors
+      await handleSubmit(() => {})();
+      return;
+    }
+    setStep(2);
+  }
+
   async function onSubmit(data: FormData) {
+    if (!selectedRepo) {
+      setRepoError('Repository is required');
+      return;
+    }
+    setRepoError('');
     setApiError(null);
     try {
       const res = await fetch('/api/issues', {
@@ -69,7 +87,7 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
         body: JSON.stringify({
           title: data.title,
           body: data.description,
-          repo: data.repo,
+          repo: selectedRepo,
           complexityHint: data.complexityHint || null,
           issueType: data.issueType || null,
         }),
@@ -114,6 +132,8 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
       });
 
       reset();
+      setSelectedRepo('');
+      setRepoError('');
       setPendingAttachments([]);
       setUploadedAttachments([]);
       setCreatedIssueNumber(null);
@@ -275,154 +295,136 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
             </button>
           </div>
 
+          {/* Step indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            {[1, 2].map((s) => (
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    fontFamily: 'Inter, sans-serif',
+                    background: step >= s ? '#6366F1' : '#262626',
+                    color: step >= s ? '#fff' : '#71717A',
+                    transition: 'background 150ms ease',
+                  }}
+                >
+                  {s}
+                </div>
+                <span style={{ fontSize: '12px', color: step === s ? '#FAFAFA' : '#71717A', fontFamily: 'Inter, sans-serif' }}>
+                  {s === 1 ? 'Details' : 'Repository'}
+                </span>
+                {s < 2 && (
+                  <div style={{ width: '24px', height: '1px', background: step > 1 ? '#6366F1' : '#3F3F46', marginLeft: '4px', marginRight: '4px' }} />
+                )}
+              </div>
+            ))}
+          </div>
+
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-              {/* Title */}
-              <div>
-                <label style={labelStyle} htmlFor="new-issue-title">
-                  Title <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
-                </label>
-                <input
-                  id="new-issue-title"
-                  type="text"
-                  placeholder="Enter issue title..."
-                  style={{
-                    ...inputStyle,
-                    ...(errors.title ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.title) {
-                      e.currentTarget.style.borderColor = '#10B981';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
-                    }
-                  }}
-                  {...register('title', { required: 'Title is required' })}
-                />
-                {errors.title && (
-                  <p style={errorStyle} role="alert">
-                    <AlertCircle size={14} /> {errors.title.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <label style={labelStyle} htmlFor="new-issue-description">
-                  Description <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
-                </label>
-                <textarea
-                  id="new-issue-description"
-                  data-testid="issue-description"
-                  placeholder="Describe the feature, bug, or enhancement..."
-                  style={{
-                    ...textareaStyle,
-                    ...(errors.description ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.description) {
-                      e.currentTarget.style.borderColor = '#10B981';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
-                    }
-                  }}
-                  {...register('description', { required: 'Description is required' })}
-                />
-                <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                  Supports markdown formatting
-                </p>
-                {errors.description && (
-                  <p style={errorStyle} role="alert">
-                    <AlertCircle size={14} /> {errors.description.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Target App — change request dropdown */}
-              <div>
-                <label style={labelStyle} htmlFor="target-app">
-                  Target App{' '}
-                  <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 400 }}>(optional)</span>
-                </label>
-                <TargetAppDropdown
-                  value={selectedTargetApp}
-                  onChange={handleRepoSelect}
-                />
-                <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                  Select an existing app for change requests
-                </p>
-              </div>
-
-              {/* Target Repository */}
-              <div>
-                <label style={labelStyle} htmlFor="new-issue-repo">
-                  Target Repository <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
-                </label>
-                {trackedRepos.length === 0 ? (
-                  <div
-                    style={{
-                      background: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: '6px',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <FolderOpen size={24} style={{ color: '#71717A', margin: '0 auto 8px' }} />
-                    <p style={{ fontSize: '13px', color: '#71717A', margin: '0 0 4px', fontFamily: 'Inter, sans-serif' }}>
-                      No repositories tracked
-                    </p>
-                    <a
-                      href="/dashboard/settings"
-                      style={{ fontSize: '12px', fontWeight: 500, color: '#10B981', fontFamily: 'Inter, sans-serif' }}
-                    >
-                      Add repos in Settings
-                    </a>
-                  </div>
-                ) : (
-                  <div style={{ position: 'relative' }}>
-                    <select
-                      id="new-issue-repo"
+              {/* ── Step 1 ─────────────────────────────────────────── */}
+              {step === 1 && (
+                <>
+                  {/* Title */}
+                  <div>
+                    <label style={labelStyle} htmlFor="new-issue-title">
+                      Title <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
+                    </label>
+                    <input
+                      id="new-issue-title"
+                      type="text"
+                      placeholder="Enter issue title..."
                       style={{
-                        ...selectStyle,
-                        ...(errors.repo ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
+                        ...inputStyle,
+                        ...(errors.title ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
                       }}
                       onFocus={(e) => {
-                        if (!errors.repo) {
+                        if (!errors.title) {
                           e.currentTarget.style.borderColor = '#10B981';
                           e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
                         }
                       }}
-                      {...register('repo', { required: 'Repository is required' })}
-                    >
-                      <option value="" style={{ background: '#1C1C1C', color: '#71717A' }}>
-                        Select a repository
-                      </option>
-                      {trackedRepos.map((r) => (
-                        <option key={r} value={r} style={{ background: '#1C1C1C', color: '#FAFAFA' }}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: '#71717A',
-                        pointerEvents: 'none',
-                      }}
+                      {...register('title', { required: 'Title is required' })}
                     />
+                    {errors.title && (
+                      <p style={errorStyle} role="alert">
+                        <AlertCircle size={14} /> {errors.title.message}
+                      </p>
+                    )}
                   </div>
-                )}
-                {errors.repo && (
-                  <p style={errorStyle} role="alert">
-                    <AlertCircle size={14} /> {errors.repo.message}
-                  </p>
-                )}
-              </div>
+
+                  {/* Description */}
+                  <div>
+                    <label style={labelStyle} htmlFor="new-issue-description">
+                      Description <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
+                    </label>
+                    <textarea
+                      id="new-issue-description"
+                      data-testid="issue-description"
+                      placeholder="Describe the feature, bug, or enhancement..."
+                      style={{
+                        ...textareaStyle,
+                        ...(errors.description ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
+                      }}
+                      onFocus={(e) => {
+                        if (!errors.description) {
+                          e.currentTarget.style.borderColor = '#10B981';
+                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
+                        }
+                      }}
+                      {...register('description', { required: 'Description is required' })}
+                    />
+                    <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                      Supports markdown formatting
+                    </p>
+                    {errors.description && (
+                      <p style={errorStyle} role="alert">
+                        <AlertCircle size={14} /> {errors.description.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Target App — change request dropdown */}
+                  <div>
+                    <label style={labelStyle} htmlFor="target-app">
+                      Target App{' '}
+                      <span style={{ fontSize: '12px', color: '#71717A', fontWeight: 400 }}>(optional)</span>
+                    </label>
+                    <TargetAppDropdown
+                      value={selectedTargetApp}
+                      onChange={handleRepoSelect}
+                    />
+                    <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                      Select an existing app for change requests
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* ── Step 2 ─────────────────────────────────────────── */}
+              {step === 2 && (
+                <>
+                  {/* Target Repository */}
+                  <RepositorySelector
+                label="Target Repository"
+                required
+                value={selectedRepo}
+                onChange={(repo) => {
+                  setSelectedRepo(repo);
+                  if (repo) setRepoError('');
+                }}
+                error={repoError}
+                helperText="The repository where this issue will be created"
+              />
 
               {/* Complexity + Type row */}
               <div
@@ -531,6 +533,8 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
                   <AlertCircle size={14} style={{ flexShrink: 0 }} /> {apiError}
                 </p>
               )}
+                </>
+              )}
             </div>
 
             {/* Footer */}
@@ -544,82 +548,148 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
                 borderTop: '1px solid #262626',
               }}
             >
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  background: 'transparent',
-                  color: '#A1A1AA',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  padding: '10px 16px',
-                  border: '1px solid #262626',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-                onMouseEnter={(e) => {
-                  const btn = e.currentTarget;
-                  btn.style.background = '#1C1C1C';
-                  btn.style.borderColor = '#3F3F46';
-                  btn.style.color = '#FAFAFA';
-                }}
-                onMouseLeave={(e) => {
-                  const btn = e.currentTarget;
-                  btn.style.background = 'transparent';
-                  btn.style.borderColor = '#262626';
-                  btn.style.color = '#A1A1AA';
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  background: isSubmitting ? 'rgba(16, 185, 129, 0.4)' : '#10B981',
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  transition: 'all 150ms ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontFamily: 'Inter, sans-serif',
-                  opacity: isSubmitting ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting) {
-                    const btn = e.currentTarget;
-                    btn.style.background = '#059669';
-                    btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting) {
-                    const btn = e.currentTarget;
-                    btn.style.background = '#10B981';
-                    btn.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    Create Issue
-                  </>
-                )}
-              </button>
+              {step === 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    style={{
+                      background: 'transparent',
+                      color: '#A1A1AA',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      padding: '10px 16px',
+                      border: '1px solid #262626',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 150ms ease',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                    onMouseEnter={(e) => {
+                      const btn = e.currentTarget;
+                      btn.style.background = '#1C1C1C';
+                      btn.style.borderColor = '#3F3F46';
+                      btn.style.color = '#FAFAFA';
+                    }}
+                    onMouseLeave={(e) => {
+                      const btn = e.currentTarget;
+                      btn.style.background = 'transparent';
+                      btn.style.borderColor = '#262626';
+                      btn.style.color = '#A1A1AA';
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="quick-create-next"
+                    onClick={handleNext}
+                    style={{
+                      background: '#6366F1',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 150ms ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#4F46E5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#6366F1';
+                    }}
+                  >
+                    Next →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    style={{
+                      background: 'transparent',
+                      color: '#A1A1AA',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      padding: '10px 16px',
+                      border: '1px solid #262626',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 150ms ease',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                    onMouseEnter={(e) => {
+                      const btn = e.currentTarget;
+                      btn.style.background = '#1C1C1C';
+                      btn.style.borderColor = '#3F3F46';
+                      btn.style.color = '#FAFAFA';
+                    }}
+                    onMouseLeave={(e) => {
+                      const btn = e.currentTarget;
+                      btn.style.background = 'transparent';
+                      btn.style.borderColor = '#262626';
+                      btn.style.color = '#A1A1AA';
+                    }}
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="submit"
+                    data-testid="quick-create-submit"
+                    disabled={isSubmitting}
+                    style={{
+                      background: isSubmitting ? 'rgba(16, 185, 129, 0.4)' : '#10B981',
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      transition: 'all 150ms ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontFamily: 'Inter, sans-serif',
+                      opacity: isSubmitting ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSubmitting) {
+                        const btn = e.currentTarget;
+                        btn.style.background = '#059669';
+                        btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSubmitting) {
+                        const btn = e.currentTarget;
+                        btn.style.background = '#10B981';
+                        btn.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={16} />
+                        Create Issue
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
