@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/51
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -59,7 +59,8 @@
 - **Text Primary:** #FAFAFA
 - **Text Secondary:** #A1A1AA
 - **Text Muted:** #71717A
-- **Font:** Inter (400;500;600;700;800) via Google Fonts
+- **Font UI:** Inter (400;500;600;700;800) via Google Fonts
+- **Font Attachment:** Instrument Sans (400;500;600;700) via Google Fonts (added CR #51)
 - Active nav: bg=rgba(99,102,241,0.15), left-border=2px solid #6366F1
 - Sidebar: 240px expanded, 56px collapsed
 - Header: 56px height, sticky top-0

@@ -361,3 +361,26 @@ _Core: Issue #37_
 - /api/designs/attachment/[attachmentId] (GET — signed URL)
 - /api/designs/parse (POST)
 - /api/designs/upload (POST)
+## Attachment System Polish (Issue #51)
+_Added: 2026-03-13_
+
+### PDF Modal Close Button [auth]
+- [ ] Log in and navigate to any issue detail page that has a PDF attachment
+- [ ] Click the PDF attachment thumbnail to open the PDF preview modal
+- [ ] Verify the close button in the modal header shows BOTH an X icon AND the text "Close" side by side
+- [ ] Verify the close button has a visible border (1px solid #E2E4E9), padding, and rounded corners — matching the Download button style
+- [ ] Hover over the Close button — background should shift to #F3F4F6 and border to #CBD0D8
+- [ ] Click the Close button — modal closes
+- [ ] Verify `button[aria-label="Close"]` is present (screen reader compatibility retained)
+
+### Instrument Sans Font Loading
+- [ ] Navigate to any page (e.g., /)
+- [ ] Open browser DevTools → Network tab → filter by "Fonts" or search "Instrument"
+- [ ] Verify a request is made to fonts.googleapis.com that includes "Instrument+Sans"
+- [ ] Verify fonts for Inter, Space Grotesk, and JetBrains Mono are still loaded (no regressions)
+- [ ] Open an issue with attachment components — text should render in Instrument Sans (not Inter fallback)
+
+### Routes/Endpoints
+- No new routes — 2-file frontend edit only
+
+---
