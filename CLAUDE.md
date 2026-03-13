@@ -146,6 +146,8 @@
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
+- **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
+- **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
