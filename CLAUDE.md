@@ -367,3 +367,11 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## UAT Fix: Webhook Preset Auto-apply + List Page Crash (Issue #87)
+- **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/87
+- **Fixes applied in commit:** `50ec416` on `feature/issue-77`
+- **Bug 1 (REQ-WHK-FIX-001):** Webhook preset auto-apply broken — replaced `useEffect`-based initialization in `WebhookForm.tsx` with direct `useState` initialization from `defaultPreset` prop. The `useEffect` approach caused hydration mismatch in Next.js 16 where `useEffect` fires AFTER hydration, making preset invisible on first render.
+- **Bug 2 (REQ-WHK-FIX-002):** Webhook list server crash — caused by unused `import IntegrationPresets` in `page.tsx` (Server Component importing a `'use client'` component in a way that triggered SSR exception). Removed the import and added graceful error handling for the `fd_webhooks` query.
+- **Key pattern:** In Next.js 16 App Router, never use `useEffect` to initialize state from props — initialize directly in `useState()`. `useEffect` runs post-hydration and causes visible flicker/failure.
+- **No DB migrations required** — pure client/SSR bug fixes.
