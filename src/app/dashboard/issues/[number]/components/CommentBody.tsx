@@ -4,21 +4,66 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
+import { visit } from 'unist-util-visit';
 import type { Components } from 'react-markdown';
-import type { ReactNode, CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
+import type { Root, Text, Element } from 'hast';
 
-export function processMarkdownText(text: string): string {
-  // Replace REQ-XXX-NNN tokens
-  let processed = text.replace(
-    /REQ-([A-Z]+-\d+)/g,
-    '<span id="REQ-$1" class="req-highlight" style="background:#FEF3C7;color:#92400E;padding:1px 4px;border-radius:3px;font-weight:600;">REQ-$1</span>'
-  );
-  // Replace AC-NNN.N tokens and link to parent REQ anchor
-  processed = processed.replace(
-    /AC-(\d+\.\d+)/g,
-    '<a href="#REQ-$1" class="ac-link" style="color:#D97706;font-weight:600;text-decoration:underline;">AC-$1</a>'
-  );
-  return processed;
+// Rehype plugin: replaces REQ-XXX-NNN and AC-NNN.N tokens in text nodes,
+// skipping nodes inside <code> or <pre> elements so backtick spans are unaffected.
+function rehypeTokenHighlight() {
+  return (tree: Root) => {
+    visit(tree, 'text', (node: Text, _index, parent) => {
+      const p = parent as Element | undefined;
+      if (p && (p.tagName === 'code' || p.tagName === 'pre')) return;
+
+      const REQ_RE = /REQ-([A-Z]+-\d+)/g;
+      const AC_RE = /AC-(\d+\.\d+)/g;
+
+      let text = node.value;
+      if (!REQ_RE.test(text) && !AC_RE.test(text)) return;
+
+      // Build array of hast nodes by splitting on tokens
+      const COMBINED = /(REQ-[A-Z]+-\d+|AC-\d+\.\d+)/g;
+      const parts = text.split(COMBINED);
+      if (parts.length <= 1) return;
+
+      const replacement = parts.map((part): Text | Element => {
+        const reqMatch = part.match(/^REQ-([A-Z]+-\d+)$/);
+        if (reqMatch) {
+          return {
+            type: 'element',
+            tagName: 'span',
+            properties: {
+              id: `REQ-${reqMatch[1]}`,
+              className: ['req-highlight'],
+              style: 'background:#FEF3C7;color:#92400E;padding:1px 4px;border-radius:3px;font-weight:600;',
+            },
+            children: [{ type: 'text', value: part }],
+          } as Element;
+        }
+        const acMatch = part.match(/^AC-(\d+\.\d+)$/);
+        if (acMatch) {
+          return {
+            type: 'element',
+            tagName: 'a',
+            properties: {
+              href: `#REQ-${acMatch[1]}`,
+              className: ['ac-link'],
+              style: 'color:#D97706;font-weight:600;text-decoration:underline;',
+            },
+            children: [{ type: 'text', value: part }],
+          } as Element;
+        }
+        return { type: 'text', value: part } as Text;
+      });
+
+      // Replace this text node with multiple nodes via splice on parent's children
+      const parentEl = parent as Element;
+      const idx = parentEl.children.indexOf(node);
+      parentEl.children.splice(idx, 1, ...replacement);
+    });
+  };
 }
 
 const baseTextStyle: CSSProperties = {
@@ -271,16 +316,14 @@ interface Props {
 }
 
 export function CommentBody({ body }: Props) {
-  const processed = processMarkdownText(body);
-
   return (
     <div style={{ color: '#1C1917', fontSize: 14, lineHeight: 1.7 }}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeTokenHighlight, rehypeHighlight]}
         components={components}
       >
-        {processed}
+        {body}
       </ReactMarkdown>
     </div>
   );

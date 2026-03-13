@@ -256,8 +256,8 @@ _Added: 2026-03-12 — Issue #30_
 - [ ] If comment post fails, a toast notification appears: "Couldn't post comment. Please try again."
 - [ ] Skeleton loaders appear during initial comment fetch
 - [ ] Page polls for new comments every 30 seconds (verify by waiting)
-- [ ] REQ-FDC-XXX tokens in spec comments appear with amber highlight background
-- [ ] AC-NNN.N tokens appear as amber-colored links
+- [ ] REQ-FDC-XXX tokens in spec comments appear with amber highlight background (rendered by rehypeTokenHighlight plugin, NOT pre-processed markdown)
+- [ ] AC-NNN.N tokens appear as amber-colored links — verify by viewing a spec comment that contains AC tokens inside backtick code spans; they must render as links, NOT as literal `<a>` HTML text
 
 ### Routes/Endpoints
 - /dashboard/issues/[number] — issue detail page with comment thread
