@@ -3,8 +3,9 @@ import WebhookForm from '@/components/webhooks/WebhookForm';
 
 export const dynamic = 'force-dynamic';
 
-export default function NewWebhookPage({ searchParams }: { searchParams?: { preset?: string } }) {
-  const preset = searchParams?.preset as 'discord' | 'slack' | undefined;
+export default async function NewWebhookPage({ searchParams }: { searchParams: Promise<{ preset?: string }> }) {
+  const { preset: presetRaw } = await searchParams;
+  const preset = presetRaw as 'discord' | 'slack' | undefined;
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '32px' }}>
       {/* Page Header */}
