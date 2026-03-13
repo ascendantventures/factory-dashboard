@@ -434,3 +434,20 @@ _Added: 2026-03-13_
 - No new routes — 2-file frontend edit only
 
 ---
+---
+
+## Remove Duplicate New Issue Button (Issue #46)
+_Added: 2026-03-13_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — Kanban board loads. Count buttons with text "New Issue" on the page — exactly 1 is visible.
+- [ ] Verify the single "New Issue" button is inside the `<header>` element (top-right of the global header, indigo/purple color)
+- [ ] Verify the Kanban sub-header toolbar (contains "Full"/"Simplified" toggle, "Sync" and "Activity" buttons) does NOT contain a "New Issue" button
+- [ ] Click the global header "New Issue" button — the issue creation modal opens
+- [ ] Fill in the modal title field and click "Create" / "Submit" — modal closes and new issue appears on the Kanban board (or sync brings it in)
+- [ ] Navigate away and back to /dashboard — still only one "New Issue" button visible
+
+### Routes/Endpoints
+- /dashboard (Kanban board page)
+- No new routes — UI-only change
+
