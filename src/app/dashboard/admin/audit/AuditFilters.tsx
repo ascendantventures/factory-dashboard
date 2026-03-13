@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, X, ChevronDown, Calendar } from 'lucide-react';
+import { Search, X, Calendar } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface FilterState {
   email: string;
@@ -140,40 +147,28 @@ export function AuditFilters({ onChange }: AuditFiltersProps) {
         {/* Category Select */}
         <div style={{ width: '180px' }}>
           <label style={labelStyle}>Category</label>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={filters.category}
-              onChange={e => update('category', e.target.value)}
+          <Select
+            value={filters.category || '_all_'}
+            onValueChange={(v) => update('category', v === '_all_' ? '' : v)}
+          >
+            <SelectTrigger
               data-testid="category-filter"
-              style={{ ...inputStyle, paddingRight: '36px', appearance: 'none', cursor: 'pointer' }}
-              onFocus={e => {
-                (e.target as HTMLSelectElement).style.borderColor = '#D4A534';
-                (e.target as HTMLSelectElement).style.boxShadow = '0 0 0 3px rgba(212,165,52,0.15)';
-              }}
-              onBlur={e => {
-                (e.target as HTMLSelectElement).style.borderColor = '#2A3038';
-                (e.target as HTMLSelectElement).style.boxShadow = 'none';
-              }}
+              className="h-10 bg-[#12151A] border-[#2A3038] text-[#F0F2F5] focus:border-[#D4A534] focus:ring-[#D4A534]/15 focus:ring-offset-0"
             >
-              {CATEGORIES.map(c => (
-                <option key={c.value} value={c.value} style={{ background: '#1E2328' }}>
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1E2328] border-[#2A3038] text-[#F0F2F5]">
+              {CATEGORIES.map((c) => (
+                <SelectItem
+                  key={c.value || '_all_'}
+                  value={c.value || '_all_'}
+                  className="focus:bg-[#2A3038] focus:text-[#F0F2F5]"
+                >
                   {c.label}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-            <ChevronDown
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                color: '#6B7785',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Action Search */}
@@ -197,71 +192,81 @@ export function AuditFilters({ onChange }: AuditFiltersProps) {
           />
         </div>
 
-        {/* Date From */}
-        <div style={{ width: '160px' }}>
-          <label style={labelStyle}>From</label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="date"
-              value={filters.dateFrom}
-              onChange={e => update('dateFrom', e.target.value)}
-              data-testid="date-from"
-              style={{ ...inputStyle, paddingRight: '36px', colorScheme: 'dark' }}
-              onFocus={e => {
-                (e.target as HTMLInputElement).style.borderColor = '#D4A534';
-                (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(212,165,52,0.15)';
-              }}
-              onBlur={e => {
-                (e.target as HTMLInputElement).style.borderColor = '#2A3038';
-                (e.target as HTMLInputElement).style.boxShadow = 'none';
-              }}
-            />
-            <Calendar
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                color: '#6B7785',
-                pointerEvents: 'none',
-              }}
-            />
+        {/* Date Range — responsive wrapper */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+          className="date-range-wrapper"
+        >
+          {/* Date From */}
+          <div style={{ width: '160px', minWidth: '140px', flexShrink: 1 }}>
+            <label style={labelStyle}>From</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={e => update('dateFrom', e.target.value)}
+                data-testid="date-from"
+                style={{ ...inputStyle, paddingRight: '36px', colorScheme: 'dark' }}
+                onFocus={e => {
+                  (e.target as HTMLInputElement).style.borderColor = '#D4A534';
+                  (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(212,165,52,0.15)';
+                }}
+                onBlur={e => {
+                  (e.target as HTMLInputElement).style.borderColor = '#2A3038';
+                  (e.target as HTMLInputElement).style.boxShadow = 'none';
+                }}
+              />
+              <Calendar
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '16px',
+                  height: '16px',
+                  color: '#6B7785',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Date To */}
-        <div style={{ width: '160px' }}>
-          <label style={labelStyle}>To</label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="date"
-              value={filters.dateTo}
-              onChange={e => update('dateTo', e.target.value)}
-              data-testid="date-to"
-              style={{ ...inputStyle, paddingRight: '36px', colorScheme: 'dark' }}
-              onFocus={e => {
-                (e.target as HTMLInputElement).style.borderColor = '#D4A534';
-                (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(212,165,52,0.15)';
-              }}
-              onBlur={e => {
-                (e.target as HTMLInputElement).style.borderColor = '#2A3038';
-                (e.target as HTMLInputElement).style.boxShadow = 'none';
-              }}
-            />
-            <Calendar
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '16px',
-                height: '16px',
-                color: '#6B7785',
-                pointerEvents: 'none',
-              }}
-            />
+          {/* Date To */}
+          <div style={{ width: '160px', minWidth: '140px', flexShrink: 1 }}>
+            <label style={labelStyle}>To</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={e => update('dateTo', e.target.value)}
+                data-testid="date-to"
+                style={{ ...inputStyle, paddingRight: '36px', colorScheme: 'dark' }}
+                onFocus={e => {
+                  (e.target as HTMLInputElement).style.borderColor = '#D4A534';
+                  (e.target as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(212,165,52,0.15)';
+                }}
+                onBlur={e => {
+                  (e.target as HTMLInputElement).style.borderColor = '#2A3038';
+                  (e.target as HTMLInputElement).style.boxShadow = 'none';
+                }}
+              />
+              <Calendar
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '16px',
+                  height: '16px',
+                  color: '#6B7785',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
           </div>
         </div>
 

@@ -165,6 +165,19 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
+/* Audit Log date range — mobile responsive */
+@media (max-width: 640px) {
+  .date-range-wrapper {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .date-range-wrapper > div {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+}
+
 /* Kanban board scrollbar */
 .kanban-scroll {
   scrollbar-width: thin;

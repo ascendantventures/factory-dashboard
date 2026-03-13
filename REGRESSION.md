@@ -451,3 +451,42 @@ _Added: 2026-03-13_
 - /dashboard (Kanban board page)
 - No new routes — UI-only change
 
+
+## Dark Mode Consistency — Users & Profile Pages (Issue #88)
+_Added: 2026-03-13_
+
+### Test Steps — Users Page
+- [ ] [auth] Navigate to /dashboard/admin/users — page heading "Users" should be clearly visible (white text on dark bg)
+- [ ] [auth] On /dashboard/admin/users — filter bar container should have dark background (#18181B), not white
+- [ ] [auth] On /dashboard/admin/users — search input should have dark background (#27272A), not white
+- [ ] [auth] On /dashboard/admin/users — table container should have dark background (#18181B), not white
+- [ ] [auth] On /dashboard/admin/users — table header row should have dark background (#27272A)
+- [ ] [auth] On /dashboard/admin/users — user row hover state should show dark highlight (#27272A), not light
+- [ ] [auth] On /dashboard/admin/users — actions dropdown (⋮ button) menu should have dark bg (#18181B)
+- [ ] [auth] Click "Invite User" button — modal background should be dark (#18181B), not white
+- [ ] [auth] In Invite User modal — email and role fields should have dark backgrounds
+- [ ] [auth] In Invite User modal — no white or light regions visible
+- [ ] [auth] "Invite User" button color should be indigo (#6366F1), not blue
+
+### Test Steps — Profile Settings Page
+- [ ] [auth] Navigate to /dashboard/settings/profile — page heading "Profile Settings" should be clearly visible (white/light text)
+- [ ] [auth] On /dashboard/settings/profile — "Profile Information" card background should be dark (#18181B), not white
+- [ ] [auth] On /dashboard/settings/profile — "Change Password" card background should be dark (#18181B), not white
+- [ ] [auth] All form inputs on profile page should have dark backgrounds
+- [ ] [auth] Focus ring on inputs should be indigo (#6366F1), not blue (#2563EB)
+
+### Test Steps — Audit Log Category Filter
+- [ ] [auth] Navigate to /dashboard/admin/audit — category filter should be a shadcn Select (not native browser select)
+- [ ] [auth] Category filter dropdown should appear styled with dark bg (#1E2328) when opened
+- [ ] [auth] Select "User Management" from category filter — table filters to show only user_management events
+- [ ] [auth] Select "All categories" — filter resets and all events show
+- [ ] [auth] Filter functionality retained after select component swap
+
+### Test Steps — Mobile Date Range Spacing
+- [ ] [auth] Open /dashboard/admin/audit on a 375px viewport — "From" and "To" date inputs stack vertically with consistent spacing
+- [ ] [auth] No date range inputs overlap on narrow viewports
+
+### Routes/Endpoints
+- /dashboard/admin/users
+- /dashboard/settings/profile
+- /dashboard/admin/audit

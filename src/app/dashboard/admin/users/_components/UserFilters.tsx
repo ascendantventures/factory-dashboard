@@ -16,10 +16,10 @@ export function UserFilters({ search, role, status, onSearchChange, onRoleChange
   const hasFilters = search || (role && role !== 'all') || (status && status !== 'all');
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '16px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '16px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '16px', background: '#18181B', border: '1px solid #3F3F46', borderRadius: '8px', marginBottom: '16px' }}>
       {/* Search */}
       <div style={{ position: 'relative', width: '280px' }}>
-        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#71717A', pointerEvents: 'none' }} />
         <input
           type="text"
           value={search}
@@ -27,12 +27,12 @@ export function UserFilters({ search, role, status, onSearchChange, onRoleChange
           placeholder="Search by name or email"
           style={{
             height: '40px', width: '100%', boxSizing: 'border-box',
-            border: '1px solid #E2E8F0', borderRadius: '6px',
+            border: '1px solid #3F3F46', borderRadius: '6px',
             paddingLeft: '40px', paddingRight: '12px',
-            fontSize: '14px', color: '#334155', background: '#F8FAFC', outline: 'none',
+            fontSize: '14px', color: '#FAFAFA', background: '#27272A', outline: 'none',
           }}
-          onFocus={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.border = '1px solid #2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-          onBlur={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.border = '1px solid #E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+          onFocus={e => { e.currentTarget.style.background = '#18181B'; e.currentTarget.style.border = '1px solid #6366F1'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)'; }}
+          onBlur={e => { e.currentTarget.style.background = '#27272A'; e.currentTarget.style.border = '1px solid #3F3F46'; e.currentTarget.style.boxShadow = 'none'; }}
         />
       </div>
 
@@ -43,8 +43,8 @@ export function UserFilters({ search, role, status, onSearchChange, onRoleChange
           value={role}
           onChange={e => onRoleChange(e.target.value)}
           style={{
-            height: '40px', padding: '0 32px 0 12px', border: '1px solid #E2E8F0', borderRadius: '6px',
-            fontSize: '14px', color: '#334155', background: '#FFFFFF', appearance: 'none', cursor: 'pointer', outline: 'none',
+            height: '40px', padding: '0 32px 0 12px', border: '1px solid #3F3F46', borderRadius: '6px',
+            fontSize: '14px', color: '#FAFAFA', background: '#18181B', appearance: 'none', cursor: 'pointer', outline: 'none',
           }}
         >
           <option value="all">All Roles</option>
@@ -52,7 +52,7 @@ export function UserFilters({ search, role, status, onSearchChange, onRoleChange
           <option value="operator">Operator</option>
           <option value="viewer">Viewer</option>
         </select>
-        <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none' }} />
+        <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717A', pointerEvents: 'none' }} />
       </div>
 
       {/* Status filter */}
@@ -62,21 +62,21 @@ export function UserFilters({ search, role, status, onSearchChange, onRoleChange
           value={status}
           onChange={e => onStatusChange(e.target.value)}
           style={{
-            height: '40px', padding: '0 32px 0 12px', border: '1px solid #E2E8F0', borderRadius: '6px',
-            fontSize: '14px', color: '#334155', background: '#FFFFFF', appearance: 'none', cursor: 'pointer', outline: 'none',
+            height: '40px', padding: '0 32px 0 12px', border: '1px solid #3F3F46', borderRadius: '6px',
+            fontSize: '14px', color: '#FAFAFA', background: '#18181B', appearance: 'none', cursor: 'pointer', outline: 'none',
           }}
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="deactivated">Deactivated</option>
         </select>
-        <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748B', pointerEvents: 'none' }} />
+        <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717A', pointerEvents: 'none' }} />
       </div>
 
       {hasFilters && (
         <button
           onClick={onClear}
-          style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, border: 'none', background: 'transparent', color: '#2563EB', cursor: 'pointer' }}
+          style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, border: 'none', background: 'transparent', color: '#6366F1', cursor: 'pointer' }}
         >
           Clear filters
         </button>

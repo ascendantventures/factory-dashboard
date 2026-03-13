@@ -41,7 +41,7 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
-        background: 'rgba(15, 23, 42, 0.4)',
+        background: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '16px',
@@ -50,20 +50,21 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
     >
       <div
         style={{
-          background: '#FFFFFF',
+          background: '#18181B',
           borderRadius: '12px',
-          boxShadow: '0 20px 25px -5px rgba(15,23,42,0.1), 0 8px 10px -6px rgba(15,23,42,0.05)',
+          border: '1px solid #3F3F46',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
           maxWidth: '420px',
           width: '100%',
         }}
       >
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#0F172A', margin: 0 }}>Invite User</h2>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #3F3F46', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#FAFAFA', margin: 0 }}>Invite User</h2>
           <button
             onClick={onClose}
-            style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F1F5F9'; }}
+            style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A1A1AA' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#27272A'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
           >
             <X size={18} />
@@ -74,7 +75,7 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit}>
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#334155', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#A1A1AA', display: 'block', marginBottom: '6px' }}>
                 Email address
               </label>
               <input
@@ -86,17 +87,17 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                 required
                 style={{
                   height: '40px', width: '100%', boxSizing: 'border-box',
-                  border: '1px solid #E2E8F0', borderRadius: '6px',
-                  padding: '0 12px', fontSize: '14px', color: '#334155',
-                  outline: 'none',
+                  border: '1px solid #3F3F46', borderRadius: '6px',
+                  padding: '0 12px', fontSize: '14px', color: '#FAFAFA',
+                  background: '#18181B', outline: 'none',
                 }}
-                onFocus={e => { e.currentTarget.style.border = '1px solid #2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)'; }}
-                onBlur={e => { e.currentTarget.style.border = '1px solid #E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+                onFocus={e => { e.currentTarget.style.border = '1px solid #6366F1'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.2)'; }}
+                onBlur={e => { e.currentTarget.style.border = '1px solid #3F3F46'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#334155', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#A1A1AA', display: 'block', marginBottom: '6px' }}>
                 Role
               </label>
               <div style={{ position: 'relative' }}>
@@ -106,9 +107,9 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                   onChange={e => setRole(e.target.value as typeof role)}
                   style={{
                     height: '40px', width: '100%', boxSizing: 'border-box',
-                    border: '1px solid #E2E8F0', borderRadius: '6px',
-                    padding: '0 36px 0 12px', fontSize: '14px', color: '#334155',
-                    appearance: 'none', background: '#FFFFFF', cursor: 'pointer',
+                    border: '1px solid #3F3F46', borderRadius: '6px',
+                    padding: '0 36px 0 12px', fontSize: '14px', color: '#FAFAFA',
+                    appearance: 'none', background: '#18181B', cursor: 'pointer',
                     outline: 'none',
                   }}
                 >
@@ -117,7 +118,7 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              <p style={{ fontSize: '12px', color: '#64748B', marginTop: '6px' }}>
+              <p style={{ fontSize: '12px', color: '#71717A', marginTop: '6px' }}>
                 Choose the permissions level for this user.
               </p>
             </div>
@@ -128,14 +129,16 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
           </div>
 
           {/* Footer */}
-          <div style={{ padding: '16px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #3F3F46', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
                 padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 500,
-                border: '1px solid #E2E8F0', background: 'transparent', color: '#334155', cursor: 'pointer',
+                border: '1px solid #3F3F46', background: 'transparent', color: '#A1A1AA', cursor: 'pointer',
               }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#27272A'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               Cancel
             </button>
@@ -145,7 +148,7 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
               disabled={loading}
               style={{
                 padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
-                background: loading ? '#93C5FD' : '#2563EB', color: '#FFFFFF', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                background: loading ? '#4F46E5' : '#6366F1', color: '#FFFFFF', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
               {loading ? 'Sending…' : 'Send Invite'}

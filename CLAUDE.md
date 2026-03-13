@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/84
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/88
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -235,6 +235,7 @@
 - **Migration:** `20260312210000_analytics_indexes.sql` — perf indexes on dash_agent_runs only
 
 ## Change Request Notes
+- **CR #88 (2026-03-13): Dark Mode Polish** — Applied dark surface tokens (`#18181B`, `#27272A`, `#3F3F46`) to Users page (table, filters, Invite modal), Profile Settings cards, and Profile heading. Replaced Audit Log native `<select>` category filter with shadcn/ui `Select` (backed by `@radix-ui/react-select`). Added mobile responsive stacking for Audit Log date range inputs. `src/components/ui/select.tsx` was created.
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
 - All UI uses dark mode (zinc-950 background) — maintain this in all new components
 - Use shadcn/ui components (Dialog, Form, Button, etc.) for consistency

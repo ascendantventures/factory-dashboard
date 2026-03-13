@@ -18,8 +18,8 @@ export default async function ProfileSettingsPage() {
     <div style={{ padding: '32px', maxWidth: '1280px', fontFamily: "'Outfit', system-ui, sans-serif" }}>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>Profile Settings</h1>
-        <p style={{ fontSize: '14px', color: '#64748B', marginTop: '4px', marginBottom: 0 }}>Manage your account</p>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#FAFAFA', margin: 0, letterSpacing: '-0.02em' }}>Profile Settings</h1>
+        <p style={{ fontSize: '14px', color: '#A1A1AA', marginTop: '4px', marginBottom: 0 }}>Manage your account</p>
       </div>
 
       {/* Cards */}

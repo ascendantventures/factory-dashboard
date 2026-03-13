@@ -165,8 +165,8 @@ export function UserManagementClient({ currentUserId }: Props) {
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>Users</h1>
-          <p style={{ fontSize: '14px', color: '#64748B', marginTop: '4px', marginBottom: 0 }}>Manage team access and roles</p>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#FAFAFA', margin: 0, letterSpacing: '-0.02em' }}>Users</h1>
+          <p style={{ fontSize: '14px', color: '#A1A1AA', marginTop: '4px', marginBottom: 0 }}>Manage team access and roles</p>
         </div>
         <button
           data-testid="invite-user-btn"
@@ -174,10 +174,10 @@ export function UserManagementClient({ currentUserId }: Props) {
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
-            background: '#2563EB', color: '#FFFFFF', border: 'none', cursor: 'pointer',
+            background: '#6366F1', color: '#FFFFFF', border: 'none', cursor: 'pointer',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1D4ED8'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2563EB'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#4F46E5'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#6366F1'; }}
         >
           <UserPlus size={16} /> Invite User
         </button>
@@ -204,46 +204,46 @@ export function UserManagementClient({ currentUserId }: Props) {
       )}
 
       {/* Table */}
-      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ background: '#18181B', border: '1px solid #3F3F46', borderRadius: '8px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+            <tr style={{ background: '#27272A', borderBottom: '1px solid #3F3F46' }}>
               <th style={{ width: '48px', padding: '12px 16px', textAlign: 'center' }}>
                 <input
                   type="checkbox"
                   checked={allEligibleSelected && users.length > 0}
                   onChange={toggleSelectAll}
-                  style={{ width: '18px', height: '18px', accentColor: '#2563EB', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: '#6366F1', cursor: 'pointer' }}
                 />
               </th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
-              <th style={{ width: '120px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</th>
-              <th style={{ width: '130px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-              <th style={{ width: '150px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Login</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</th>
+              <th style={{ width: '120px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</th>
+              <th style={{ width: '130px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+              <th style={{ width: '150px', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Login</th>
               <th style={{ width: '48px' }} />
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} style={{ padding: '64px 16px', textAlign: 'center', color: '#64748B', fontSize: '14px' }}>
+                <td colSpan={6} style={{ padding: '64px 16px', textAlign: 'center', color: '#A1A1AA', fontSize: '14px' }}>
                   Loading…
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: '64px 16px', textAlign: 'center' }}>
-                  <Search size={48} style={{ color: '#CBD5E1', marginBottom: '12px' }} />
-                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#334155', margin: '0 0 4px' }}>
+                  <Search size={48} style={{ color: '#3F3F46', marginBottom: '12px' }} />
+                  <p style={{ fontSize: '16px', fontWeight: 600, color: '#FAFAFA', margin: '0 0 4px' }}>
                     {search || roleFilter !== 'all' || statusFilter !== 'all' ? 'No users match your search' : 'No team members yet'}
                   </p>
-                  <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
+                  <p style={{ fontSize: '14px', color: '#A1A1AA', margin: 0 }}>
                     {search || roleFilter !== 'all' || statusFilter !== 'all' ? 'Try adjusting your filters or search term.' : 'Invite your first user to get started.'}
                   </p>
                   {!(search || roleFilter !== 'all' || statusFilter !== 'all') && (
                     <button
                       onClick={() => setShowInvite(true)}
-                      style={{ marginTop: '16px', padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, background: '#2563EB', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                      style={{ marginTop: '16px', padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, background: '#6366F1', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
                     >
                       Invite User
                     </button>
@@ -258,11 +258,11 @@ export function UserManagementClient({ currentUserId }: Props) {
                   <tr
                     key={u.id}
                     style={{
-                      borderBottom: idx < users.length - 1 ? '1px solid #F1F5F9' : 'none',
-                      background: isSelected ? '#DBEAFE' : 'transparent',
+                      borderBottom: idx < users.length - 1 ? '1px solid #27272A' : 'none',
+                      background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
                       transition: 'background 150ms ease',
                     }}
-                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = '#F8FAFC'; }}
+                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = '#27272A'; }}
                     onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
                   >
                     <td style={{ padding: '14px 16px', textAlign: 'center', width: '48px' }}>
@@ -271,24 +271,24 @@ export function UserManagementClient({ currentUserId }: Props) {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelect(u.id)}
-                          style={{ width: '18px', height: '18px', accentColor: '#2563EB', cursor: 'pointer' }}
+                          style={{ width: '18px', height: '18px', accentColor: '#6366F1', cursor: 'pointer' }}
                         />
                       )}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{
-                          width: '40px', height: '40px', borderRadius: '50%', background: '#2563EB',
+                          width: '40px', height: '40px', borderRadius: '50%', background: '#6366F1',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           color: '#FFF', fontSize: '14px', fontWeight: 600, flexShrink: 0,
                         }}>
                           {getInitials(u.display_name)}
                         </div>
                         <div>
-                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', margin: 0 }}>
-                            {u.display_name} {isOwn && <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 400 }}>(you)</span>}
+                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#FAFAFA', margin: 0 }}>
+                            {u.display_name} {isOwn && <span style={{ fontSize: '11px', color: '#71717A', fontWeight: 400 }}>(you)</span>}
                           </p>
-                          <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>{u.email}</p>
+                          <p style={{ fontSize: '13px', color: '#A1A1AA', margin: 0 }}>{u.email}</p>
                         </div>
                       </div>
                     </td>
@@ -298,7 +298,7 @@ export function UserManagementClient({ currentUserId }: Props) {
                     <td style={{ padding: '14px 16px', width: '130px' }}>
                       <StatusBadge isActive={u.is_active} />
                     </td>
-                    <td style={{ padding: '14px 16px', width: '150px', fontSize: '13px', color: '#64748B' }}>
+                    <td style={{ padding: '14px 16px', width: '150px', fontSize: '13px', color: '#A1A1AA' }}>
                       {formatRelativeTime(u.last_sign_in_at)}
                     </td>
                     <td style={{ padding: '14px 8px', width: '48px', position: 'relative' }}>
@@ -309,10 +309,10 @@ export function UserManagementClient({ currentUserId }: Props) {
                             onClick={() => setOpenDropdownId(openDropdownId === u.id ? null : u.id)}
                             style={{
                               width: '36px', height: '36px', border: 'none', background: 'transparent',
-                              cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B',
+                              cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A1A1AA',
                             }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F1F5F9'; (e.currentTarget as HTMLButtonElement).style.color = '#334155'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#64748B'; }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#27272A'; (e.currentTarget as HTMLButtonElement).style.color = '#FAFAFA'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#A1A1AA'; }}
                           >
                             <MoreVertical size={16} />
                           </button>
@@ -320,19 +320,19 @@ export function UserManagementClient({ currentUserId }: Props) {
                             <div
                               style={{
                                 position: 'absolute', right: 0, top: '100%', marginTop: '4px', zIndex: 20,
-                                background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px',
-                                boxShadow: '0 10px 15px -3px rgba(15,23,42,0.1)', minWidth: '180px', padding: '4px 0',
+                                background: '#18181B', border: '1px solid #3F3F46', borderRadius: '8px',
+                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.4)', minWidth: '180px', padding: '4px 0',
                               }}
                             >
                               <button
                                 onClick={() => { setEditRoleUser(u); setOpenDropdownId(null); }}
-                                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', background: 'transparent', fontSize: '14px', color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F1F5F9'; }}
+                                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', background: 'transparent', fontSize: '14px', color: '#FAFAFA', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#27272A'; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                               >
                                 Edit Role
                               </button>
-                              <div style={{ height: '1px', background: '#E2E8F0', margin: '4px 0' }} />
+                              <div style={{ height: '1px', background: '#3F3F46', margin: '4px 0' }} />
                               <button
                                 data-testid={u.is_active ? 'deactivate-btn' : 'reactivate-btn'}
                                 onClick={() => { setDeactivateUser(u); setOpenDropdownId(null); }}
@@ -341,7 +341,7 @@ export function UserManagementClient({ currentUserId }: Props) {
                                   fontSize: '14px', color: u.is_active ? '#DC2626' : '#059669', cursor: 'pointer',
                                   display: 'flex', alignItems: 'center', gap: '10px',
                                 }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = u.is_active ? '#FEF2F2' : '#F0FDF4'; }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#27272A'; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                               >
                                 {u.is_active ? 'Deactivate' : 'Reactivate'}
@@ -360,8 +360,8 @@ export function UserManagementClient({ currentUserId }: Props) {
 
         {/* Pagination */}
         {total > pageSize && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '13px', color: '#64748B' }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #3F3F46', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '13px', color: '#A1A1AA' }}>
               Showing {Math.min((page - 1) * pageSize + 1, total)}–{Math.min(page * pageSize, total)} of {total} users
             </span>
             <div style={{ display: 'flex', gap: '4px' }}>
@@ -371,7 +371,7 @@ export function UserManagementClient({ currentUserId }: Props) {
                 style={{
                   width: '32px', height: '32px', borderRadius: '6px', border: 'none',
                   background: 'transparent', fontSize: '13px', cursor: page === 1 ? 'not-allowed' : 'pointer',
-                  color: page === 1 ? '#CBD5E1' : '#334155',
+                  color: page === 1 ? '#71717A' : '#FAFAFA',
                 }}
               >‹</button>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -382,8 +382,8 @@ export function UserManagementClient({ currentUserId }: Props) {
                     onClick={() => setPage(p)}
                     style={{
                       width: '32px', height: '32px', borderRadius: '6px', border: 'none',
-                      background: page === p ? '#DBEAFE' : 'transparent',
-                      color: page === p ? '#1D4ED8' : '#334155',
+                      background: page === p ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                      color: page === p ? '#6366F1' : '#FAFAFA',
                       fontSize: '13px', fontWeight: page === p ? 600 : 400, cursor: 'pointer',
                     }}
                   >{p}</button>
@@ -395,7 +395,7 @@ export function UserManagementClient({ currentUserId }: Props) {
                 style={{
                   width: '32px', height: '32px', borderRadius: '6px', border: 'none',
                   background: 'transparent', fontSize: '13px', cursor: page === totalPages ? 'not-allowed' : 'pointer',
-                  color: page === totalPages ? '#CBD5E1' : '#334155',
+                  color: page === totalPages ? '#71717A' : '#FAFAFA',
                 }}
               >›</button>
             </div>
