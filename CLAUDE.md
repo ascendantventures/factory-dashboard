@@ -155,6 +155,9 @@
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
 ## Known Issues & Gotchas
+- **Vercel project / Supabase instance mismatch** — the repo has been linked to two different Vercel projects (`build-work` and `factory-dashboard`) at different points. Each uses a different Supabase instance. When applying migrations, use `supabase link --project-ref <ref>` to ensure you're targeting the correct DB. The `factory-dashboard` project uses Supabase ref `ojazkhiqwgssduehubdu`; the `build-work` project uses `xvniwehnspnxlnerbfwj`. Both must have all migrations applied.
+- **`NEXT_PUBLIC_SUPABASE_URL` must be set for ALL Vercel environments (preview + development + production)** — if missing from Preview, every server component that calls `createSupabaseServerClient()` will crash with a Next.js digest error at runtime (since `NEXT_PUBLIC_*` vars are inlined at build time for server bundles).
+- **`WEBHOOK_SECRET_ENCRYPTION_KEY` must be set for all environments** — set for production AND preview/development. Missing key causes decryption failures on test/dispatch, though the `?? ''` fallback prevents hard crashes.
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
