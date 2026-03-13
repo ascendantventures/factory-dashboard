@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { PIPELINE_EVENTS, EVENT_CATEGORIES } from '@/lib/webhook-events';
-import IntegrationPresets, { type PresetConfig } from './IntegrationPresets';
+import IntegrationPresets, { type PresetConfig, PRESETS } from './IntegrationPresets';
 
 interface WebhookFormProps {
   mode: 'create' | 'edit';
@@ -12,6 +12,7 @@ interface WebhookFormProps {
   initialUrl?: string;
   initialEvents?: string[];
   initialEnabled?: boolean;
+  defaultPreset?: 'discord' | 'slack';
 }
 
 export default function WebhookForm({
@@ -20,11 +21,13 @@ export default function WebhookForm({
   initialUrl = '',
   initialEvents = [],
   initialEnabled = true,
+  defaultPreset,
 }: WebhookFormProps) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [secret, setSecret] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set(initialEvents));
+  const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined);
   const [urlError, setUrlError] = useState('');
   const [eventsError, setEventsError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,9 +37,22 @@ export default function WebhookForm({
     setSelectedEvents(new Set(initialEvents));
   }, [initialEvents.join(',')]);
 
+  useEffect(() => {
+    if (defaultPreset) {
+      const preset = PRESETS.find((p) => p.type === defaultPreset);
+      if (preset) {
+        setUrl(preset.urlPlaceholder);
+        setSelectedEvents(new Set(preset.defaultEvents));
+        setSelectedPreset(defaultPreset);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultPreset]);
+
   function handlePreset(preset: PresetConfig) {
     setUrl(preset.urlPlaceholder);
     setSelectedEvents(new Set(preset.defaultEvents));
+    setSelectedPreset(preset.type);
     setUrlError('');
     setEventsError('');
   }
@@ -142,7 +158,7 @@ export default function WebhookForm({
           >
             Start with a preset
           </div>
-          <IntegrationPresets onSelect={handlePreset} compact />
+          <IntegrationPresets onSelect={handlePreset} compact selectedPreset={selectedPreset} />
           <div className="flex items-center gap-4 my-6">
             <div style={{ flex: 1, height: '1px', background: '#2E353D' }} />
             <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#6B7380', padding: '0 4px' }}>
@@ -293,6 +309,10 @@ export default function WebhookForm({
         </div>
         {eventsError && (
           <div
+            id="events-error"
+            data-testid="events-error"
+            role="alert"
+            aria-live="polite"
             className="flex items-center gap-1 mb-3"
             style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '12px', color: '#EF4444' }}
           >

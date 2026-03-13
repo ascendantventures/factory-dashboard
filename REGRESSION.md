@@ -308,3 +308,30 @@ _Added: 2026-03-12_
 - /dashboard/settings/webhooks
 - /dashboard/settings/webhooks/new
 - /dashboard/settings/webhooks/[id]
+
+---
+
+## Webhook Settings UX Improvements (Issue #77)
+_Added: 2026-03-13_
+
+### REQ-WHK-001: Auto-apply preset from query param
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=discord — Discord preset tile (data-testid="preset-discord") is pre-selected (aria-selected="true"), URL field pre-filled with Discord placeholder, events pre-checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=slack — Slack preset tile (data-testid="preset-slack") is pre-selected (aria-selected="true"), URL field pre-filled with Slack placeholder, events pre-checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new (no preset param) — no preset tile has aria-selected="true", form is blank
+
+### REQ-WHK-002: Settings page links to Webhooks
+
+- [ ] [auth] Navigate to /dashboard/settings — a "Webhooks & Integrations" card is visible under an "Integrations" section label
+- [ ] [auth] Click the "Webhooks & Integrations" card (data-testid="webhooks-settings-card") — navigates to /dashboard/settings/webhooks
+
+### REQ-WHK-003: Events validation error has data-testid
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new — click "Create Webhook" with no events selected — an element with data-testid="events-error" becomes visible
+- [ ] [auth] When no validation error, data-testid="events-error" element is NOT present in the DOM
+
+### Routes/Endpoints
+- /dashboard/settings (settings page with webhooks card)
+- /dashboard/settings/webhooks/new?preset=discord
+- /dashboard/settings/webhooks/new?preset=slack
+- /dashboard/settings/webhooks/new

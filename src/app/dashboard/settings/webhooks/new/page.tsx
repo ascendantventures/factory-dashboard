@@ -3,7 +3,8 @@ import WebhookForm from '@/components/webhooks/WebhookForm';
 
 export const dynamic = 'force-dynamic';
 
-export default function NewWebhookPage() {
+export default function NewWebhookPage({ searchParams }: { searchParams?: { preset?: string } }) {
+  const preset = searchParams?.preset as 'discord' | 'slack' | undefined;
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '32px' }}>
       {/* Page Header */}
@@ -45,7 +46,7 @@ export default function NewWebhookPage() {
           padding: '24px',
         }}
       >
-        <WebhookForm mode="create" />
+        <WebhookForm mode="create" defaultPreset={preset} />
       </div>
     </div>
   );
