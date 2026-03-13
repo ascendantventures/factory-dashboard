@@ -92,6 +92,7 @@ export function CommentThread({ issueNumber }: Props) {
   const [comments, setComments] = useState<GithubComment[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [newIds, setNewIds] = useState<Set<string | number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchComments = useCallback(
@@ -157,9 +158,36 @@ export function CommentThread({ issueNumber }: Props) {
 
   const handleNewComment = useCallback((comment: GithubComment) => {
     setComments((prev) => {
-      // Avoid duplicates
-      if (prev.find((c) => c.id === comment.id)) return prev;
+      if (comment.tempId) {
+        const idx = prev.findIndex((c) => c.tempId === comment.tempId);
+        if (idx !== -1) {
+          // Replace optimistic comment with real one (strip tempId from stored copy)
+          const next = [...prev];
+          next[idx] = { ...comment, tempId: undefined };
+          return next;
+        }
+        // New optimistic comment — append
+        return [...prev, comment];
+      }
+      // Real comment (no tempId) — avoid duplicates
+      if (prev.find((c) => c.id === comment.id && !c.tempId)) return prev;
       return [...prev, comment];
+    });
+    setNewIds((prev) => {
+      const next = new Set(prev);
+      if (comment.tempId) next.add(comment.tempId);
+      // Also add real id so isNew survives the key change on replacement
+      if (comment.id !== -1) next.add(comment.id);
+      return next;
+    });
+  }, []);
+
+  const handleRollback = useCallback((tempId: string) => {
+    setComments((prev) => prev.filter((c) => c.tempId !== tempId));
+    setNewIds((prev) => {
+      const next = new Set(prev);
+      next.delete(tempId);
+      return next;
     });
   }, []);
 
@@ -277,12 +305,16 @@ export function CommentThread({ issueNumber }: Props) {
           ) : (
             <div style={{ marginBottom: 20 }}>
               {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} />
+                <CommentItem
+                  key={comment.tempId ?? comment.id}
+                  comment={comment}
+                  isNew={newIds.has(comment.tempId ?? comment.id)}
+                />
               ))}
             </div>
           )}
 
-          <ReplyEditor issueNumber={issueNumber} onSuccess={handleNewComment} />
+          <ReplyEditor issueNumber={issueNumber} onSuccess={handleNewComment} onRollback={handleRollback} />
         </>
       )}
     </div>

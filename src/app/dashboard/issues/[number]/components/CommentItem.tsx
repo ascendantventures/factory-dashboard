@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { BotBadge } from './BotBadge';
 import { CommentBody } from './CommentBody';
@@ -8,6 +9,7 @@ import { DocumentViewer } from './DocumentViewer';
 
 export interface GithubComment {
   id: number;
+  tempId?: string;
   author: string;
   authorType: 'Bot' | 'User';
   avatarUrl: string;
@@ -19,17 +21,27 @@ export interface GithubComment {
 
 interface Props {
   comment: GithubComment;
+  isNew?: boolean;
 }
 
 function isDocumentComment(body: string): boolean {
   return body.startsWith('# Spec:') || body.startsWith('# Design:');
 }
 
-export function CommentItem({ comment }: Props) {
+export function CommentItem({ comment, isNew = false }: Props) {
   const isAgent = comment.authorType === 'Bot';
   const isDocument = isDocumentComment(comment.body);
 
-  const cardBg = isAgent ? '#F5F3FF' : '#FFFFFF';
+  const [flash, setFlash] = useState(isNew);
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(false), 1500);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  const baseBg = isAgent ? '#F5F3FF' : '#FFFFFF';
+  const cardBg = flash ? '#FEF3C7' : baseBg;
   const cardBorder = isAgent ? '#DDD6FE' : '#E7E5E4';
 
   const timeAgo = formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true });
@@ -43,6 +55,7 @@ export function CommentItem({ comment }: Props) {
         borderRadius: 10,
         padding: '16px 20px',
         marginBottom: 12,
+        transition: 'background 1.5s ease',
       }}
     >
       {/* Header row */}

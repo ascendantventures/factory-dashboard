@@ -9,6 +9,7 @@ import type { GithubComment } from './CommentItem';
 interface Props {
   issueNumber: number;
   onSuccess: (comment: GithubComment) => void;
+  onRollback?: (tempId: string) => void;
 }
 
 type Tab = 'write' | 'preview';
@@ -36,7 +37,7 @@ function insertMarkdown(
   }, 0);
 }
 
-export function ReplyEditor({ issueNumber, onSuccess }: Props) {
+export function ReplyEditor({ issueNumber, onSuccess, onRollback }: Props) {
   const [value, setValue] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('write');
   const [isPosting, setIsPosting] = useState(false);
@@ -58,6 +59,23 @@ export function ReplyEditor({ issueNumber, onSuccess }: Props) {
     setIsPosting(true);
     setError(null);
 
+    // Optimistic insert: immediately show the comment before API responds
+    const tempId = `temp_${Date.now()}`;
+    const tempComment: GithubComment = {
+      id: -1,
+      tempId,
+      author: 'You',
+      authorType: 'User',
+      avatarUrl: '',
+      body: trimmed,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      htmlUrl: '#',
+    };
+    onSuccess(tempComment);
+    setValue('');
+    setActiveTab('write');
+
     try {
       const res = await fetch(`/api/issues/${issueNumber}/comments`, {
         method: 'POST',
@@ -70,12 +88,15 @@ export function ReplyEditor({ issueNumber, onSuccess }: Props) {
       }
 
       const data = (await res.json()) as { comment: GithubComment };
-      setValue('');
-      setActiveTab('write');
-      onSuccess(data.comment);
+      // Replace optimistic comment with real one from API
+      onSuccess({ ...data.comment, tempId });
     } catch {
+      // Rollback: remove the optimistic comment
+      onRollback?.(tempId);
       toast.error("Couldn't post comment. Please try again.");
       setError("Couldn't post comment. Please try again.");
+      // Restore editor content so user can retry
+      setValue(trimmed);
     } finally {
       setIsPosting(false);
     }

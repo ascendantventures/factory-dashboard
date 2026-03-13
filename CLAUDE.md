@@ -149,7 +149,8 @@
 - **Polling:** 30s interval, paused when tab hidden (Page Visibility API)
 - **Light mode island:** Comment thread uses inline styles with light-mode amber design system (#D97706 primary, #FAFAF9 background) within the dark dashboard
 - **Reply editor:** Custom textarea with toolbar (not @uiw/react-md-editor which has SSR issues)
-- **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
+- **Optimistic insert:** `ReplyEditor` inserts a temp comment (`tempId`, `id: -1`) immediately via `onSuccess(tempComment)`, clears the editor, then fires the POST. On success it calls `onSuccess({ ...data.comment, tempId })` so `CommentThread.handleNewComment` can find and replace the temp by matching `tempId`. On failure it calls `onRollback(tempId)` to remove the optimistic entry and restores editor text so the user can retry.
+- **Amber flash animation:** `CommentItem` accepts `isNew?: boolean`. On mount it sets `flash=true` and uses `useEffect` + `setTimeout(1500ms)` to set `flash=false`, applying `background: #FEF3C7 → cardBg` with `transition: background 1.5s ease`. `CommentThread` tracks `newIds: Set<string|number>` populated by both the tempId and the real comment id so the flash survives the key change when temp is replaced.
 
 ## Known Issues & Gotchas
 - **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development).
