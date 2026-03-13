@@ -300,3 +300,78 @@ _Added: 2026-03-12_
 - GET /api/admin/audit
 - POST /api/auth/change-password
 - PATCH /api/auth/profile
+
+---
+
+## UAT Follow-up UX Enhancements (Issue #76)
+_Added: 2026-03-13_
+
+### REQ-001: UUID Resolution in Breadcrumbs and Page Titles [auth]
+- [ ] Navigate to /dashboard/apps/[repoId]/designs — page title (data-testid="page-title") SHALL show "[App Name] — Designs", NOT a raw UUID
+- [ ] Breadcrumb nav (aria-label="breadcrumb") SHALL show human-readable app name, NOT a raw UUID
+- [ ] Navigate to /dashboard/apps/[repoId]/designs/[issueNumber] — all breadcrumb segments show human-readable names (Apps / [App Name] / Designs / Issue #N)
+- [ ] If app name cannot be resolved — breadcrumb shows "Unknown App" (not a full UUID)
+
+### REQ-002: Gallery Card Thumbnails [auth]
+- [ ] Navigate to /dashboard/apps/[repoId]/designs with at least one design present
+- [ ] Each design card (data-testid="design-gallery-item") SHALL contain a thumbnail container (data-testid="design-thumbnail")
+- [ ] Thumbnail shows shimmer/skeleton animation while the .pen file loads
+- [ ] After load, thumbnail renders a canvas preview of the first frame
+- [ ] If render fails, thumbnail shows "Preview unavailable" text (NOT blank grey box)
+- [ ] Cards off-screen do NOT render canvas until they scroll into view (lazy loading)
+
+### REQ-003: App Cards — Anchor Navigation [auth]
+- [ ] Navigate to /dashboard/apps
+- [ ] Each app card (data-testid="app-card") SHALL be wrapped in an `<a>` tag with href="/dashboard/apps/[id]"
+- [ ] Right-clicking an app card — browser context menu shows "Open in New Tab"
+- [ ] Hovering over app card — destination URL appears in browser status bar
+- [ ] Clicking app card — navigates to /dashboard/apps/[repoId]
+- [ ] Tab key focuses app cards; Enter key navigates to detail page
+
+### REQ-004: Mobile Nav — Missing Pages [auth, mobile viewport]
+- [ ] Set viewport to 375px width, navigate to /dashboard
+- [ ] Mobile bottom nav (data-testid="mobile-nav") SHALL be visible
+- [ ] Nav shows 4 primary items: Dashboard, Apps, Pipeline, Activity
+- [ ] "More" button (data-testid="mobile-more-btn") is present
+- [ ] Tapping "More" opens bottom sheet (data-testid="mobile-more-sheet")
+- [ ] Sheet contains: API Docs, Event Log, Metrics, Settings items (data-testid="mobile-sheet-item")
+- [ ] Tapping "API Docs" navigates to /dashboard/docs
+- [ ] Tapping "Event Log" navigates to /dashboard/admin/events
+- [ ] Tapping backdrop or X button closes the sheet
+- [ ] Active route is highlighted correctly in primary nav and overflow items
+
+### REQ-005: Deployment Table Empty State [auth]
+- [ ] Navigate to /dashboard/apps/[repoId] for an app with no Vercel deployments
+- [ ] After data loads, deployment list SHALL show "No deployments found" text (data-testid="empty-deployments")
+- [ ] NO skeleton shimmer rows SHALL be visible alongside the empty state message
+- [ ] Skeleton rows SHALL only appear while loading (before query resolves)
+
+### REQ-006: Kanban Horizontal Scroll Indicator [auth]
+- [ ] Navigate to /dashboard, set viewport to 1280px width
+- [ ] Kanban scroll container (data-testid="kanban-scroll-container") is present
+- [ ] When all columns do NOT fit in viewport — a right-edge gradient fade indicator is visible
+- [ ] After scrolling to rightmost column — fade indicator disappears
+
+### REQ-007: Create Issue Modal Accessibility [auth]
+- [ ] Click "New Issue" button on /dashboard to open modal
+- [ ] Modal container SHALL have role="dialog", aria-modal="true", aria-labelledby="new-issue-modal-title"
+- [ ] Title element SHALL have id="new-issue-modal-title" with text "Create New Issue"
+- [ ] Modal opens with focus on the title input field
+- [ ] Pressing Escape SHALL close the modal
+
+### REQ-008: Upload Zone Visibility [auth]
+- [ ] Navigate to /dashboard/apps/[repoId]/designs
+- [ ] A drag-drop upload zone (data-testid="design-upload-zone") SHALL be visible above the design cards
+- [ ] Zone displays "Drop .pen files here or browse" text and an Upload icon
+- [ ] Dragging a file over the zone — shows active/highlighted border state
+- [ ] Dropping a .txt or .png file — error message (data-testid="upload-error", role="alert") appears: "Only .pen files are supported"
+- [ ] Clicking anywhere in the zone — file picker opens
+- [ ] Zone is visible even when gallery is empty (before any designs exist)
+
+### Routes/Endpoints
+- /dashboard/apps — AppCard anchor navigation
+- /dashboard/apps/[repoId]/designs — gallery page title + upload zone + thumbnails
+- /dashboard/apps/[repoId]/designs/[issueNumber] — breadcrumb UUID fix
+- /dashboard (mobile) — mobile nav overflow menu
+- /dashboard/apps/[repoId] — deployment table empty state
+- /dashboard (1280px) — Kanban scroll indicator

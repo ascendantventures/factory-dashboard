@@ -7,6 +7,18 @@ import PenFileViewer from '@/components/pencil/PenFileViewer';
 import DesignUploadButton from '@/components/pencil/DesignUploadButton';
 import type { PencilDesignRow } from '@/lib/pen-types';
 
+function useAppDisplayName(repoId: string): string {
+  const [displayName, setDisplayName] = useState('');
+  useEffect(() => {
+    if (!repoId) return;
+    fetch(`/api/apps/${repoId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.app?.display_name) setDisplayName(data.app.display_name); })
+      .catch(() => {});
+  }, [repoId]);
+  return displayName;
+}
+
 export default function DesignDetailPage({
   params,
 }: {
@@ -14,6 +26,7 @@ export default function DesignDetailPage({
 }) {
   const { repoId, issueNumber } = use(params);
   const issueNum = parseInt(issueNumber, 10);
+  const appName = useAppDisplayName(repoId);
 
   const [design, setDesign] = useState<PencilDesignRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,26 +55,39 @@ export default function DesignDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoId, issueNumber]);
 
+  const breadcrumbLinkStyle = {
+    fontFamily: '"Instrument Sans", system-ui, sans-serif',
+    fontSize: '14px',
+    fontWeight: 500 as const,
+    color: '#9C9792',
+    textDecoration: 'none',
+  };
+
   return (
     <div style={{ background: '#FDFCFB', minHeight: '100vh', padding: '32px' }}>
-      {/* Nav */}
-      <Link
-        href={`/dashboard/apps/${repoId}/designs`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '24px',
+      {/* Breadcrumb nav */}
+      <nav aria-label="breadcrumb" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Link href="/dashboard/apps" style={breadcrumbLinkStyle}>
+          Apps
+        </Link>
+        <span style={{ color: '#9C9792', fontSize: '14px' }}>/</span>
+        <Link href={`/dashboard/apps/${repoId}`} style={breadcrumbLinkStyle}>
+          {appName || 'Unknown App'}
+        </Link>
+        <span style={{ color: '#9C9792', fontSize: '14px' }}>/</span>
+        <Link href={`/dashboard/apps/${repoId}/designs`} style={breadcrumbLinkStyle}>
+          Designs
+        </Link>
+        <span style={{ color: '#9C9792', fontSize: '14px' }}>/</span>
+        <span style={{
           fontFamily: '"Instrument Sans", system-ui, sans-serif',
           fontSize: '14px',
-          fontWeight: 500,
-          color: '#9C9792',
-          textDecoration: 'none',
-        }}
-      >
-        <ArrowLeft size={16} />
-        All designs
-      </Link>
+          fontWeight: 600,
+          color: '#1F1E1C',
+        }}>
+          Issue #{issueNum}
+        </span>
+      </nav>
 
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

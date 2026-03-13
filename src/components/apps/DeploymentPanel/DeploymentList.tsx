@@ -69,11 +69,26 @@ export default function DeploymentList({ deployments, onSelectDeployment }: Depl
       </div>
 
       {deployments.length === 0 && (
-        <>
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
-        </>
+        <div
+          data-testid="empty-deployments"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: 'var(--text-muted)',
+          }}>
+            No deployments found
+          </span>
+        </div>
       )}
 
       {deployments.map((dep) => (

@@ -215,6 +215,18 @@
 - **Light mode design:** attachment components use inline styles from issue #36 DESIGN.md (white surfaces, #2563EB primary) — intentional contrast within dark dashboard shell
 - **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `attachment-preview`, `attachment-gallery`, `attachment-item`, `delete-attachment-btn`, `pen-file-badge`
 
+## UAT Follow-up UX Enhancements (Issue #76)
+_8 front-end-only polish items from UAT of CR #37 — no schema changes_
+
+- **REQ-001 (UUID fix):** `useAppDisplayName` hook fetches `/api/apps/[repoId]` to resolve display name. Designs gallery page title now shows `[AppName] — Designs`. Breadcrumbs on both `/designs` and `/designs/[issueNumber]` pages show human-readable name with fallback to truncated UUID (8 chars + …)
+- **REQ-002 (Thumbnails):** `DesignThumbnail` component in `DesignGallery.tsx` uses IntersectionObserver (lazy load, `rootMargin: 100px`) + `usePenParser` to render first frame via `PenFrameCanvas`. Shows shimmer skeleton during load, `ImageOff` fallback on error.
+- **REQ-003 (Anchor cards):** `AppCard` now wraps in `<Link href="/dashboard/apps/{id}">`. Removed `onClick` prop. `apps/page.tsx` no longer uses `AppDetailDrawer` — all navigation goes to detail page directly.
+- **REQ-004 (Mobile nav):** `MobileBottomNav` now has 4 primary items (Dashboard, Apps, Pipeline, Activity) + "More" button that opens a slide-up bottom sheet with API Docs, Event Log, Metrics, Settings. Sheet animation: `sheet-slide-up` keyframe (added to globals.css).
+- **REQ-005 (Skeleton fix):** `DeploymentList` now shows a proper empty state (`data-testid="empty-deployments"`) instead of 3 skeleton rows when `deployments.length === 0` after load.
+- **REQ-006 (Kanban scroll):** Desktop board wrapped in `position: relative` container. `useLayoutEffect` + `ResizeObserver` detects scroll overflow. A gradient fade div (`position: absolute, right: 0`) appears when content overflows right.
+- **REQ-007 (Modal a11y):** `NewIssueModal` dialog div now has `role="dialog"`, `aria-modal="true"`, `aria-labelledby="new-issue-modal-title"`. Title h3 has `id="new-issue-modal-title"`. Auto-focuses title input on mount.
+- **REQ-008 (Upload zone):** `DesignUploadZone` component added to `DesignGallery.tsx`. Always visible above gallery grid. Handles drag-over/drop/click-to-browse. Validates `.pen` extension and 10MB limit. Shows error state with `role="alert"`. Requires issue number input before upload.
+
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
 - All UI uses dark mode (zinc-950 background) — maintain this in all new components

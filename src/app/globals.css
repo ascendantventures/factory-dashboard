@@ -165,6 +165,12 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
+/* Mobile sheet slide-up animation (MobileBottomNav More sheet) */
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* Kanban board scrollbar */
 .kanban-scroll {
   scrollbar-width: thin;

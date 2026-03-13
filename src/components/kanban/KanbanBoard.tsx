@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { STATIONS, Station, STATION_COLORS, STATION_LABELS } from '@/lib/constants';
 import { DashIssue } from '@/types';
 import { KanbanColumn } from './KanbanColumn';
@@ -93,6 +93,29 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [selectedIssue, setSelectedIssue] = useState<DashIssue | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+  const [hasScrollRight, setHasScrollRight] = useState(false);
+
+  // Update kanban scroll indicator
+  const updateScrollIndicator = useCallback(() => {
+    const el = boardScrollRef.current;
+    if (!el) return;
+    const canScrollRight = el.scrollWidth > el.clientWidth && el.scrollLeft < el.scrollWidth - el.clientWidth - 8;
+    setHasScrollRight(canScrollRight);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = boardScrollRef.current;
+    if (!el) return;
+    updateScrollIndicator();
+    el.addEventListener('scroll', updateScrollIndicator, { passive: true });
+    const resizeObserver = new ResizeObserver(updateScrollIndicator);
+    resizeObserver.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollIndicator);
+      resizeObserver.disconnect();
+    };
+  }, [updateScrollIndicator]);
 
   // Load prefs from localStorage on mount
   useEffect(() => {
@@ -437,7 +460,13 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
       {/* Board + Activity Sidebar Row */}
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Board */}
-        <div className="hidden sm:block flex-1 overflow-x-auto p-4" style={{ overflowY: 'hidden' }}>
+        <div className="hidden sm:block flex-1" style={{ position: 'relative', minWidth: 0 }}>
+          <div
+            ref={boardScrollRef}
+            data-testid="kanban-scroll-container"
+            className="h-full overflow-x-auto p-4"
+            style={{ overflowY: 'hidden' }}
+          >
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <AnimatePresence mode="wait">
               {prefs.viewMode === 'full' ? (
@@ -504,6 +533,24 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
               ) : null}
             </DragOverlay>
           </DndContext>
+          </div>
+          {/* Scroll-right fade indicator */}
+          {hasScrollRight && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: '48px',
+                pointerEvents: 'none',
+                background: 'linear-gradient(to left, rgba(9,9,11,0.95) 0%, rgba(9,9,11,0) 100%)',
+                transition: 'opacity 200ms ease',
+                zIndex: 5,
+              }}
+            />
+          )}
         </div>
 
         {/* Mobile view */}

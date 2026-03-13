@@ -60,6 +60,12 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Focus first input on open
+  useEffect(() => {
+    const firstInput = document.getElementById('new-issue-title') as HTMLInputElement | null;
+    firstInput?.focus();
+  }, []);
+
   async function onSubmit(data: FormData) {
     setApiError(null);
     try {
@@ -210,6 +216,9 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-issue-modal-title"
           style={{
             background: '#141414',
             border: '1px solid #262626',
@@ -235,6 +244,7 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
             }}
           >
             <h3
+              id="new-issue-modal-title"
               style={{
                 margin: 0,
                 fontSize: '18px',
