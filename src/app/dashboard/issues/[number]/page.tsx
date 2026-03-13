@@ -71,7 +71,7 @@ export default async function IssueDetailPage({ params, searchParams }: PageProp
         className="rounded-xl border p-6 mb-6"
         style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
               <span
