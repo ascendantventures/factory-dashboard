@@ -17,11 +17,6 @@ export async function GET(req: NextRequest) {
   const admin = createSupabaseAdminClient();
   const { searchParams } = new URL(req.url);
 
-  const page = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
-  const from = page * limit;
-  const to = from + limit - 1;
-
   const userId = searchParams.get('user_id');
   const category = searchParams.get('category');
   const action = searchParams.get('action');
@@ -31,9 +26,9 @@ export async function GET(req: NextRequest) {
 
   let query = admin
     .from('audit_log_entries')
-    .select('*', { count: 'exact' })
+    .select('id,created_at,actor_email,action,category,target_type,target_id,details,ip_address')
     .order('created_at', { ascending: false })
-    .range(from, to);
+    .limit(10000);
 
   if (userId) query = query.eq('user_id', userId);
   if (category) query = query.eq('category', category);
@@ -42,14 +37,41 @@ export async function GET(req: NextRequest) {
   if (dateFrom) query = query.gte('created_at', dateFrom);
   if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59Z');
 
-  const { data: entries, error, count } = await query;
+  const { data: entries, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({
-    entries: entries ?? [],
-    total: count ?? 0,
-    page,
-    limit,
+  const headers = 'id,created_at,actor_email,action,category,target_type,target_id,details,ip_address';
+  const rows = (entries ?? []).map((e) => {
+    const cols = [
+      e.id ?? '',
+      e.created_at ?? '',
+      escapeCsv(e.actor_email ?? ''),
+      escapeCsv(e.action ?? ''),
+      escapeCsv(e.category ?? ''),
+      escapeCsv(e.target_type ?? ''),
+      escapeCsv(e.target_id ?? ''),
+      escapeCsv(e.details ? JSON.stringify(e.details) : ''),
+      escapeCsv(e.ip_address ?? ''),
+    ];
+    return cols.join(',');
   });
+
+  const csv = [headers, ...rows].join('\n');
+  const today = new Date().toISOString().slice(0, 10);
+
+  return new NextResponse(csv, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="audit-log-${today}.csv"`,
+    },
+  });
+}
+
+function escapeCsv(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
