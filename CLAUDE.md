@@ -218,7 +218,7 @@
 ## UAT Follow-up UX Enhancements (Issue #76)
 _8 front-end-only polish items from UAT of CR #37 — no schema changes_
 
-- **REQ-001 (UUID fix):** `useAppDisplayName` hook fetches `/api/apps/[repoId]` to resolve display name. Designs gallery page title now shows `[AppName] — Designs`. Breadcrumbs on both `/designs` and `/designs/[issueNumber]` pages show human-readable name with fallback to truncated UUID (8 chars + …)
+- **REQ-001 (UUID fix):** `useAppDisplayName` hook fetches `/api/apps/[repoId]` to resolve display name. Designs gallery page title now shows `[AppName] — Designs`. Breadcrumb on `/designs/[issueNumber]` detail page is rendered by the **page component** (not `PenFileViewer`). `PenFileViewer` had a legacy internal breadcrumb that rendered the raw `repoId` UUID — this was removed (bugfix #76). Do NOT add breadcrumbs back inside `PenFileViewer`; breadcrumbs belong in the page wrapper.
 - **REQ-002 (Thumbnails):** `DesignThumbnail` component in `DesignGallery.tsx` uses IntersectionObserver (lazy load, `rootMargin: 100px`) + `usePenParser` to render first frame via `PenFrameCanvas`. Shows shimmer skeleton during load, `ImageOff` fallback on error.
 - **REQ-003 (Anchor cards):** `AppCard` now wraps in `<Link href="/dashboard/apps/{id}">`. Removed `onClick` prop. `apps/page.tsx` no longer uses `AppDetailDrawer` — all navigation goes to detail page directly.
 - **REQ-004 (Mobile nav):** `MobileBottomNav` now has 4 primary items (Dashboard, Apps, Pipeline, Activity) + "More" button that opens a slide-up bottom sheet with API Docs, Event Log, Metrics, Settings. Sheet animation: `sheet-slide-up` keyframe (added to globals.css).

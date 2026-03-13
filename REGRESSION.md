@@ -309,7 +309,7 @@ _Added: 2026-03-13_
 ### REQ-001: UUID Resolution in Breadcrumbs and Page Titles [auth]
 - [ ] Navigate to /dashboard/apps/[repoId]/designs — page title (data-testid="page-title") SHALL show "[App Name] — Designs", NOT a raw UUID
 - [ ] Breadcrumb nav (aria-label="breadcrumb") SHALL show human-readable app name, NOT a raw UUID
-- [ ] Navigate to /dashboard/apps/[repoId]/designs/[issueNumber] — all breadcrumb segments show human-readable names (Apps / [App Name] / Designs / Issue #N)
+- [ ] Navigate to /dashboard/apps/[repoId]/designs/[issueNumber] — ONLY ONE breadcrumb SHALL be rendered (aria-label="breadcrumb" on the page's <nav>). The design detail page renders its own breadcrumb; `PenFileViewer` does NOT render a secondary breadcrumb. All breadcrumb segments show human-readable names (Apps / [App Name] / Designs / Issue #N).
 - [ ] If app name cannot be resolved — breadcrumb shows "Unknown App" (not a full UUID)
 
 ### REQ-002: Gallery Card Thumbnails [auth]
