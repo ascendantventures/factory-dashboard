@@ -73,16 +73,83 @@ export default function DesignGallery({ repoId }: Props) {
 
   if (designs.length === 0) {
     return (
-      <>
+      <div>
         <EmptyGallery onUpload={() => setShowUpload(true)} />
-        {showUpload && uploadIssue !== null && (
-          <DesignUploadButton
-            repoId={repoId}
-            issueNumber={uploadIssue}
-            onSuccess={() => { setShowUpload(false); refetch(); }}
-          />
+        {showUpload && (
+          <div style={{ marginTop: '24px' }}>
+            {uploadIssue === null ? (
+              <div style={{
+                background: '#FFFFFF',
+                border: '1px solid #E8E5E1',
+                borderRadius: '12px',
+                padding: '24px',
+              }}>
+                <label style={{
+                  display: 'block',
+                  fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#1F1E1C',
+                  marginBottom: '8px',
+                }}>
+                  Which issue is this design for?
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Issue number"
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: '1px solid #E8E5E1',
+                      borderRadius: '6px',
+                      fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                      fontSize: '14px',
+                      color: '#1F1E1C',
+                      background: '#FDFCFB',
+                      outline: 'none',
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = parseInt((e.target as HTMLInputElement).value, 10);
+                        if (val > 0) setUploadIssue(val);
+                      }
+                    }}
+                    id="upload-issue-input"
+                  />
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('upload-issue-input') as HTMLInputElement;
+                      const val = parseInt(el?.value ?? '', 10);
+                      if (val > 0) setUploadIssue(val);
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#E85D4C',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#FFFFFF',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <DesignUploadButton
+                repoId={repoId}
+                issueNumber={uploadIssue}
+                onSuccess={() => { setShowUpload(false); setUploadIssue(null); refetch(); }}
+              />
+            )}
+          </div>
         )}
-      </>
+      </div>
     );
   }
 
