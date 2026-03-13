@@ -332,3 +332,32 @@ _Added: 2026-03-12_
 - GET /api/analytics/roi?from=&to=&repo= — ROI metrics
 - GET /api/analytics/trends?from=&to=&repo=&granularity= — time-series data
 - GET /api/analytics/export?from=&to=&repo= — CSV download
+
+---
+
+## Pencil.dev Design Integration [auth]
+_Core: Issue #37_
+
+### Test Steps
+- [ ] `/dashboard/apps/[repoId]/designs` tab is visible on app detail page
+- [ ] Designs gallery loads without errors and shows empty state when no designs exist
+- [ ] `.pen` upload zone visible on designs page (drag-drop or click to upload)
+- [ ] Uploading a valid `.pen` file stores it in Supabase Storage (`pencil-designs` bucket)
+- [ ] Uploaded `.pen` appears in the gallery after upload
+- [ ] Clicking a design navigates to `/dashboard/apps/[repoId]/designs/[issueNumber]`
+- [ ] Design detail page renders frame previews via HTML Canvas
+- [ ] Frames tab shows all frames as clickable thumbnails
+- [ ] Tokens tab displays design tokens: colors, typography, spacing
+- [ ] "Open in Pencil" button renders with correct `pencil://` deep link
+- [ ] "Download .pen" button triggers file download
+- [ ] Version history accordion shows design evolution across issues
+- [ ] Unauthenticated access to `/dashboard/apps/*/designs` redirects to login
+
+### Routes
+- /dashboard/apps/[repoId]/designs
+- /dashboard/apps/[repoId]/designs/[issueNumber]
+- /api/designs/[repoId] (GET)
+- /api/designs/[repoId]/[issueNumber] (GET)
+- /api/designs/attachment/[attachmentId] (GET — signed URL)
+- /api/designs/parse (POST)
+- /api/designs/upload (POST)
