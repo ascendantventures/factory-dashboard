@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, ExternalLink, Github } from 'lucide-react'
+import Link from 'next/link'
+import { X, ExternalLink, Github, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AppStatusBadge from './AppStatusBadge'
 import AppIssueList from './AppIssueList'
@@ -166,24 +167,46 @@ export default function AppDetailDrawer({ appId, onClose }: AppDetailDrawerProps
               >
                 {data?.app.display_name ?? ''}
               </span>
-              <button
-                aria-label="Close"
-                onClick={onClose}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                  padding: '4px',
-                  borderRadius: '6px',
-                  flexShrink: 0,
-                }}
-              >
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                {appId && (
+                  <Link
+                    href={`/dashboard/apps/${appId}`}
+                    onClick={onClose}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: 'var(--text-muted)',
+                      textDecoration: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    View Details
+                    <ArrowRight size={12} />
+                  </Link>
+                )}
+                <button
+                  aria-label="Close"
+                  onClick={onClose}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    padding: '4px',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Body */}

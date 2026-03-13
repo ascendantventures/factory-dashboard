@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FolderOpen, RefreshCw } from 'lucide-react';
 import AppCard from '@/components/apps/AppCard';
 import AppGrid from '@/components/apps/AppGrid';
@@ -30,6 +31,7 @@ function SkeletonCard() {
 }
 
 export default function AppsPage() {
+  const router = useRouter();
   const [apps, setApps] = useState<AppSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,11 +94,7 @@ export default function AppsPage() {
   }
 
   function handleCardClick(app: AppSummary) {
-    if (window.innerWidth >= 768) {
-      setSelectedAppId(app.id);
-    } else {
-      window.location.href = `/dashboard/apps/${app.id}`;
-    }
+    router.push(`/dashboard/apps/${app.id}`);
   }
 
   return (
