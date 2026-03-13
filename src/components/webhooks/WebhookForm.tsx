@@ -347,6 +347,7 @@ export default function WebhookForm({
                       <input
                         type="checkbox"
                         data-testid={`event-${ev.value}`}
+                        value={ev.value}
                         checked={checked}
                         onChange={() => toggleEvent(ev.value)}
                         className="sr-only"

@@ -20,6 +20,7 @@ export default async function WebhooksSettingsPage() {
   const { data: webhooks, error: webhooksError } = await supabase
     .from('fd_webhooks')
     .select('id, url, events, enabled, created_at')
+    .eq('created_by', user.id)
     .order('created_at', { ascending: false });
 
   if (webhooksError) {

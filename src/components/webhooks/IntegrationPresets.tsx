@@ -37,6 +37,7 @@ export default function IntegrationPresets({ onSelect, compact = false, selected
           <button
             key={preset.type}
             data-testid={`preset-${preset.type}`}
+            data-preset={preset.type}
             aria-selected={isSelected}
             type="button"
             onClick={() => onSelect(preset)}

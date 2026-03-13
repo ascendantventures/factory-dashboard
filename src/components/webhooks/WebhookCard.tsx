@@ -59,8 +59,9 @@ export default function WebhookCard({ webhook }: WebhookCardProps) {
     }
   }
 
-  const visibleEvents = webhook.events.slice(0, MAX_VISIBLE_EVENTS);
-  const extraCount = webhook.events.length - MAX_VISIBLE_EVENTS;
+  const events = Array.isArray(webhook.events) ? webhook.events as string[] : [];
+  const visibleEvents = events.slice(0, MAX_VISIBLE_EVENTS);
+  const extraCount = events.length - MAX_VISIBLE_EVENTS;
 
   return (
     <>
