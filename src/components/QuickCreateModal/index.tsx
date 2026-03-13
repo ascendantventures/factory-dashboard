@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { modalOverlay, modalContent, staggerContainer, staggerItem } from '@/lib/motion';
 import type { FdIssueTemplate } from '@/types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -766,29 +768,29 @@ export default function QuickCreateModal({
         </div>
 
         {/* Body preview */}
-        <pre
+        <div
+          data-testid="template-body"
           style={{
             background: css.surfaceAlt,
             border: `1px solid ${css.border}`,
             borderRadius: '8px',
-            padding: '14px',
+            padding: '14px 16px',
             overflowY: 'auto',
             maxHeight: '300px',
-            margin: 0,
           }}
         >
-          <code
-            style={{
-              fontSize: '12px',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              color: css.textSecondary,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {wizard.interpolatedBody || '(empty body)'}
-          </code>
-        </pre>
+          {wizard.interpolatedBody ? (
+            <div className="prose-dark">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {wizard.interpolatedBody}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <span style={{ fontSize: '12px', color: css.textMuted, fontStyle: 'italic' }}>
+              (empty body)
+            </span>
+          )}
+        </div>
 
         {/* Labels */}
         {labels.length > 0 && (

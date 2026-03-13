@@ -295,3 +295,47 @@ _Added: 2026-03-12_
 - POST /api/templates
 - PATCH /api/templates/[id]
 - DELETE /api/templates/[id]
+
+---
+
+## Template UX Enhancements (Issue #78)
+_Added: 2026-03-13_
+
+### Test Steps — REQ-TMPL-001: Markdown Rendering
+- [ ] [auth] Navigate to /dashboard/templates
+- [ ] Click "Preview" on any template card — TemplatePreviewModal opens (data-testid="template-preview-modal")
+- [ ] Verify body_template section shows rendered HTML (h2/h3/ul/code elements) NOT raw `##` or `**` syntax
+- [ ] data-testid="template-body" element contains rendered markdown nodes
+- [ ] Click "Use Template" on a template, proceed to Step 3 (Review Body)
+- [ ] Step 3 body preview shows rendered markdown — not raw `<pre><code>` monospace block
+- [ ] GFM features work: tables render as HTML tables, task lists show checkboxes, strikethrough renders
+
+### Test Steps — REQ-TMPL-002: Escape Key Guard
+- [ ] [auth] Navigate to /dashboard — click "New Issue" button to open QuickCreateModal
+- [ ] While modal is at rest (isSubmitting=false), press Escape — modal closes normally
+- [ ] Fill required fields and click Create Issue to submit
+- [ ] While submission is in-flight, press Escape — modal should NOT close
+- [ ] After success, a sonner toast "Issue created" appears with a clickable GitHub issue URL link
+- [ ] Toast persists at least 5 seconds before auto-dismissing
+
+### Test Steps — REQ-TMPL-003: Template Search and Complexity Filter
+- [ ] [auth] Navigate to /dashboard/templates
+- [ ] data-testid="template-search" input is visible at top of page
+- [ ] Type "SaaS" in search — only templates matching "SaaS" in name or description show
+- [ ] Clear search — all templates show again
+- [ ] Click "Simple" pill (data-testid="complexity-filter-simple") — only simple templates show
+- [ ] Click "Simple" again — deselects filter, all templates return
+- [ ] Click "Complex" pill — only complex templates show
+- [ ] Combine search text + complexity filter — both applied simultaneously
+- [ ] Enter "xyznonexistent12345" in search — data-testid="templates-empty-state" appears
+- [ ] Template count label updates: "N template(s)" reflects filtered count
+
+### Test Steps — REQ-TMPL-004: Sidebar Templates Link
+- [ ] [auth] Navigate to /dashboard — Templates link visible in sidebar between Apps and Activity
+- [ ] Click Templates link — navigates to /dashboard/templates
+- [ ] On /dashboard/templates — Templates nav item has active styling (indigo left-border + indigo text)
+- [ ] In collapsed sidebar mode — Templates icon shows with tooltip "Templates" on hover
+
+### Routes/Endpoints
+- /dashboard/templates (modified — search/filter added)
+- No new API routes

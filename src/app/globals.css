@@ -165,6 +165,77 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
+/* Markdown prose styling (dark mode) — used in template preview and Step 3 review */
+.prose-dark {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.prose-dark h1, .prose-dark h2, .prose-dark h3, .prose-dark h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+.prose-dark h1 { font-size: 22px; }
+.prose-dark h2 { font-size: 18px; }
+.prose-dark h3 { font-size: 15px; }
+.prose-dark h4 { font-size: 14px; }
+.prose-dark h1:first-child, .prose-dark h2:first-child, .prose-dark h3:first-child { margin-top: 0; }
+.prose-dark p { margin-bottom: 14px; }
+.prose-dark p:last-child { margin-bottom: 0; }
+.prose-dark a { color: #6366F1; text-decoration: none; }
+.prose-dark a:hover { text-decoration: underline; }
+.prose-dark code {
+  background: #27272A;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.prose-dark pre {
+  background: #0D0E12;
+  padding: 12px 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+.prose-dark pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+}
+.prose-dark ul, .prose-dark ol {
+  padding-left: 22px;
+  margin-bottom: 14px;
+}
+.prose-dark li { margin-bottom: 6px; }
+.prose-dark ul { list-style-type: disc; }
+.prose-dark ol { list-style-type: decimal; }
+.prose-dark ul.contains-task-list { list-style-type: none; padding-left: 0; }
+.prose-dark li.task-list-item { display: flex; align-items: flex-start; gap: 8px; }
+.prose-dark li.task-list-item input[type="checkbox"] {
+  margin-top: 3px;
+  width: 14px;
+  height: 14px;
+  accent-color: #6366F1;
+  flex-shrink: 0;
+}
+.prose-dark table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.prose-dark th, .prose-dark td { padding: 8px 10px; border: 1px solid #3F3F46; text-align: left; }
+.prose-dark th { background: #27272A; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.prose-dark blockquote {
+  border-left: 3px solid #6366F1;
+  padding: 4px 0 4px 14px;
+  margin: 12px 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.prose-dark del { text-decoration: line-through; color: var(--text-muted); }
+.prose-dark hr { border: none; border-top: 1px solid #3F3F46; margin: 20px 0; }
+
 /* Kanban board scrollbar */
 .kanban-scroll {
   scrollbar-width: thin;

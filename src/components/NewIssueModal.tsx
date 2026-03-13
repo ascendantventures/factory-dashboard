@@ -54,11 +54,11 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
   // Close on Escape
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isSubmitting) onClose();
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, isSubmitting]);
 
   async function onSubmit(data: FormData) {
     setApiError(null);

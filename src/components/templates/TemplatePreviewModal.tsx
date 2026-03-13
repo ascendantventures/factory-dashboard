@@ -3,6 +3,8 @@
 import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, ArrowRight } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { FdIssueTemplate } from '@/types';
 import { modalOverlay, modalContent } from '@/lib/motion';
 
@@ -80,6 +82,7 @@ export function TemplatePreviewModal({
             animate="visible"
             exit="hidden"
             onClick={(e) => e.stopPropagation()}
+            data-testid="template-preview-modal"
             className="relative flex flex-col w-full rounded-xl overflow-hidden"
             style={{
               maxWidth: 560,
@@ -222,18 +225,22 @@ export function TemplatePreviewModal({
                 >
                   Body template
                 </span>
-                <pre
-                  className="rounded-lg p-3 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap break-words"
+                <div
+                  data-testid="template-body"
+                  className="rounded-lg overflow-y-auto"
                   style={{
-                    background: 'var(--background)',
-                    color: 'var(--text-secondary)',
+                    background: 'var(--surface-alt)',
                     border: '1px solid var(--border)',
+                    padding: '14px 16px',
                     maxHeight: 320,
-                    overflowY: 'auto',
                   }}
                 >
-                  <code>{template.body_template}</code>
-                </pre>
+                  <div className="prose-dark">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {template.body_template}
+                    </ReactMarkdown>
+                  </div>
+                </div>
               </div>
             </div>
 

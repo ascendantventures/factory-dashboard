@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/motion';
-import { LayoutTemplate, Plus } from 'lucide-react';
+import { LayoutTemplate, Plus, Search, X as XIcon, FileSearch } from 'lucide-react';
 import { TemplateCard } from '@/components/templates/TemplateCard';
 import { TemplatePreviewModal } from '@/components/templates/TemplatePreviewModal';
 import { TemplateFormModal } from '@/components/templates/TemplateFormModal';
@@ -18,6 +18,21 @@ export default function TemplatesPage() {
   const [trackedRepos, setTrackedRepos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Search & filter state
+  const [search, setSearch] = useState('');
+  const [complexityFilter, setComplexityFilter] = useState<'simple' | 'medium' | 'complex' | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Filtered templates — client-side, no API calls on keystroke
+  const filteredTemplates = templates.filter((t) => {
+    const matchesSearch =
+      !search ||
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      (t.description ?? '').toLowerCase().includes(search.toLowerCase());
+    const matchesComplexity = !complexityFilter || t.complexity === complexityFilter;
+    return matchesSearch && matchesComplexity;
+  });
 
   // Modal state
   const [previewTemplate, setPreviewTemplate] = useState<FdIssueTemplate | null>(null);
@@ -296,6 +311,149 @@ export default function TemplatesPage() {
         )}
       </div>
 
+      {/* Search + filter bar */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '24px',
+        }}
+      >
+        {/* Search input */}
+        <div
+          className="template-search"
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            height: '40px',
+            maxWidth: '360px',
+            width: '100%',
+            background: 'var(--surface-elevated, #1C1C1C)',
+            border: '1px solid var(--border-subtle, #262626)',
+            borderRadius: '8px',
+            padding: '0 10px',
+            transition: 'border-color 150ms ease, box-shadow 150ms ease',
+          }}
+          onFocusCapture={(e) => {
+            const el = e.currentTarget as HTMLDivElement;
+            el.style.borderColor = '#6366F1';
+            el.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.2)';
+          }}
+          onBlurCapture={(e) => {
+            const el = e.currentTarget as HTMLDivElement;
+            el.style.borderColor = 'var(--border-subtle, #262626)';
+            el.style.boxShadow = 'none';
+          }}
+        >
+          <Search size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <input
+            ref={searchRef}
+            data-testid="template-search"
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search templates..."
+            aria-label="Search templates"
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              fontSize: '14px',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => { setSearch(''); searchRef.current?.focus(); }}
+              aria-label="Clear search"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                flexShrink: 0,
+                transition: 'color 150ms ease',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
+            >
+              <XIcon size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Complexity filter pills */}
+        {(
+          [
+            { key: 'simple', label: 'Simple', color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
+            { key: 'medium', label: 'Medium', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
+            { key: 'complex', label: 'Complex', color: '#EF4444', bg: 'rgba(239,68,68,0.15)' },
+          ] as const
+        ).map(({ key, label, color, bg }) => {
+          const active = complexityFilter === key;
+          return (
+            <button
+              key={key}
+              data-testid={`complexity-filter-${key}`}
+              role="button"
+              aria-pressed={active}
+              onClick={() => setComplexityFilter(active ? null : key)}
+              style={{
+                height: '32px',
+                padding: '0 14px',
+                borderRadius: '16px',
+                border: `1px solid ${active ? color : 'var(--border, #3F3F46)'}`,
+                background: active ? bg : 'transparent',
+                color: active ? color : 'var(--text-secondary)',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                fontFamily: 'Inter, sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.borderColor = 'var(--text-muted)';
+                  btn.style.background = 'rgba(255,255,255,0.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.borderColor = 'var(--border, #3F3F46)';
+                  btn.style.background = 'transparent';
+                }
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+
+        {/* Result count */}
+        {templates.length > 0 && (
+          <span
+            style={{
+              marginLeft: 'auto',
+              fontSize: '13px',
+              color: 'var(--text-muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
       {/* Empty state */}
       {templates.length === 0 ? (
         <div
@@ -377,6 +535,36 @@ export default function TemplatesPage() {
             </p>
           )}
         </div>
+      ) : filteredTemplates.length === 0 ? (
+        /* No results from search/filter */
+        <div
+          data-testid="templates-empty-state"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '64px 32px',
+            textAlign: 'center',
+          }}
+        >
+          <FileSearch size={48} style={{ color: 'var(--text-muted, #71717A)' }} />
+          <div>
+            <h2
+              style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                margin: '0 0 4px 0',
+              }}
+            >
+              No templates found
+            </h2>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
+              Try adjusting your search or filters
+            </p>
+          </div>
+        </div>
       ) : (
         /* Template grid */
         <motion.div
@@ -389,7 +577,7 @@ export default function TemplatesPage() {
             gap: '20px',
           }}
         >
-          {templates.map((template) => (
+          {filteredTemplates.map((template) => (
             <motion.div key={template.id} variants={staggerItem}>
               <TemplateCard
                 template={template}

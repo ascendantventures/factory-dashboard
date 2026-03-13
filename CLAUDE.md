@@ -145,6 +145,13 @@
 - **NewIssueButton** now opens `QuickCreateModal` — old `NewIssueModal` component still exists but is no longer used by the button. Safe to remove in future CR.
 - **Templates nav item:** `LayoutTemplate` icon added to Sidebar between Dashboard and Activity.
 
+## Template UX Enhancements (CR #78 — UAT Follow-up on #27)
+- **Markdown rendering:** `react-markdown` + `remark-gfm` added. Template body_template now rendered as prose (not raw `<pre><code>`) in `TemplatePreviewModal.tsx` and `QuickCreateModal` Step 3. Prose styled via `.prose-dark` CSS class in `globals.css`.
+- **Escape key guard:** `NewIssueModal.tsx` escape handler now checks `!isSubmitting` — prevents modal closing mid-flight so sonner toast + success state always visible.
+- **Template search/filter:** `templates/page.tsx` has client-side `search` (string) and `complexityFilter` ('simple'|'medium'|'complex'|null) state. Filters on `name` and `description` fields (case-insensitive). No API calls on keystroke. `data-testid` attributes: `template-search`, `complexity-filter-simple`, `complexity-filter-medium`, `complexity-filter-complex`, `templates-empty-state`.
+- **Sidebar Templates link:** Already present from CR #27 (`LayoutTemplate` icon, `/dashboard/templates`, between Apps and Activity). No changes needed for CR #78.
+- **data-testid on preview modal:** `data-testid="template-preview-modal"` added to modal container in `TemplatePreviewModal.tsx`. `data-testid="template-body"` on prose container.
+
 ## Known Issues & Gotchas
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
