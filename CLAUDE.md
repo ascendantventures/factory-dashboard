@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/84
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -393,3 +393,34 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## CR #84 — Sign-out URL + Test DB Fixtures + Stats Consistency
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/84_
+
+### Changes Made
+
+**REQ-FD-001: Sign-out redirect fix**
+- File: `src/components/layout/Sidebar.tsx`
+- Added `data-testid="sign-out-button"` to the sign-out button
+- Changed `router.push('/auth/login')` to use `NEXT_PUBLIC_APP_URL` env var when set:
+  `router.push(process.env.NEXT_PUBLIC_APP_URL ? ${NEXT_PUBLIC_APP_URL}/auth/login : '/auth/login')`
+- Added `scope: 'global'` to `signOut()` for proper session cleanup
+- **Required env var:** `NEXT_PUBLIC_APP_URL=https://factory-dashboard-tau.vercel.app` (set in Vercel production)
+- **Supabase config:** Add `https://factory-dashboard-tau.vercel.app/**` to Auth > URL Configuration > Redirect URLs
+
+**REQ-FD-002: Test DB fixtures**
+- New file: `supabase/seeds/test-fixtures.sql`
+- Inserts 1 row into `dash_build_repos` (github_repo: ascendantventures/factory-dashboard)
+- Inserts 3 rows into `dash_issues` with `build_repo: ascendantventures/factory-dashboard` in body
+- Uses bigint IDs 9000101–9000103 to avoid collision with real data
+- All inserts are idempotent (ON CONFLICT DO NOTHING)
+- **To apply:** `psql $BUILD_WORK_DB_URL -f supabase/seeds/test-fixtures.sql`
+
+**REQ-FD-003: Stats count consistency**
+- File: `src/app/dashboard/apps/[repoId]/page.tsx` — added `data-testid="app-issue-count-header"` to total count span
+- File: `src/components/apps/AppCard.tsx` — added `data-testid="app-issue-count-stats"` to total count span
+- Both counts come from the same API logic (`bodyMatch || numberMatch`) — already consistent, testids enable E2E verification
+
+**New E2E test files:**
+- `tests/e2e/signout-redirect.spec.ts`
+- `tests/e2e/stats-consistency.spec.ts`
