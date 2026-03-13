@@ -14,6 +14,9 @@ import {
   Cpu,
   BookOpen,
   Radio,
+  Users,
+  FileText,
+  User,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -26,7 +29,10 @@ const NAV_ITEMS = [
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
   { href: '/dashboard/docs', label: 'API Docs', icon: BookOpen, exact: false },
   { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
+  { href: '/dashboard/admin/users', label: 'Users', icon: Users, exact: false },
+  { href: '/dashboard/admin/audit', label: 'Audit Log', icon: FileText, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
+  { href: '/dashboard/settings/profile', label: 'Profile', icon: User, exact: true },
 ];
 
 const STORAGE_KEY = 'sidebar-collapsed';

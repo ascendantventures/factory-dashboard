@@ -227,6 +227,82 @@ _Issue #36 — Added: 2026-03-12_
 
 ---
 
+## User Management & Admin Panel [auth] (Issue #24)
+_Added: 2026-03-12_
+
+### Admin User List [admin-auth]
+- [ ] Log in as admin, navigate to /dashboard/admin/users — page loads with user table
+- [ ] Table shows columns: checkbox, User (name+email), Role badge, Status badge, Last Login, Actions (⋮)
+- [ ] At least one user row appears in the table
+- [ ] Log in as operator or viewer, navigate to /dashboard/admin/users — redirects to /dashboard
+
+### Invite User [admin-auth]
+- [ ] On /dashboard/admin/users, click "Invite User" button (data-testid="invite-user-btn") — InviteUserModal opens
+- [ ] Enter email `test+regression@example.com`, select role "operator", click "Send Invite" — success toast appears (data-testid="toast-success")
+- [ ] Try inviting the same email again — error "User already exists" (409)
+- [ ] Close modal without submitting — modal closes, no user added
+
+### Edit User Role [admin-auth]
+- [ ] Click ⋮ actions on a non-admin user row (data-testid="row-actions-btn") — dropdown shows "Edit Role" and "Deactivate"
+- [ ] Click "Edit Role" — EditRoleModal opens with user name and current role
+- [ ] Select new role and click "Update Role" — role badge updates in table, success toast shows
+
+### Deactivate / Reactivate [admin-auth]
+- [ ] Click ⋮ on an active non-admin user, click "Deactivate" (data-testid="deactivate-btn") — DeactivateModal shows warning
+- [ ] Click "Deactivate" confirm button (data-testid="confirm-deactivate-btn") — user status badge changes to "Deactivated" (data-testid="status-badge")
+- [ ] Click ⋮ on the now-deactivated user, click "Reactivate" — user status badge changes to "Active"
+- [ ] Try to deactivate own (admin) account — option not shown or blocked with error
+
+### Self-demotion blocked [admin-auth]
+- [ ] On own user row (labeled "(you)") — no checkbox shown
+- [ ] If editing own role via API PATCH: returns 400 "Cannot demote your own admin role"
+
+### Bulk Actions [admin-auth]
+- [ ] Select 2+ non-own user checkboxes — BulkActionsBar appears above table showing selected count
+- [ ] Click "Change Role" → "Viewer" — all selected users updated, success toast shows count
+- [ ] Click "Deactivate" bulk button — all selected users deactivated
+- [ ] Click "Clear" — BulkActionsBar disappears, checkboxes unchecked
+
+### Search & Filter [admin-auth]
+- [ ] Type in search box — table filters in real-time (300ms debounce) by name or email
+- [ ] Select "Admin" from Role filter — only admin users shown
+- [ ] Select "Deactivated" from Status filter — only deactivated users shown
+- [ ] Click "Clear filters" — all filters reset, full user list returns
+
+### Audit Log [admin-auth]
+- [ ] Navigate to /dashboard/admin/audit — page loads with audit log table
+- [ ] Table shows columns: Timestamp, Actor, Action (badge), Target
+- [ ] After invite/role change/deactivate — corresponding entries appear in log
+- [ ] Click on an audit row with details — expands inline JSON details block
+- [ ] Log in as operator/viewer, navigate to /dashboard/admin/audit — redirects to /dashboard
+
+### Profile Settings [auth — any role]
+- [ ] Navigate to /dashboard/settings/profile — page loads with Profile Information card and Change Password card
+- [ ] Profile card shows current display name (editable), email (read-only with lock icon), role badge (read-only)
+- [ ] Edit display name to "Regression Tester", click "Save Changes" (data-testid="save-profile-btn") — success toast (data-testid="toast-success"), name updates
+- [ ] Try display name < 2 chars — inline validation error shown before submit
+- [ ] Try display name > 50 chars — inline validation error shown before submit
+
+### Change Password [auth — any role]
+- [ ] On /dashboard/settings/profile, enter current password, new password, confirm password and click "Update Password" (data-testid="change-password-btn") — success toast appears
+- [ ] Enter wrong current password — error message (data-testid="error-message") contains "Incorrect"
+- [ ] Enter new password < 8 chars — inline validation error before submit
+- [ ] Enter mismatched confirm password — inline validation error before submit
+
+### Routes/Endpoints
+- /dashboard/admin/users (admin only)
+- /dashboard/admin/audit (admin only)
+- /dashboard/settings/profile (any authenticated role)
+- GET /api/admin/users
+- POST /api/admin/users/invite
+- PATCH /api/admin/users/:id
+- POST /api/admin/users/bulk
+- GET /api/admin/audit
+- POST /api/auth/change-password
+- PATCH /api/auth/profile
+
+---
+
 ## Cost Analytics & ROI Dashboard (Issue #25)
 _Added: 2026-03-12_
 

@@ -338,6 +338,36 @@
 - **Animations added to globals.css:** `@keyframes shimmer`, `@keyframes vercel-dot-pulse`, `@keyframes spin`
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 
+## User Management & Admin Panel (Issue #24)
+- **New routes:**
+  - `/dashboard/admin/users` — Admin-only user list with invite, role change, deactivate/reactivate, bulk actions, search/filter
+  - `/dashboard/admin/audit` — Admin-only audit log (append-only view of all user management actions)
+  - `/dashboard/settings/profile` — Profile settings for all roles: display name edit, read-only email+role, change password
+- **New DB tables:**
+  - `fd_user_roles` — user_id (FK auth.users), role (admin/operator/viewer), is_active (bool), updated_by, timestamps. **Use upsert() not insert() — unique constraint on user_id**. RLS: admins see all; users see own row.
+  - `fd_audit_log` — actor_id, target_user_id, action, details (jsonb), created_at. **Append-only** — no DELETE RLS policy. Service-role writes only.
+  - Migration: `20260312220000_fd_user_roles_audit.sql`
+- **New API routes:**
+  - `GET /api/admin/users` — list all users with roles/status (admin only); query: search, role, status, page, pageSize
+  - `POST /api/admin/users/invite` — Supabase `inviteUserByEmail()` + upsert fd_user_roles; 409 if email exists
+  - `PATCH /api/admin/users/:id` — update role/is_active; calls Supabase ban/unban; writes audit log; self-demotion and self-deactivation blocked
+  - `POST /api/admin/users/bulk` — bulk role_change / deactivate / reactivate; excludes actor's own account
+  - `POST /api/auth/change-password` — verifies current password by signInWithPassword then calls updateUser
+  - `PATCH /api/auth/profile` — updates `raw_user_meta_data.full_name`; validates 2–50 chars
+  - `GET /api/admin/audit` — paginated audit log with enriched actor/target user info (admin only)
+- **New lib:**
+  - `src/lib/roles.ts` — `getUserRole(userId)` via service-role client; `writeAuditLog()` helper
+  - `src/lib/storage.ts` — added `avatars: 'fd-avatars'` bucket constant (Phase 2)
+- **Components in `src/app/dashboard/admin/users/_components/`:** UserManagementClient, RoleBadge, StatusBadge, InviteUserModal, EditRoleModal, DeactivateModal, BulkActionsBar, UserFilters
+- **Key behavior:**
+  - Role allowlist pattern: `['admin'].includes(role)` — never `role !== 'viewer'`
+  - Admin cannot self-demote or self-deactivate
+  - Own account row has no checkbox (excluded from bulk)
+  - Supabase ban_duration `87600h` = effectively permanent ban for deactivated users; `none` to unban
+  - Password change: re-authenticates with current password before calling updateUser
+  - Audit actions: invite, role_change, deactivate, reactivate, password_change
+- **data-testid attributes:** `invite-user-btn`, `send-invite-btn`, `row-actions-btn`, `deactivate-btn`, `confirm-deactivate-btn`, `status-badge`, `save-profile-btn`, `change-password-btn`, `error-message`, `toast-success`, `toast-error`
+
 ## Pencil.dev Design Integration (CR #37)
 - **New routes:**
   - `/dashboard/apps/[repoId]/designs` — Design gallery per app (all .pen files across issues)
