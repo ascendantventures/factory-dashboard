@@ -27,7 +27,7 @@ export default function MobileBottomNav({ userRole }: MobileBottomNavProps) {
   ];
 
   function isActive(href: string, exact: boolean) {
-    if (href === '/dashboard/admin/users' && pathname.startsWith('/dashboard/admin')) return true;
+    if (href === '/dashboard/admin/users') return pathname.startsWith('/dashboard/admin');
     return exact ? pathname === href : pathname.startsWith(href);
   }
 

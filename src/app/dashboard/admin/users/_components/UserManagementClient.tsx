@@ -1,43 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
-
-function TableScrollContainer({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    function update() {
-      if (!el) return;
-      setCanScrollLeft(el.scrollLeft > 0);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-    }
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      el.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="table-scroll-container"
-      role="region"
-      aria-label="Users table"
-      data-scroll-left={canScrollLeft}
-      data-scroll-right={canScrollRight}
-    >
-      {children}
-    </div>
-  );
-}
-import { UserPlus, MoreVertical, Search, Users } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { UserPlus, MoreVertical, Search } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { StatusBadge } from './StatusBadge';
 import { InviteUserModal } from './InviteUserModal';
@@ -75,6 +39,44 @@ function formatRelativeTime(iso: string | null): string {
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function TableScrollContainer({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    function update() {
+      if (!el) return;
+      setCanScrollLeft(el.scrollLeft > 0);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+    }
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="table-scroll-container"
+      role="region"
+      aria-label="Users table"
+      data-scroll-left={canScrollLeft}
+      data-scroll-right={canScrollRight}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function UserManagementClient({ currentUserId }: Props) {

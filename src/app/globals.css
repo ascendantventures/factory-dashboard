@@ -175,7 +175,7 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #52525B; }
 
-/* Users table horizontal scroll container */
+/* ── Users table horizontal scroll ── */
 .table-scroll-container {
   position: relative;
   overflow-x: auto;

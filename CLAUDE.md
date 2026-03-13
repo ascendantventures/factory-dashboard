@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/36
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/61
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -34,7 +34,7 @@
 - **AppShell** (`src/components/layout/AppShell.tsx`) — Root shell wrapping Sidebar + Header + children
 - **Sidebar** (`src/components/layout/Sidebar.tsx`) — Collapsible sidebar, 5 nav items, localStorage persistence
 - **Header** (`src/components/layout/Header.tsx`) — Sticky 56px bar with PageTitle, GlobalSearch, SyncStatus, NotificationBell, NewIssueButton
-- **MobileBottomNav** (`src/components/layout/MobileBottomNav.tsx`) — Bottom nav on mobile (md:hidden for desktop)
+- **MobileBottomNav** (`src/components/layout/MobileBottomNav.tsx`) — Bottom nav on mobile (md:hidden for desktop). Accepts `userRole` prop; admin role adds a Shield/"Admin" nav item to `/dashboard/admin/users`. Role is fetched in AppShell via browser Supabase client from `fd_user_roles`.
 - **LoadingSkeleton** (`src/components/feedback/LoadingSkeleton.tsx`) — Skeleton variants: card, row, stat, kanban-column
 - **EmptyState** (`src/components/feedback/EmptyState.tsx`) — Centered empty state with icon, title, description, optional CTA
 

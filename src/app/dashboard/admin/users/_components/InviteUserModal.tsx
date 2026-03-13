@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 
+// RFC 5321-compliant email regex — accepts + addressing
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 interface Props {
@@ -100,11 +101,13 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                 onBlur={e => setEmailError(validateEmail(e.target.value))}
                 placeholder="Enter email"
                 required
+                aria-label="Email"
                 style={{
                   height: '40px', width: '100%', boxSizing: 'border-box',
                   border: `1px solid ${emailError ? '#DC2626' : '#E2E8F0'}`, borderRadius: '6px',
                   padding: '0 12px', fontSize: '14px', color: '#334155',
                   outline: 'none',
+                  background: emailError ? '#FEF2F2' : '#FFFFFF',
                 }}
                 onFocus={e => { if (!emailError) { e.currentTarget.style.border = '1px solid #2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)'; } }}
               />
@@ -164,8 +167,7 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                 background: loading ? '#93C5FD' : '#2563EB', color: '#FFFFFF', border: 'none',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                minWidth: '120px',
-                pointerEvents: loading ? 'none' : 'auto',
+                minWidth: '120px', pointerEvents: loading ? 'none' : 'auto',
               }}
             >
               {loading ? (
