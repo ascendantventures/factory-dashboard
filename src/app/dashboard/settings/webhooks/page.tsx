@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { Plus, Webhook } from 'lucide-react';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import WebhookCard from '@/components/webhooks/WebhookCard';
-import IntegrationPresets from '@/components/webhooks/IntegrationPresets';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +17,14 @@ export default async function WebhooksSettingsPage() {
     );
   }
 
-  const { data: webhooks } = await supabase
+  const { data: webhooks, error: webhooksError } = await supabase
     .from('fd_webhooks')
     .select('id, url, events, enabled, created_at')
     .order('created_at', { ascending: false });
+
+  if (webhooksError) {
+    console.error('[WebhooksPage] Failed to fetch webhooks:', webhooksError.message);
+  }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>

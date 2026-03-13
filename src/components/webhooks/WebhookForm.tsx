@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { PIPELINE_EVENTS, EVENT_CATEGORIES } from '@/lib/webhook-events';
@@ -24,30 +24,21 @@ export default function WebhookForm({
   defaultPreset,
 }: WebhookFormProps) {
   const router = useRouter();
-  const [url, setUrl] = useState(initialUrl);
+
+  // Initialize state directly from defaultPreset so the preset is applied
+  // synchronously on the first render — avoiding hydration mismatch and
+  // useEffect timing issues that caused AC-001.x failures.
+  const presetConfig = defaultPreset ? PRESETS.find((p) => p.type === defaultPreset) : undefined;
+  const [url, setUrl] = useState(presetConfig?.urlPlaceholder ?? initialUrl);
   const [secret, setSecret] = useState('');
-  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set(initialEvents));
-  const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined);
+  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(
+    new Set(presetConfig?.defaultEvents ?? initialEvents)
+  );
+  const [selectedPreset, setSelectedPreset] = useState<string | undefined>(defaultPreset);
   const [urlError, setUrlError] = useState('');
   const [eventsError, setEventsError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
-
-  useEffect(() => {
-    setSelectedEvents(new Set(initialEvents));
-  }, [initialEvents.join(',')]);
-
-  useEffect(() => {
-    if (defaultPreset) {
-      const preset = PRESETS.find((p) => p.type === defaultPreset);
-      if (preset) {
-        setUrl(preset.urlPlaceholder);
-        setSelectedEvents(new Set(preset.defaultEvents));
-        setSelectedPreset(defaultPreset);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultPreset]);
 
   function handlePreset(preset: PresetConfig) {
     setUrl(preset.urlPlaceholder);

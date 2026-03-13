@@ -335,3 +335,27 @@ _Added: 2026-03-13_
 - /dashboard/settings/webhooks/new?preset=discord
 - /dashboard/settings/webhooks/new?preset=slack
 - /dashboard/settings/webhooks/new
+
+---
+
+## UAT Fix: Preset Auto-apply + Webhook List Crash (Issue #87)
+_Added: 2026-03-13_
+
+### REQ-WHK-FIX-001: Preset query param auto-applies on page load
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=discord — Discord tile has aria-selected="true", URL input is pre-filled (not empty), build.completed + qa.passed + deploy.completed events are checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=slack — Slack tile has aria-selected="true", URL input is pre-filled with Slack placeholder, default events are checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new (no preset param) — no tile has aria-selected="true", URL field is empty, no events checked
+
+### REQ-WHK-FIX-002: Webhook list page renders without server error
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks — page renders (HTTP status < 500), no Vercel error digest visible
+- [ ] [auth] "Add Webhook" button is visible on /dashboard/settings/webhooks
+- [ ] [auth] Discord and Slack preset cards are visible on /dashboard/settings/webhooks
+- [ ] [auth] (with at least one webhook) Webhook list shows webhook cards with toggle, edit, delete controls
+- [ ] Vercel error digest "2416468996" is NOT visible on any webhook page
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks
+- /dashboard/settings/webhooks/new?preset=discord
+- /dashboard/settings/webhooks/new?preset=slack
