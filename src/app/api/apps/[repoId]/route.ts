@@ -42,11 +42,12 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Fetch build repo by id
+  // Fetch build repo by github_repo slug (URL-decoded)
+  const decoded = decodeURIComponent(repoId);
   const { data: buildRepo, error: repoError } = await supabase
     .from('dash_build_repos')
     .select('*')
-    .eq('id', repoId)
+    .eq('github_repo', decoded)
     .single();
 
   if (repoError || !buildRepo) {

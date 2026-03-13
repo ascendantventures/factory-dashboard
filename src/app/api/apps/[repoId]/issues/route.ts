@@ -16,11 +16,12 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Look up build repo
+  // Look up build repo by github_repo slug (URL-decoded)
+  const decoded = decodeURIComponent(repoId);
   const { data: buildRepo, error: repoError } = await supabase
     .from('dash_build_repos')
     .select('id, github_repo')
-    .eq('id', repoId)
+    .eq('github_repo', decoded)
     .single();
 
   if (repoError || !buildRepo) {
@@ -45,11 +46,12 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid order parameter', field: 'order' }, { status: 400 });
   }
 
-  // Build query
+  // Build query — filter by body referencing this build repo
+  // Issues may be filed in any repo but reference this build_repo in their body
   let query = supabase
     .from('dash_issues')
     .select('id, issue_number, repo, title, station, complexity, created_at, updated_at')
-    .eq('repo', buildRepo.github_repo);
+    .ilike('body', `build_repo: ${buildRepo.github_repo}%`);
 
   if (station) query = query.eq('station', station);
   if (complexity) query = query.eq('complexity', complexity);
@@ -139,11 +141,12 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid issue type', field: 'type' }, { status: 400 });
   }
 
-  // Look up build repo
+  // Look up build repo by github_repo slug (URL-decoded)
+  const decodedRepoId = decodeURIComponent(repoId);
   const { data: buildRepo, error: repoError } = await supabase
     .from('dash_build_repos')
     .select('id, github_repo')
-    .eq('id', repoId)
+    .eq('github_repo', decodedRepoId)
     .single();
 
   if (repoError || !buildRepo) {
