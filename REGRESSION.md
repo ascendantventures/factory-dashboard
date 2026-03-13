@@ -227,6 +227,139 @@ _Issue #36 — Added: 2026-03-12_
 
 ---
 
+## Webhook & Integration Configuration (Issue #29)
+_Added: 2026-03-12_
+
+### Test Steps [auth]
+
+**Webhook List Page**
+- [ ] Navigate to /dashboard/settings/webhooks — page renders with "Webhooks" H1, "Add Webhook" button, Discord + Slack preset cards
+- [ ] If no webhooks exist — empty state with Webhook icon and "No webhooks yet" message is shown
+- [ ] "Add Webhook" button links to /dashboard/settings/webhooks/new
+
+**Create Webhook via Preset**
+- [ ] Go to /dashboard/settings/webhooks/new — page renders with Discord + Slack preset tiles and "or configure manually" divider
+- [ ] Click Discord preset tile (data-testid="preset-discord") — URL field pre-filled with Discord placeholder, build.completed + qa.passed + deploy.completed checkboxes checked
+- [ ] Click Slack preset tile (data-testid="preset-slack") — URL field pre-filled with Slack placeholder, build.completed + qa.passed + deploy.completed checkboxes checked
+- [ ] After preset, modify URL to real HTTPS URL, click "Create Webhook" — webhook saved, redirects to /dashboard/settings/webhooks, new card appears
+
+**Create Webhook — Validation**
+- [ ] Submit form with http:// URL — inline error "URL must use HTTPS" shown at data-testid="url-error", form does not submit
+- [ ] Submit form with invalid URL — inline error shown, form does not submit
+- [ ] Submit form with no events selected — inline events error shown, form does not submit
+- [ ] Submit form with valid HTTPS URL and at least one event — webhook created successfully
+
+**Event Checkboxes**
+- [ ] All 16 pipeline events are listed grouped by category (Issues, Spec, Build, QA, Deploy, Agent, Pipeline)
+- [ ] Each checkbox has data-testid="event-{eventName}" (e.g. event-build.completed)
+- [ ] Checking/unchecking events updates selection state
+
+**WebhookCard (Webhook List)**
+- [ ] Each webhook shows truncated URL, creation timestamp, enabled/disabled badge, toggle switch
+- [ ] Up to 5 event badges shown; if more, "+N more" badge shown
+- [ ] Toggle switch (data-testid="enabled-toggle") — click to disable, badge changes to "Paused"; click again to re-enable, badge changes to "Active"
+- [ ] Toggle persists after page refresh (PATCH /api/settings/webhooks/:id called)
+- [ ] "Edit" link navigates to /dashboard/settings/webhooks/[id]
+- [ ] "Delete" button (data-testid="delete-webhook-btn") opens confirmation modal
+
+**Delete Webhook**
+- [ ] Delete modal shows webhook URL context, "Cancel" and "Delete Webhook" (data-testid="confirm-delete-btn") buttons
+- [ ] Click "Cancel" — modal closes, webhook still in list
+- [ ] Click "Delete Webhook" — webhook removed from list, deliveries cascade-deleted
+- [ ] After delete — redirects to /dashboard/settings/webhooks
+
+**Edit Webhook**
+- [ ] Navigate to /dashboard/settings/webhooks/[id] — form pre-filled with existing URL and selected events
+- [ ] Secret field shows placeholder "Enter new secret to replace existing", not current secret
+- [ ] Change URL, save — updated URL reflected on list page
+- [ ] Change events, save — updated event badges on card
+
+**Test Webhook**
+- [ ] On edit page, "Send Test" button (data-testid="test-webhook-btn") visible in "Test Webhook" card
+- [ ] Click "Send Test" — button enters loading state ("Sending…"), result appears within ~10s
+- [ ] Test result (data-testid="test-result") shows HTTP status code and response snippet
+- [ ] Success response (2xx): green left border, CheckCircle2 icon, green status badge
+- [ ] Failure/timeout: red left border, XCircle icon, red/yellow status badge
+- [ ] After test, a delivery entry with event="test" appears in the Delivery Log section
+
+**Delivery Log**
+- [ ] Delivery log table (data-testid="delivery-log") visible on edit page
+- [ ] Table shows columns: Event, Status, Response, Sent
+- [ ] Each row (data-testid="delivery-row") shows event badge, status code badge, truncated response, relative timestamp
+- [ ] 2xx status rows styled green background (#0D2E24)
+- [ ] 4xx/5xx rows styled red background (#2E1515)
+- [ ] null (timeout) rows styled yellow background (#2E2514)
+- [ ] At most 50 rows shown, ordered most-recent first
+- [ ] Empty delivery log shows "No deliveries yet" message
+
+**Danger Zone**
+- [ ] Danger Zone card on edit page has red border, "Delete Webhook" button
+- [ ] Delete from detail page works same as delete from list (confirm modal, then redirect)
+
+### API Endpoints
+- GET /api/settings/webhooks — returns user's webhooks, no secret_hash field
+- POST /api/settings/webhooks — creates webhook, 201 response, requires HTTPS URL
+- PATCH /api/settings/webhooks/:id — partial update (url, events, enabled, secret)
+- DELETE /api/settings/webhooks/:id — 204 response, cascade-deletes deliveries
+- POST /api/settings/webhooks/:id/test — fires real HTTP request, logs to fd_webhook_deliveries
+- GET /api/settings/webhooks/:id/deliveries — last 50 entries ordered sent_at DESC
+
+### Routes
+- /dashboard/settings/webhooks
+- /dashboard/settings/webhooks/new
+- /dashboard/settings/webhooks/[id]
+
+---
+
+## Webhook Settings UX Improvements (Issue #77)
+_Added: 2026-03-13_
+
+### REQ-WHK-001: Auto-apply preset from query param
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=discord — Discord preset tile (data-testid="preset-discord") is pre-selected (aria-selected="true"), URL field pre-filled with Discord placeholder, events pre-checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=slack — Slack preset tile (data-testid="preset-slack") is pre-selected (aria-selected="true"), URL field pre-filled with Slack placeholder, events pre-checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new (no preset param) — no preset tile has aria-selected="true", form is blank
+
+### REQ-WHK-002: Settings page links to Webhooks
+
+- [ ] [auth] Navigate to /dashboard/settings — a "Webhooks & Integrations" card is visible under an "Integrations" section label
+- [ ] [auth] Click the "Webhooks & Integrations" card (data-testid="webhooks-settings-card") — navigates to /dashboard/settings/webhooks
+
+### REQ-WHK-003: Events validation error has data-testid
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new — click "Create Webhook" with no events selected — an element with data-testid="events-error" becomes visible
+- [ ] [auth] When no validation error, data-testid="events-error" element is NOT present in the DOM
+
+### Routes/Endpoints
+- /dashboard/settings (settings page with webhooks card)
+- /dashboard/settings/webhooks/new?preset=discord
+- /dashboard/settings/webhooks/new?preset=slack
+- /dashboard/settings/webhooks/new
+
+---
+
+## UAT Fix: Preset Auto-apply + Webhook List Crash (Issue #87)
+_Added: 2026-03-13_
+
+### REQ-WHK-FIX-001: Preset query param auto-applies on page load
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=discord — Discord tile has aria-selected="true", URL input is pre-filled (not empty), build.completed + qa.passed + deploy.completed events are checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new?preset=slack — Slack tile has aria-selected="true", URL input is pre-filled with Slack placeholder, default events are checked
+- [ ] [auth] Navigate to /dashboard/settings/webhooks/new (no preset param) — no tile has aria-selected="true", URL field is empty, no events checked
+
+### REQ-WHK-FIX-002: Webhook list page renders without server error
+
+- [ ] [auth] Navigate to /dashboard/settings/webhooks — page renders (HTTP status < 500), no Vercel error digest visible
+- [ ] [auth] "Add Webhook" button is visible on /dashboard/settings/webhooks
+- [ ] [auth] Discord and Slack preset cards are visible on /dashboard/settings/webhooks
+- [ ] [auth] (with at least one webhook) Webhook list shows webhook cards with toggle, edit, delete controls
+- [ ] Vercel error digest "2416468996" is NOT visible on any webhook page
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks
+- /dashboard/settings/webhooks/new?preset=discord
+- /dashboard/settings/webhooks/new?preset=slack
+
 ## User Management & Admin Panel [auth] (Issue #24)
 _Added: 2026-03-12_
 

@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import Link from 'next/link';
 import {
   Plus, Trash2, Loader2, Save, Shield, Users, Settings, Layers, Server, Key,
   Pencil, X, Github, Database, Triangle, Bot, RotateCw,
-  CheckCircle, Activity,
+  CheckCircle, Activity, Webhook, ChevronRight,
 } from 'lucide-react';
 import { DashDashboardConfig, DashTemplate } from '@/types';
 
@@ -887,6 +888,49 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
                 </button>
                 {saveSuccess && <span className="text-sm" style={{ color: 'var(--success)' }}>Saved!</span>}
                 {saveError && <span className="text-sm" style={{ color: 'var(--error)' }}>{saveError}</span>}
+              </div>
+
+              {/* Integrations Section */}
+              <div className="mt-8">
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+                  Integrations
+                </p>
+                <Link
+                  href="/dashboard/settings/webhooks"
+                  data-testid="webhooks-settings-card"
+                  className="flex items-start justify-between rounded-xl p-5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    textDecoration: 'none',
+                    display: 'flex',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget;
+                    el.style.background = 'var(--surface-alt)';
+                    el.style.borderColor = 'rgba(99,102,241,0.4)';
+                    el.style.transform = 'translateY(-1px)';
+                    el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget;
+                    el.style.background = 'var(--surface)';
+                    el.style.borderColor = 'var(--border)';
+                    el.style.transform = 'translateY(0)';
+                    el.style.boxShadow = 'none';
+                  }}
+                >
+                  <div className="flex flex-col">
+                    <Webhook className="w-5 h-5 mb-3" style={{ color: 'var(--primary)' }} />
+                    <span className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      Webhooks &amp; Integrations
+                    </span>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)', maxWidth: '280px' }}>
+                      Configure webhooks for Discord, Slack, and custom endpoints
+                    </span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+                </Link>
               </div>
             </div>
           )}

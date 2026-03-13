@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/85
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/87
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -72,6 +72,7 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key (client-side)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
+- `WEBHOOK_SECRET_ENCRYPTION_KEY` — AES-GCM 32-byte key for encrypting webhook signing secrets (Issue #29). Pad to 32 chars if shorter. Required for HMAC signing dispatch.
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -84,6 +85,8 @@
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
+- `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
+- `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
 ## Key Files
@@ -123,6 +126,22 @@
 - `src/components/apps/AppTechStack.tsx` — Tech stack tag pills
 - `src/components/apps/DeploymentHistory.tsx` — Last deploy row with relative time
 
+## Webhook & Integration Configuration (Issue #29)
+- **New routes:** `/dashboard/settings/webhooks`, `/dashboard/settings/webhooks/new`, `/dashboard/settings/webhooks/[id]`
+- **API routes:**
+  - `GET /api/settings/webhooks` — list user's webhooks (no secret_hash)
+  - `POST /api/settings/webhooks` — create webhook (URL validation, encrypt secret, require HTTPS)
+  - `PATCH /api/settings/webhooks/[id]` — update webhook (partial)
+  - `DELETE /api/settings/webhooks/[id]` — delete webhook (RLS-scoped)
+  - `POST /api/settings/webhooks/[id]/test` — fire test payload, log delivery
+  - `GET /api/settings/webhooks/[id]/deliveries` — last 50 deliveries ordered by sent_at DESC
+- **Lib files:**
+  - `src/lib/webhook-events.ts` — PIPELINE_EVENTS array, EVENT_CATEGORIES, PipelineEvent type
+  - `src/lib/webhook-dispatcher.ts` — `dispatchEvent()` (server-only), `encryptSecret()`/`decryptSecret()` using AES-GCM, HMAC-SHA-256 header `X-Factory-Signature`
+- **Components:** `src/components/webhooks/` — WebhookForm.tsx, WebhookCard.tsx, DeliveryLog.tsx, TestWebhookButton.tsx, IntegrationPresets.tsx
+- **Secret storage:** AES-GCM encrypted with `WEBHOOK_SECRET_ENCRYPTION_KEY` env var. NOT a plain hash — raw secret needed for HMAC at dispatch time.
+- **data-testid attributes:** `webhook-card`, `enabled-toggle`, `delete-webhook-btn`, `confirm-delete-btn`, `test-webhook-btn`, `test-result`, `delivery-log`, `delivery-row`, `url-error`, `event-{eventName}` (e.g. `event-build.completed`), `preset-discord`, `preset-slack`
+
 ## Pipeline Control Panel (CR #19)
 - **New route:** `/pipeline` — protected by middleware, uses AppShell, polls every 5s
 - **New API routes:**
@@ -140,6 +159,9 @@
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
 ## Known Issues & Gotchas
+- **Vercel project / Supabase instance mismatch** — the repo has been linked to two different Vercel projects (`build-work` and `factory-dashboard`) at different points. Each uses a different Supabase instance. When applying migrations, use `supabase link --project-ref <ref>` to ensure you're targeting the correct DB. The `factory-dashboard` project uses Supabase ref `ojazkhiqwgssduehubdu`; the `build-work` project uses `xvniwehnspnxlnerbfwj`. Both must have all migrations applied.
+- **`NEXT_PUBLIC_SUPABASE_URL` must be set for ALL Vercel environments (preview + development + production)** — if missing from Preview, every server component that calls `createSupabaseServerClient()` will crash with a Next.js digest error at runtime (since `NEXT_PUBLIC_*` vars are inlined at build time for server bundles).
+- **`WEBHOOK_SECRET_ENCRYPTION_KEY` must be set for all environments** — set for production AND preview/development. Missing key causes decryption failures on test/dispatch, though the `?? ''` fallback prevents hard crashes.
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
@@ -454,3 +476,11 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/85_
 - `data-testid="quick-create-trigger"` — New Issue button
 - `data-testid="repo-selector"` — repository selector dropdown
 - `data-testid="repo-selector-error"` — inline validation error
+
+## UAT Fix: Webhook Preset Auto-apply + List Page Crash (Issue #87)
+- **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/87
+- **Fixes applied in commit:** `50ec416` on `feature/issue-77`
+- **Bug 1 (REQ-WHK-FIX-001):** Webhook preset auto-apply broken — replaced `useEffect`-based initialization in `WebhookForm.tsx` with direct `useState` initialization from `defaultPreset` prop. The `useEffect` approach caused hydration mismatch in Next.js 16 where `useEffect` fires AFTER hydration, making preset invisible on first render.
+- **Bug 2 (REQ-WHK-FIX-002):** Webhook list server crash — caused by unused `import IntegrationPresets` in `page.tsx` (Server Component importing a `'use client'` component in a way that triggered SSR exception). Removed the import and added graceful error handling for the `fd_webhooks` query.
+- **Key pattern:** In Next.js 16 App Router, never use `useEffect` to initialize state from props — initialize directly in `useState()`. `useEffect` runs post-hydration and causes visible flicker/failure.
+- **No DB migrations required** — pure client/SSR bug fixes.
