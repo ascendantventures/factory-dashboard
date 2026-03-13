@@ -94,7 +94,7 @@ export default function AppsPage() {
   }
 
   function handleCardClick(app: AppSummary) {
-    router.push(`/dashboard/apps/${app.id}`);
+    router.push(`/dashboard/apps/${encodeURIComponent(app.repo_full_name)}`);
   }
 
   return (

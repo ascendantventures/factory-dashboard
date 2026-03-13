@@ -375,3 +375,12 @@
 - **fadash_timeline_events:** Phase 1 — table exists, UI handles empty state gracefully; Phase 2 will auto-populate from pipeline worker
 - **data-testid attributes:** `app-stats-bar`, `stat-total-issues`, `stat-total-cost`, `stat-avg-cost`, `stat-success-rate`, `stat-active-issues`, `stat-last-deployed`, `filter-bar`, `filter-station`, `filter-complexity`, `issue-history-table`, `issue-row`, `station-badge`, `timeline-view`, `timeline-empty-state`, `create-issue-modal`, `create-issue-repo`, `issue-history-empty-state`
 - **E2E tests:** `tests/e2e/app-management.spec.ts`
+
+## UAT Fix — Issue #74 (fixes for CR #35)
+- **Routing change:** App detail URL changed from UUID-based (`/dashboard/apps/<uuid>`) to slug-based (`/dashboard/apps/<encoded-repo-slug>`)
+  - Navigation in `apps/page.tsx` now uses `encodeURIComponent(app.repo_full_name)` instead of `app.id`
+  - All `[repoId]` API routes now look up `dash_build_repos` by `github_repo` (slug) not `id` (UUID)
+- **Stats/issues API fix:** Changed `.eq('repo', github_repo)` to `.ilike('body', 'build_repo: <repo>%')` in stats, issues, and timeline routes — issues are filed in harness-beta-test but reference factory-dashboard in body
+- **Title validation UX:** "Title is required" error now displays inline below the title input field (not only in the bottom error bar)
+- **data-testid status:** All 4 required testids were already present from CR #35 (`app-stats-bar`, `stat-total-issues`, `create-issue-modal`, `create-issue-repo`)
+- **E2E tests:** `tests/e2e/uat-fix-35.spec.ts`

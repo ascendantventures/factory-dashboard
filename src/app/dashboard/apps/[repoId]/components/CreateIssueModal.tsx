@@ -240,8 +240,10 @@ export default function CreateIssueModal({ repoId, buildRepo, onClose, onSuccess
             <input
               id="issue-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); if (e.target.value.trim()) setError(null); }}
               placeholder="Brief description of the issue"
+              aria-invalid={error && !title.trim() ? 'true' : 'false'}
+              aria-describedby={error && !title.trim() ? 'title-error' : undefined}
               style={{
                 ...inputStyle,
                 borderColor: error && !title.trim() ? '#EF4444' : '#3D3937',
@@ -252,10 +254,29 @@ export default function CreateIssueModal({ repoId, buildRepo, onClose, onSuccess
                 (e.currentTarget as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(212,160,18,0.2)';
               }}
               onBlur={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = '#3D3937';
-                (e.currentTarget as HTMLInputElement).style.boxShadow = 'none';
+                (e.currentTarget as HTMLInputElement).style.borderColor = error && !title.trim() ? '#EF4444' : '#3D3937';
+                (e.currentTarget as HTMLInputElement).style.boxShadow = error && !title.trim() ? '0 0 0 3px rgba(239,68,68,0.2)' : 'none';
               }}
             />
+            {error && !title.trim() && (
+              <p
+                id="title-error"
+                role="alert"
+                style={{
+                  marginTop: '6px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#EF4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  margin: '6px 0 0',
+                }}
+              >
+                <AlertCircle size={14} />
+                Title is required
+              </p>
+            )}
           </div>
 
           {/* Description */}

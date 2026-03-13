@@ -288,3 +288,27 @@ _Added: 2026-03-12_
 - GET /api/apps/[repoId]/stats
 - GET /api/apps/[repoId]/timeline
 - POST /api/apps/[repoId]/issues
+
+## UAT Fix #74 — App Navigation + Stats Accuracy (Issue #74)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/apps` — app cards are visible
+- [ ] [auth] Click an app card — browser navigates to `/dashboard/apps/ascendantventures%2Ffactory-dashboard` (slug URL, NOT UUID)
+- [ ] [auth] Detail page loads: stats bar, tabs, and GitHub link all visible
+- [ ] [auth] `data-testid="app-stats-bar"` present on detail page
+- [ ] [auth] `data-testid="stat-total-issues"` present and shows a number > 0 (if issues exist)
+- [ ] [auth] Header issue count and stats bar "TOTAL ISSUES" show the same value (no discrepancy)
+- [ ] [auth] Click "New Issue" button — modal opens with `data-testid="create-issue-modal"`
+- [ ] [auth] `data-testid="create-issue-repo"` is pre-filled with repo name and is read-only
+- [ ] [auth] In modal, click Submit without entering a title — "Title is required" appears directly below the title input
+- [ ] [auth] GET `/api/apps/ascendantventures%2Ffactory-dashboard/stats` returns 200 with `total_issues > 0`
+- [ ] [auth] GET `/api/apps/ascendantventures%2Ffactory-dashboard/issues` returns 200 with `{ issues: [...], total: N }`
+
+### Routes/Endpoints
+- /dashboard/apps (navigation changed: cards now link to slug URL)
+- /dashboard/apps/[repoId] (slug-based, e.g. ascendantventures%2Ffactory-dashboard)
+- GET /api/apps/[repoId]/stats (now looks up by github_repo slug + ilike body filter)
+- GET /api/apps/[repoId]/issues (now looks up by github_repo slug + ilike body filter)
+- GET /api/apps/[repoId]/timeline (now looks up by github_repo slug + ilike body filter)
+- POST /api/apps/[repoId]/issues (now looks up by github_repo slug)

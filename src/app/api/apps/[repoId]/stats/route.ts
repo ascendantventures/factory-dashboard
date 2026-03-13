@@ -15,22 +15,24 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Look up build repo
+  // Look up build repo by github_repo slug (URL-decoded)
+  const decoded = decodeURIComponent(repoId);
   const { data: buildRepo, error: repoError } = await supabase
     .from('dash_build_repos')
     .select('id, github_repo')
-    .eq('id', repoId)
+    .eq('github_repo', decoded)
     .single();
 
   if (repoError || !buildRepo) {
     return NextResponse.json({ error: 'App not found' }, { status: 404 });
   }
 
-  // Fetch all issues for this repo
+  // Fetch all issues whose body references this build repo
+  // Issues may be filed in a different repo (e.g. harness-beta-test) but target this build_repo
   const { data: issues, error: issuesError } = await supabase
     .from('dash_issues')
     .select('id, station, created_at')
-    .eq('repo', buildRepo.github_repo);
+    .ilike('body', `build_repo: ${buildRepo.github_repo}%`);
 
   if (issuesError) {
     return NextResponse.json({ error: issuesError.message }, { status: 500 });
