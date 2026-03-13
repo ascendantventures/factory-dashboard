@@ -270,5 +270,5 @@ _Added: 2026-03-12 — Issue #30_
 - POST with body > 65536 chars → 400 response
 
 ### Prerequisite Check (run before testing comment threading)
-- **VERIFY** `GITHUB_BUILD_REPO` is set in Vercel environment (Production + Preview + Development) — if missing, ALL comment API calls return HTTP 500. Value must be `owner/repo` (e.g. `ascendantventures/factory-dashboard`). This was the root cause of the QA failure for issue #30.
+- **VERIFY** `GITHUB_BUILD_REPO` is set to **`ascendantventures/harness-beta-test`** in Vercel (Production + Preview + Development). Two failure modes: (1) missing → HTTP 500; (2) wrong repo (e.g. `factory-dashboard`) → GitHub 404 → HTTP 500. Dashboard issue numbers live in `harness-beta-test`, not `factory-dashboard`. Both bugs confirmed in QA for issue #30 (rounds 1 and 2).
 

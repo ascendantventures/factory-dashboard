@@ -71,7 +71,7 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key (client-side)
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation + comment read/post)
-- `GITHUB_BUILD_REPO` — Target repo for comment threading (e.g. `ascendantventures/factory-dashboard`)
+- `GITHUB_BUILD_REPO` — Target repo for comment threading. Must be `ascendantventures/harness-beta-test` (the harness repo where issues live, NOT the build repo `factory-dashboard`)
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -152,7 +152,7 @@
 - **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
 
 ## Known Issues & Gotchas
-- **GITHUB_BUILD_REPO must be set in Vercel** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is not set in the Vercel project env vars. Set to `owner/repo` (e.g. `ascendantventures/factory-dashboard`) for all environments (Production, Preview, Development). Bug confirmed in QA for issue #30.
+- **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development).
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
