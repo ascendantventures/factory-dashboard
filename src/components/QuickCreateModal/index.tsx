@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FileText,
@@ -329,6 +330,19 @@ export default function QuickCreateModal({
   }, [isOpen, initialTemplate, trackedRepos]);
 
   // -------------------------------------------------------------------------
+  // Escape key handler — blocked during submission so toast/success state shows
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && submitStatus !== 'loading') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, submitStatus]);
+
+  // -------------------------------------------------------------------------
   // Navigation helpers
   // -------------------------------------------------------------------------
 
@@ -390,6 +404,17 @@ export default function QuickCreateModal({
       }
       const data: SubmitResult = await res.json();
       setSubmitResult(data);
+      toast.success(
+        data.html_url
+          ? `Issue #${data.number} created — view on GitHub`
+          : 'Issue created successfully!',
+        {
+          duration: 5000,
+          action: data.html_url
+            ? { label: 'View', onClick: () => window.open(data.html_url, '_blank') }
+            : undefined,
+        }
+      );
       setSubmitStatus('success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
