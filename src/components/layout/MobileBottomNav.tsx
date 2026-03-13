@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Grid3X3,
@@ -16,24 +16,14 @@ const NAV_ITEMS = [
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
-  { href: '/dashboard/settings?tab=templates', label: 'Templates', icon: FileStack, exact: false },
+  { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
 ];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   function isActive(href: string, exact: boolean) {
-    if (href.includes('?tab=templates')) {
-      return pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates';
-    }
-    // /dashboard/settings should not appear active when the templates tab is open
-    if (href === '/dashboard/settings' && !exact) {
-      if (pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates') {
-        return false;
-      }
-    }
     return exact ? pathname === href : pathname.startsWith(href);
   }
 

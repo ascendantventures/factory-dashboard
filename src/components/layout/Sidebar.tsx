@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Factory,
   LayoutDashboard,
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
   { href: '/dashboard/admin/users', label: 'Users', icon: Users, exact: false },
   { href: '/dashboard/admin/audit', label: 'Audit Log', icon: FileText, exact: false },
-  { href: '/dashboard/settings?tab=templates', label: 'Templates', icon: FileStack, exact: false },
+  { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
   { href: '/dashboard/settings/profile', label: 'Profile', icon: User, exact: true },
 ];
@@ -45,7 +45,6 @@ interface SidebarProps {
 
 export default function Sidebar({ onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const supabaseRef = useRef<ReturnType<typeof import('@/lib/supabase')['createSupabaseBrowserClient']> | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -99,15 +98,6 @@ export default function Sidebar({ onCollapsedChange }: SidebarProps) {
   }
 
   function isActive(href: string, exact: boolean) {
-    if (href.includes('?tab=templates')) {
-      return pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates';
-    }
-    // /dashboard/settings should not appear active when the templates tab is open
-    if (href === '/dashboard/settings' && !exact) {
-      if (pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates') {
-        return false;
-      }
-    }
     return exact ? pathname === href : pathname.startsWith(href);
   }
 

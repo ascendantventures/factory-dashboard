@@ -47,7 +47,7 @@
 - `/dashboard/analytics` → Cost Analytics & ROI Dashboard (Issue #25) — charts, ROI metrics, CSV export
 - `/dashboard/costs` → Cost tracking
 - `/dashboard/settings` → Settings (tabs: general, users, templates, environment, api-keys)
-- `/dashboard/settings?tab=templates` → Templates tab (accessible via sidebar "Templates" link)
+- `/dashboard/templates` → Templates registry (dedicated route, defaults to templates tab in SettingsClient)
 
 ## Design System (CR #14 — DESIGN.md spec)
 - **Primary:** #6366F1 (indigo — changed from old #3B82F6 blue)

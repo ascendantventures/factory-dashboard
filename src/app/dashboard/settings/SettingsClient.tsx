@@ -20,6 +20,7 @@ interface SettingsClientProps {
   initialConfig: DashDashboardConfig | null;
   isAdmin: boolean;
   allUsers: User[];
+  defaultTab?: Tab;
 }
 
 type Tab = 'general' | 'users' | 'templates' | 'environment' | 'api-keys';
@@ -728,9 +729,9 @@ function ApiKeyPanel() {
 
 // ─── Main SettingsClient ──────────────────────────────────────────────────────
 
-export function SettingsClient({ userId, initialConfig, isAdmin, allUsers }: SettingsClientProps) {
+export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defaultTab }: SettingsClientProps) {
   const supabaseRef = useRef<SupabaseClient | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab ?? 'general');
 
   const getSupabase = async () => {
     if (!supabaseRef.current) {
