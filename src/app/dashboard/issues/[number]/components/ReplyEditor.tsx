@@ -9,6 +9,8 @@ import type { GithubComment } from './CommentItem';
 interface Props {
   issueNumber: number;
   onSuccess: (comment: GithubComment) => void;
+  onOptimisticInsert?: (comment: GithubComment) => void;
+  onRollback?: (tempId: number) => void;
 }
 
 type Tab = 'write' | 'preview';
@@ -36,7 +38,7 @@ function insertMarkdown(
   }, 0);
 }
 
-export function ReplyEditor({ issueNumber, onSuccess }: Props) {
+export function ReplyEditor({ issueNumber, onSuccess, onOptimisticInsert, onRollback }: Props) {
   const [value, setValue] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('write');
   const [isPosting, setIsPosting] = useState(false);
@@ -55,6 +57,22 @@ export function ReplyEditor({ issueNumber, onSuccess }: Props) {
     const trimmed = value.trim();
     if (!trimmed) return;
 
+    // Optimistic insert — show comment immediately
+    const tempId = -Date.now();
+    const optimisticComment: GithubComment = {
+      id: tempId,
+      author: 'you',
+      authorType: 'User',
+      avatarUrl: '',
+      body: trimmed,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      htmlUrl: '#',
+    };
+    setValue('');
+    setActiveTab('write');
+    onOptimisticInsert?.(optimisticComment);
+
     setIsPosting(true);
     setError(null);
 
@@ -70,10 +88,13 @@ export function ReplyEditor({ issueNumber, onSuccess }: Props) {
       }
 
       const data = (await res.json()) as { comment: GithubComment };
-      setValue('');
-      setActiveTab('write');
+      // Remove optimistic placeholder and insert real comment
+      onRollback?.(tempId);
       onSuccess(data.comment);
     } catch {
+      // Rollback optimistic comment and restore editor text
+      onRollback?.(tempId);
+      setValue(trimmed);
       toast.error("Couldn't post comment. Please try again.");
       setError("Couldn't post comment. Please try again.");
     } finally {

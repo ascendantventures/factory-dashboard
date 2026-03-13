@@ -19,13 +19,14 @@ export interface GithubComment {
 
 interface Props {
   comment: GithubComment;
+  isNew?: boolean;
 }
 
 function isDocumentComment(body: string): boolean {
   return body.startsWith('# Spec:') || body.startsWith('# Design:');
 }
 
-export function CommentItem({ comment }: Props) {
+export function CommentItem({ comment, isNew = false }: Props) {
   const isAgent = comment.authorType === 'Bot';
   const isDocument = isDocumentComment(comment.body);
 
@@ -43,6 +44,8 @@ export function CommentItem({ comment }: Props) {
         borderRadius: 10,
         padding: '16px 20px',
         marginBottom: 12,
+        ['--comment-bg' as string]: cardBg,
+        ...(isNew ? { animation: 'amberFlash 2s ease-out forwards' } : {}),
       }}
     >
       {/* Header row */}

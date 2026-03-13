@@ -92,6 +92,7 @@ export function CommentThread({ issueNumber }: Props) {
   const [comments, setComments] = useState<GithubComment[]>([]);
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [newCommentIds, setNewCommentIds] = useState<Set<number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchComments = useCallback(
@@ -155,12 +156,29 @@ export function CommentThread({ issueNumber }: Props) {
     };
   }, [fetchComments]);
 
+  const handleOptimisticInsert = useCallback((comment: GithubComment) => {
+    setComments((prev) => [...prev, comment]);
+  }, []);
+
+  const handleRollback = useCallback((tempId: number) => {
+    setComments((prev) => prev.filter((c) => c.id !== tempId));
+  }, []);
+
   const handleNewComment = useCallback((comment: GithubComment) => {
     setComments((prev) => {
       // Avoid duplicates
       if (prev.find((c) => c.id === comment.id)) return prev;
       return [...prev, comment];
     });
+    // Mark as new for amber flash animation, clear after animation completes
+    setNewCommentIds((prev) => new Set(prev).add(comment.id));
+    setTimeout(() => {
+      setNewCommentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(comment.id);
+        return next;
+      });
+    }, 2500);
   }, []);
 
   return (
@@ -178,6 +196,10 @@ export function CommentThread({ issueNumber }: Props) {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
+        }
+        @keyframes amberFlash {
+          0% { background-color: #FEF3C7; }
+          100% { background-color: var(--comment-bg, #FFFFFF); }
         }
       `}</style>
 
@@ -277,12 +299,17 @@ export function CommentThread({ issueNumber }: Props) {
           ) : (
             <div style={{ marginBottom: 20 }}>
               {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} />
+                <CommentItem key={comment.id} comment={comment} isNew={newCommentIds.has(comment.id)} />
               ))}
             </div>
           )}
 
-          <ReplyEditor issueNumber={issueNumber} onSuccess={handleNewComment} />
+          <ReplyEditor
+            issueNumber={issueNumber}
+            onSuccess={handleNewComment}
+            onOptimisticInsert={handleOptimisticInsert}
+            onRollback={handleRollback}
+          />
         </>
       )}
     </div>
