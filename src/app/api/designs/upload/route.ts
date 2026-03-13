@@ -81,8 +81,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
   }
 
-  // Get public URL (not public bucket, so we'll store path)
-  const file_url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/sign/${BUCKETS.pencilDesigns}/${storagePath}`;
+  // Generate a proper signed URL (10-year expiry)
+  const { data: signedData, error: signedError } = await admin.storage
+    .from(BUCKETS.pencilDesigns)
+    .createSignedUrl(storagePath, 315360000);
+
+  if (signedError || !signedData?.signedUrl) {
+    console.error('Signed URL error:', signedError);
+    return NextResponse.json({ error: 'Failed to generate file URL' }, { status: 500 });
+  }
+
+  const file_url = signedData.signedUrl;
 
   // Create attachment row
   const { data: attachment, error: attError } = await supabase

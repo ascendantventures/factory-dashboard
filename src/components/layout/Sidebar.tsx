@@ -14,6 +14,10 @@ import {
   Cpu,
   BookOpen,
   Radio,
+  Users,
+  FileText,
+  User,
+  FileStack,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -22,10 +26,15 @@ const NAV_ITEMS = [
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3, exact: false },
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
   { href: '/dashboard/docs', label: 'API Docs', icon: BookOpen, exact: false },
   { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
+  { href: '/dashboard/admin/users', label: 'Users', icon: Users, exact: false },
+  { href: '/dashboard/admin/audit', label: 'Audit Log', icon: FileText, exact: false },
+  { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
+  { href: '/dashboard/settings/profile', label: 'Profile', icon: User, exact: true },
 ];
 
 const STORAGE_KEY = 'sidebar-collapsed';
@@ -80,8 +89,11 @@ export default function Sidebar({ onCollapsedChange }: SidebarProps) {
       const { createSupabaseBrowserClient } = await import('@/lib/supabase');
       supabaseRef.current = createSupabaseBrowserClient();
     }
-    await supabaseRef.current.auth.signOut();
-    router.push('/auth/login');
+    const redirectTo = process.env.NEXT_PUBLIC_APP_URL
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
+      : '/auth/login';
+    await supabaseRef.current.auth.signOut({ scope: 'global' });
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -188,6 +200,7 @@ export default function Sidebar({ onCollapsedChange }: SidebarProps) {
           onClick={handleSignOut}
           disabled={signingOut}
           title={collapsed ? 'Sign Out' : undefined}
+          data-testid="sign-out-button"
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
           style={{ color: 'var(--text-muted)' }}
         >

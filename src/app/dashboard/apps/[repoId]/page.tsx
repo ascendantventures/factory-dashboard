@@ -110,7 +110,7 @@ export default function AppDetailPage({
             </div>
 
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {data.app.issue_counts.total} issues · {data.app.issue_counts.open} open · {data.app.issue_counts.done} done
+              <span data-testid="app-issue-count-header">{data.app.issue_counts.total}</span> issues · {data.app.issue_counts.open} open · {data.app.issue_counts.done} done
             </p>
           </div>
 

@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/77
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/87
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -44,8 +44,10 @@
 - `/dashboard/apps/[repoId]` → App detail page (mobile full page; desktop uses drawer instead)
 - `/dashboard/activity` → Activity feed (reads dash_stage_transitions)
 - `/dashboard/metrics` → Metrics charts
+- `/dashboard/analytics` → Cost Analytics & ROI Dashboard (Issue #25) — charts, ROI metrics, CSV export
 - `/dashboard/costs` → Cost tracking
-- `/dashboard/settings` → Settings
+- `/dashboard/settings` → Settings (tabs: general, users, templates, environment, api-keys)
+- `/dashboard/templates` → Templates registry (dedicated route, defaults to templates tab in SettingsClient)
 
 ## Design System (CR #14 — DESIGN.md spec)
 - **Primary:** #6366F1 (indigo — changed from old #3B82F6 blue)
@@ -58,7 +60,8 @@
 - **Text Primary:** #FAFAFA
 - **Text Secondary:** #A1A1AA
 - **Text Muted:** #71717A
-- **Font:** Inter (400;500;600;700;800) via Google Fonts
+- **Font UI:** Inter (400;500;600;700;800) via Google Fonts
+- **Font Attachment:** Instrument Sans (400;500;600;700) via Google Fonts (added CR #51)
 - Active nav: bg=rgba(99,102,241,0.15), left-border=2px solid #6366F1
 - Sidebar: 240px expanded, 56px collapsed
 - Header: 56px height, sticky top-0
@@ -100,8 +103,9 @@
 - `src/components/activity/ActivityFeed.tsx` — AnimatePresence slide-in list, loading skeleton, empty state
 - `src/components/activity/ActivityEvent.tsx` — Single event row with icon+color per event_type, data-testid="activity-event" + data-event-type
 - `src/components/activity/ActivityTimestamp.tsx` — Auto-updating relative time (30s interval), title=ISO for a11y
-- `src/components/NewIssueModal.tsx` — Create issue form with Target App dropdown
-- `src/components/TargetAppDropdown.tsx` — Build repo selector populated from completed builds
+- `src/components/NewIssueModal.tsx` — Create issue form. Target Repository now uses `RepositorySelector` (no longer takes `trackedRepos` prop).
+- `src/components/TargetAppDropdown.tsx` — Optional "Target App" dropdown for change requests (fetches /api/build-repos)
+- `src/components/ui/RepositorySelector.tsx` — Shared required repo selector (Issue #85). Fetches /api/build-repos, shows display names, inline validation error, data-testid="repo-selector".
 - `src/app/api/sync/route.ts` — GitHub → Supabase sync endpoint
 - `src/app/api/sync/status/route.ts` — Sync status endpoint (used by SyncStatus component)
 - `src/app/api/issues/route.ts` — Create GitHub issue with station:intake label
@@ -167,6 +171,8 @@
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
+- **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
+- **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
@@ -236,6 +242,21 @@
 - **Allowed file types:** PNG, JPG, GIF, SVG, PDF, .pen (application/x-pencil)
 - **Light mode design:** attachment components use inline styles from issue #36 DESIGN.md (white surfaces, #2563EB primary) — intentional contrast within dark dashboard shell
 - **data-testid attributes:** `attachment-dropzone`, `attachment-file-input`, `attachment-preview`, `attachment-gallery`, `attachment-item`, `delete-attachment-btn`, `pen-file-badge`
+
+## Cost Analytics & ROI Dashboard (Issue #25)
+- **Primary data source:** `dash_agent_runs` (has `estimated_cost_usd`, `model`, `repo`, `station`, `duration_seconds`, `run_status`)
+- **NOTE:** Spec referenced `dash_stage_transitions` for cost data, but actual cost data is on `dash_agent_runs`. Analytics API routes query `dash_agent_runs`.
+- **New API routes (all require authenticated session):**
+  - `GET /api/analytics/costs` — totals (all-time/month/week/today), by_app, by_station, by_model
+  - `GET /api/analytics/roi` — cost_per_issue, avg_time_to_deploy_hours, qa_first_try_rate, issues_completed
+  - `GET /api/analytics/trends` — time-series cost data; granularity: day|week|month
+  - `GET /api/analytics/export` — CSV download with active filters
+- **New components:** `src/app/dashboard/analytics/` — AnalyticsDashboard, TotalsGrid, ROIMetricsGrid, SpendByAppChart, SpendByStationChart, SpendByModelChart, SpendOverTimeChart, FilterBar, ExportButton
+- **Hooks:** `useAnalyticsCosts`, `useAnalyticsROI`, `useAnalyticsTrends` — all in `src/app/dashboard/analytics/hooks/`
+- **Filter state:** persisted in URL search params (from, to, repo, granularity)
+- **Column mapping:** `estimated_cost_usd` (not `cost_usd`), `repo` (not `build_repo`), `started_at` (not `created_at`), `run_status` (not `status`)
+- **ROI QA rate:** (issues without bugfix / total issues) × 100
+- **Migration:** `20260312210000_analytics_indexes.sql` — perf indexes on dash_agent_runs only
 
 ## Change Request Notes
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
@@ -344,6 +365,36 @@
 - **Animations added to globals.css:** `@keyframes shimmer`, `@keyframes vercel-dot-pulse`, `@keyframes spin`
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 
+## User Management & Admin Panel (Issue #24)
+- **New routes:**
+  - `/dashboard/admin/users` — Admin-only user list with invite, role change, deactivate/reactivate, bulk actions, search/filter
+  - `/dashboard/admin/audit` — Admin-only audit log (append-only view of all user management actions)
+  - `/dashboard/settings/profile` — Profile settings for all roles: display name edit, read-only email+role, change password
+- **New DB tables:**
+  - `fd_user_roles` — user_id (FK auth.users), role (admin/operator/viewer), is_active (bool), updated_by, timestamps. **Use upsert() not insert() — unique constraint on user_id**. RLS: admins see all; users see own row.
+  - `fd_audit_log` — actor_id, target_user_id, action, details (jsonb), created_at. **Append-only** — no DELETE RLS policy. Service-role writes only.
+  - Migration: `20260312220000_fd_user_roles_audit.sql`
+- **New API routes:**
+  - `GET /api/admin/users` — list all users with roles/status (admin only); query: search, role, status, page, pageSize
+  - `POST /api/admin/users/invite` — Supabase `inviteUserByEmail()` + upsert fd_user_roles; 409 if email exists
+  - `PATCH /api/admin/users/:id` — update role/is_active; calls Supabase ban/unban; writes audit log; self-demotion and self-deactivation blocked
+  - `POST /api/admin/users/bulk` — bulk role_change / deactivate / reactivate; excludes actor's own account
+  - `POST /api/auth/change-password` — verifies current password by signInWithPassword then calls updateUser
+  - `PATCH /api/auth/profile` — updates `raw_user_meta_data.full_name`; validates 2–50 chars
+  - `GET /api/admin/audit` — paginated audit log with enriched actor/target user info (admin only)
+- **New lib:**
+  - `src/lib/roles.ts` — `getUserRole(userId)` via service-role client; `writeAuditLog()` helper
+  - `src/lib/storage.ts` — added `avatars: 'fd-avatars'` bucket constant (Phase 2)
+- **Components in `src/app/dashboard/admin/users/_components/`:** UserManagementClient, RoleBadge, StatusBadge, InviteUserModal, EditRoleModal, DeactivateModal, BulkActionsBar, UserFilters
+- **Key behavior:**
+  - Role allowlist pattern: `['admin'].includes(role)` — never `role !== 'viewer'`
+  - Admin cannot self-demote or self-deactivate
+  - Own account row has no checkbox (excluded from bulk)
+  - Supabase ban_duration `87600h` = effectively permanent ban for deactivated users; `none` to unban
+  - Password change: re-authenticates with current password before calling updateUser
+  - Audit actions: invite, role_change, deactivate, reactivate, password_change
+- **data-testid attributes:** `invite-user-btn`, `send-invite-btn`, `row-actions-btn`, `deactivate-btn`, `confirm-deactivate-btn`, `status-badge`, `save-profile-btn`, `change-password-btn`, `error-message`, `toast-success`, `toast-error`
+
 ## Pencil.dev Design Integration (CR #37)
 - **New routes:**
   - `/dashboard/apps/[repoId]/designs` — Design gallery per app (all .pen files across issues)
@@ -367,6 +418,64 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## CR #84 — Sign-out URL + Test DB Fixtures + Stats Consistency
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/84_
+
+### Changes Made
+
+**REQ-FD-001: Sign-out redirect fix**
+- File: `src/components/layout/Sidebar.tsx`
+- Added `data-testid="sign-out-button"` to the sign-out button
+- Changed `router.push('/auth/login')` to use `NEXT_PUBLIC_APP_URL` env var when set:
+  `router.push(process.env.NEXT_PUBLIC_APP_URL ? ${NEXT_PUBLIC_APP_URL}/auth/login : '/auth/login')`
+- Added `scope: 'global'` to `signOut()` for proper session cleanup
+- **Required env var:** `NEXT_PUBLIC_APP_URL=https://factory-dashboard-tau.vercel.app` (set in Vercel production)
+- **Supabase config:** Add `https://factory-dashboard-tau.vercel.app/**` to Auth > URL Configuration > Redirect URLs
+
+**REQ-FD-002: Test DB fixtures**
+- New file: `supabase/seeds/test-fixtures.sql`
+- Inserts 1 row into `dash_build_repos` (github_repo: ascendantventures/factory-dashboard)
+- Inserts 3 rows into `dash_issues` with `build_repo: ascendantventures/factory-dashboard` in body
+- Uses bigint IDs 9000101–9000103 to avoid collision with real data
+- All inserts are idempotent (ON CONFLICT DO NOTHING)
+- **To apply:** `psql $BUILD_WORK_DB_URL -f supabase/seeds/test-fixtures.sql`
+
+**REQ-FD-003: Stats count consistency**
+- File: `src/app/dashboard/apps/[repoId]/page.tsx` — added `data-testid="app-issue-count-header"` to total count span
+- File: `src/components/apps/AppCard.tsx` — added `data-testid="app-issue-count-stats"` to total count span
+- Both counts come from the same API logic (`bodyMatch || numberMatch`) — already consistent, testids enable E2E verification
+
+**New E2E test files:**
+- `tests/e2e/signout-redirect.spec.ts`
+- `tests/e2e/stats-consistency.spec.ts`
+
+## CR #85 — Templates Sidebar Discoverability & Mobile Nav
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/85_
+
+### Changes Made
+
+**REQ-85-001: Templates link in admin sidebar**
+- File: `src/components/layout/Sidebar.tsx`
+- Added `FileStack` icon import from lucide-react
+- Added Templates nav item (after Audit Log, before Settings): `{ href: '/dashboard/settings?tab=templates', label: 'Templates', icon: FileStack, exact: false }`
+- Updated `isActive()` to detect query-param-based active state (`?tab=templates`)
+
+**REQ-85-002: Templates in mobile bottom nav**
+- File: `src/components/layout/MobileBottomNav.tsx`
+- Added `FileStack` icon + Templates as 6th nav item (between Metrics and Settings)
+- Added `data-testid="mobile-nav"` to `<nav>` element
+
+**REQ-85-003: QuickCreate repository dropdown**
+- New file: `src/components/ui/RepositorySelector.tsx` — shared dropdown fetching `/api/build-repos`, display names, loading/empty/error states
+- File: `src/components/NewIssueModal.tsx` — `trackedRepos` prop removed; Target Repository uses `RepositorySelector`
+- File: `src/components/ui/NewIssueButton.tsx` — added `data-testid="quick-create-trigger"`, removed `trackedRepos={[]}`
+
+### data-testid attributes added
+- `data-testid="mobile-nav"` — mobile bottom nav
+- `data-testid="quick-create-trigger"` — New Issue button
+- `data-testid="repo-selector"` — repository selector dropdown
+- `data-testid="repo-selector-error"` — inline validation error
 
 ## UAT Fix: Webhook Preset Auto-apply + List Page Crash (Issue #87)
 - **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/87

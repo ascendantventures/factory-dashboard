@@ -359,3 +359,273 @@ _Added: 2026-03-13_
 - /dashboard/settings/webhooks
 - /dashboard/settings/webhooks/new?preset=discord
 - /dashboard/settings/webhooks/new?preset=slack
+
+## User Management & Admin Panel [auth] (Issue #24)
+_Added: 2026-03-12_
+
+### Admin User List [admin-auth]
+- [ ] Log in as admin, navigate to /dashboard/admin/users — page loads with user table
+- [ ] Table shows columns: checkbox, User (name+email), Role badge, Status badge, Last Login, Actions (⋮)
+- [ ] At least one user row appears in the table
+- [ ] Log in as operator or viewer, navigate to /dashboard/admin/users — redirects to /dashboard
+
+### Invite User [admin-auth]
+- [ ] On /dashboard/admin/users, click "Invite User" button (data-testid="invite-user-btn") — InviteUserModal opens
+- [ ] Enter email `test+regression@example.com`, select role "operator", click "Send Invite" — success toast appears (data-testid="toast-success")
+- [ ] Try inviting the same email again — error "User already exists" (409)
+- [ ] Close modal without submitting — modal closes, no user added
+
+### Edit User Role [admin-auth]
+- [ ] Click ⋮ actions on a non-admin user row (data-testid="row-actions-btn") — dropdown shows "Edit Role" and "Deactivate"
+- [ ] Click "Edit Role" — EditRoleModal opens with user name and current role
+- [ ] Select new role and click "Update Role" — role badge updates in table, success toast shows
+
+### Deactivate / Reactivate [admin-auth]
+- [ ] Click ⋮ on an active non-admin user, click "Deactivate" (data-testid="deactivate-btn") — DeactivateModal shows warning
+- [ ] Click "Deactivate" confirm button (data-testid="confirm-deactivate-btn") — user status badge changes to "Deactivated" (data-testid="status-badge")
+- [ ] Click ⋮ on the now-deactivated user, click "Reactivate" — user status badge changes to "Active"
+- [ ] Try to deactivate own (admin) account — option not shown or blocked with error
+
+### Self-demotion blocked [admin-auth]
+- [ ] On own user row (labeled "(you)") — no checkbox shown
+- [ ] If editing own role via API PATCH: returns 400 "Cannot demote your own admin role"
+
+### Bulk Actions [admin-auth]
+- [ ] Select 2+ non-own user checkboxes — BulkActionsBar appears above table showing selected count
+- [ ] Click "Change Role" → "Viewer" — all selected users updated, success toast shows count
+- [ ] Click "Deactivate" bulk button — all selected users deactivated
+- [ ] Click "Clear" — BulkActionsBar disappears, checkboxes unchecked
+
+### Search & Filter [admin-auth]
+- [ ] Type in search box — table filters in real-time (300ms debounce) by name or email
+- [ ] Select "Admin" from Role filter — only admin users shown
+- [ ] Select "Deactivated" from Status filter — only deactivated users shown
+- [ ] Click "Clear filters" — all filters reset, full user list returns
+
+### Audit Log [admin-auth]
+- [ ] Navigate to /dashboard/admin/audit — page loads with audit log table
+- [ ] Table shows columns: Timestamp, Actor, Action (badge), Target
+- [ ] After invite/role change/deactivate — corresponding entries appear in log
+- [ ] Click on an audit row with details — expands inline JSON details block
+- [ ] Log in as operator/viewer, navigate to /dashboard/admin/audit — redirects to /dashboard
+
+### Profile Settings [auth — any role]
+- [ ] Navigate to /dashboard/settings/profile — page loads with Profile Information card and Change Password card
+- [ ] Profile card shows current display name (editable), email (read-only with lock icon), role badge (read-only)
+- [ ] Edit display name to "Regression Tester", click "Save Changes" (data-testid="save-profile-btn") — success toast (data-testid="toast-success"), name updates
+- [ ] Try display name < 2 chars — inline validation error shown before submit
+- [ ] Try display name > 50 chars — inline validation error shown before submit
+
+### Change Password [auth — any role]
+- [ ] On /dashboard/settings/profile, enter current password, new password, confirm password and click "Update Password" (data-testid="change-password-btn") — success toast appears
+- [ ] Enter wrong current password — error message (data-testid="error-message") contains "Incorrect"
+- [ ] Enter new password < 8 chars — inline validation error before submit
+- [ ] Enter mismatched confirm password — inline validation error before submit
+
+### Routes/Endpoints
+- /dashboard/admin/users (admin only)
+- /dashboard/admin/audit (admin only)
+- /dashboard/settings/profile (any authenticated role)
+- GET /api/admin/users
+- POST /api/admin/users/invite
+- PATCH /api/admin/users/:id
+- POST /api/admin/users/bulk
+- GET /api/admin/audit
+- POST /api/auth/change-password
+- PATCH /api/auth/profile
+
+---
+
+## Cost Analytics & ROI Dashboard (Issue #25)
+_Added: 2026-03-12_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/analytics — page renders with "Analytics" H1, no JS errors
+- [ ] Verify 4 totals cards visible: All-Time Spend, This Month, This Week, Today — each shows $X.XXXX format (data-testid: total-all-time, total-this-month, total-this-week, total-today)
+- [ ] Verify ROI metrics grid visible: Cost per Issue, Avg Time-to-Deploy, QA First-Try Rate, Issues Completed (data-testid: roi-cost-per-issue, roi-time-to-deploy, roi-qa-first-try, roi-issues-completed)
+- [ ] Verify Spend Over Time line chart renders (data-testid: chart-spend-over-time)
+- [ ] Verify Spend by Station pie chart renders (data-testid: chart-spend-by-station)
+- [ ] Verify Spend by App bar chart renders (data-testid: chart-spend-by-app)
+- [ ] Verify Spend by Model horizontal bar chart renders (data-testid: chart-spend-by-model)
+- [ ] Click "Week" granularity toggle — chart re-renders for weekly data; button has aria-pressed="true"
+- [ ] Click "Month" granularity toggle — chart re-renders; button shows monthly view
+- [ ] Change date range (From/To inputs) — all charts and totals refresh with new range
+- [ ] Select a repo from the repo dropdown (filter-repo) — URL updates with ?repo=..., charts filter to that repo
+- [ ] Click "Reset filters" — from/to/repo/granularity reset to defaults
+- [ ] Verify filter state persists in URL (copy URL, paste in new tab — same filters applied)
+- [ ] Click "Export CSV" button — file download triggers, filename matches analytics-export-YYYY-MM-DD.csv
+- [ ] Verify CSV has header row: id,submission_id,station,model,build_repo,cost_usd,duration_seconds,status,created_at
+- [ ] Navigate to /dashboard/analytics without auth (incognito) — redirected to /auth/login
+- [ ] Verify "Analytics" link appears in sidebar navigation
+- [ ] Click Analytics sidebar link — navigates to /dashboard/analytics
+
+### Routes/Endpoints
+- /dashboard/analytics — main analytics page
+- GET /api/analytics/costs?from=&to=&repo= — cost aggregations
+- GET /api/analytics/roi?from=&to=&repo= — ROI metrics
+- GET /api/analytics/trends?from=&to=&repo=&granularity= — time-series data
+- GET /api/analytics/export?from=&to=&repo= — CSV download
+
+---
+
+## Pencil.dev Design Integration [auth]
+_Core: Issue #37_
+
+### Test Steps
+- [ ] `/dashboard/apps/[repoId]/designs` tab is visible on app detail page
+- [ ] Designs gallery loads without errors and shows empty state when no designs exist
+- [ ] `.pen` upload zone visible on designs page (drag-drop or click to upload)
+- [ ] Uploading a valid `.pen` file stores it in Supabase Storage (`pencil-designs` bucket)
+- [ ] Uploaded `.pen` appears in the gallery after upload
+- [ ] Clicking a design navigates to `/dashboard/apps/[repoId]/designs/[issueNumber]`
+- [ ] Design detail page renders frame previews via HTML Canvas
+- [ ] Frames tab shows all frames as clickable thumbnails
+- [ ] Tokens tab displays design tokens: colors, typography, spacing
+- [ ] "Open in Pencil" button renders with correct `pencil://` deep link
+- [ ] "Download .pen" button triggers file download
+- [ ] Version history accordion shows design evolution across issues
+- [ ] Unauthenticated access to `/dashboard/apps/*/designs` redirects to login
+
+### Routes
+- /dashboard/apps/[repoId]/designs
+- /dashboard/apps/[repoId]/designs/[issueNumber]
+- /api/designs/[repoId] (GET)
+- /api/designs/[repoId]/[issueNumber] (GET)
+- /api/designs/attachment/[attachmentId] (GET — signed URL)
+- /api/designs/parse (POST)
+- /api/designs/upload (POST)
+
+---
+
+## Sign-out Redirect (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] [auth] Click the Sign Out button in the sidebar — browser redirects to `/auth/login`
+- [ ] [auth] Verify the redirect URL hostname is NOT a `build-work-*.vercel.app` preview URL
+- [ ] [auth] Verify the redirect URL is on the same origin as where the user was signed in
+- [ ] Sign in on production (`factory-dashboard-tau.vercel.app`), sign out — redirected to `factory-dashboard-tau.vercel.app/auth/login`
+
+### Routes/Endpoints
+- Sign-out button: `[data-testid="sign-out-button"]` in sidebar
+
+---
+
+## Test DB Fixtures (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/apps` — Factory Dashboard app card appears
+- [ ] App card shows `3 total` in the issue count row (with fixture data applied)
+- [ ] Click the Factory Dashboard app card — navigates to detail page
+- [ ] Detail page header shows `3 issues · 2 open · 1 done` (with fixture data applied)
+- [ ] Issues section on detail page shows 3 issue rows (not empty)
+- [ ] Stats bar timeline shows activity from the seeded issues
+
+### Routes/Endpoints
+- Apps list: `/dashboard/apps`
+- App detail: `/dashboard/apps/:repoId`
+- API: `GET /api/apps`, `GET /api/apps/:repoId`
+
+---
+
+## Stats Count Consistency (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/apps` — note the `X total` count on any app card (`[data-testid="app-issue-count-stats"]`)
+- [ ] Click that app card to open the detail page
+- [ ] Verify the number before "issues ·" in the page header (`[data-testid="app-issue-count-header"]`) matches the `X total` from step 1
+- [ ] With fixture data: both header and stats bar count should show `3`
+
+### Routes/Endpoints
+- Apps list: `/dashboard/apps`
+- App detail: `/dashboard/apps/:repoId`
+
+---
+
+## Attachment System Polish (Issue #51)
+_Added: 2026-03-13_
+
+### PDF Modal Close Button [auth]
+- [ ] Log in and navigate to any issue detail page that has a PDF attachment
+- [ ] Click the PDF attachment thumbnail to open the PDF preview modal
+- [ ] Verify the close button in the modal header shows BOTH an X icon AND the text "Close" side by side
+- [ ] Verify the close button has a visible border (1px solid #E2E4E9), padding, and rounded corners — matching the Download button style
+- [ ] Hover over the Close button — background should shift to #F3F4F6 and border to #CBD0D8
+- [ ] Click the Close button — modal closes
+- [ ] Verify `button[aria-label="Close"]` is present (screen reader compatibility retained)
+
+### Instrument Sans Font Loading
+- [ ] Navigate to any page (e.g., /)
+- [ ] Open browser DevTools → Network tab → filter by "Fonts" or search "Instrument"
+- [ ] Verify a request is made to fonts.googleapis.com that includes "Instrument+Sans"
+- [ ] Verify fonts for Inter, Space Grotesk, and JetBrains Mono are still loaded (no regressions)
+- [ ] Open an issue with attachment components — text should render in Instrument Sans (not Inter fallback)
+
+### Routes/Endpoints
+- No new routes — 2-file frontend edit only
+
+---
+---
+
+## Remove Duplicate New Issue Button (Issue #46)
+_Added: 2026-03-13_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — Kanban board loads. Count buttons with text "New Issue" on the page — exactly 1 is visible.
+- [ ] Verify the single "New Issue" button is inside the `<header>` element (top-right of the global header, indigo/purple color)
+- [ ] Verify the Kanban sub-header toolbar (contains "Full"/"Simplified" toggle, "Sync" and "Activity" buttons) does NOT contain a "New Issue" button
+- [ ] Click the global header "New Issue" button — the issue creation modal opens
+- [ ] Fill in the modal title field and click "Create" / "Submit" — modal closes and new issue appears on the Kanban board (or sync brings it in)
+- [ ] Navigate away and back to /dashboard — still only one "New Issue" button visible
+
+### Routes/Endpoints
+- /dashboard (Kanban board page)
+- No new routes — UI-only change
+
+
+---
+
+## Templates Sidebar Discoverability & Mobile Nav (Issue #85)
+_Added: 2026-03-13_
+
+### Test Steps [auth]
+
+#### Sidebar Templates Link (REQ-85-001)
+- [ ] Navigate to /dashboard — sidebar must contain a "Templates" nav item visible in the left rail
+- [ ] The Templates link href must be `/dashboard/templates`
+- [ ] Click "Templates" in the sidebar — navigates to /dashboard/settings and the Templates tab is active
+- [ ] The "Templates" item uses the FileStack icon, consistent with other nav items
+- [ ] Collapse the sidebar — Templates item shows FileStack icon only (no label) with tooltip "Templates" on hover
+- [ ] Active state: visiting /dashboard/templates highlights Templates link (indigo background + left border)
+
+#### Mobile Bottom Nav Templates (REQ-85-002)
+- [ ] At 375px viewport width, the bottom nav shows 6 items: Dashboard, Apps, Activity, Metrics, Templates, Settings
+- [ ] "Templates" item has the FileStack icon and label "Templates"
+- [ ] Items do not overflow or truncate at 375px width
+- [ ] Tapping "Templates" on mobile navigates to /dashboard/templates
+- [ ] Active state: FileStack icon turns indigo (#6366F1) when on /dashboard/templates
+
+#### Repository Selector in Issue Modal (REQ-85-003)
+- [ ] Click "New Issue" button (data-testid="quick-create-trigger") — modal opens
+- [ ] "Target Repository" field shows a dropdown (not a free-text input with placeholder "owner/repo")
+- [ ] Dropdown is populated with repositories from /api/build-repos showing display names like "Factory Dashboard (ascendantventures/factory-dashboard)"
+- [ ] While repos load, a shimmer skeleton shows with "Loading repositories..." text
+- [ ] Clicking "Create Issue" with no repository selected shows inline error: "Repository is required" (data-testid="repo-selector-error")
+- [ ] Selecting a valid repository and submitting creates the issue successfully
+- [ ] No plain `<input placeholder="owner/repo">` is visible anywhere in the modal
+
+### Routes/Endpoints
+- /dashboard (sidebar Templates link visible)
+- /dashboard/templates (Templates tab renders)
+- /dashboard (mobile nav at 375px viewport)
+- Modal: data-testid="quick-create-trigger" → repo-selector → repo-selector-error
+
+### QuickCreate Two-Step Flow (Issue #85 — quick-create-next)
+- [ ] Click "New Issue" button (data-testid="quick-create-trigger") — Step 1 modal opens showing Title + Description + Target App
+- [ ] Click "Next →" button (data-testid="quick-create-next") without filling fields — validation errors appear
+- [ ] Fill Title + Description, click "Next →" — advances to Step 2 showing Repository selector
+- [ ] Step 2 shows data-testid="repo-selector" dropdown populated from /api/build-repos
+- [ ] Click "← Back" on Step 2 — returns to Step 1 with filled fields preserved
+- [ ] On Step 2, click "Create Issue" without selecting repo — shows data-testid="repo-selector-error"
