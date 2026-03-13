@@ -25,6 +25,12 @@ export default async function WebhooksSettingsPage() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
+      <style>{`
+        .webhook-add-btn { background: #E85D04; transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1); }
+        .webhook-add-btn:hover { background: #C44D03; }
+        .preset-card { transition: all 200ms ease; }
+        .preset-card:hover { border-color: rgba(232, 93, 4, 0.4) !important; transform: translateY(-2px); }
+      `}</style>
       {/* Page Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap" style={{ marginBottom: '32px' }}>
         <div>
@@ -53,9 +59,8 @@ export default async function WebhooksSettingsPage() {
         </div>
         <Link
           href="/dashboard/settings/webhooks/new"
-          className="flex items-center gap-2"
+          className="webhook-add-btn flex items-center gap-2"
           style={{
-            background: '#E85D04',
             border: 'none',
             borderRadius: '8px',
             padding: '12px 20px',
@@ -68,13 +73,6 @@ export default async function WebhooksSettingsPage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            transition: 'all 150ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.background = '#C44D03';
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.currentTarget.style.background = '#E85D04';
           }}
         >
           <Plus size={16} />
@@ -102,7 +100,7 @@ export default async function WebhooksSettingsPage() {
           <Link
             href="/dashboard/settings/webhooks/new?preset=discord"
             data-testid="preset-discord-link"
-            className="group"
+            className="preset-card"
             style={{
               background: '#161A1F',
               border: '1px solid #2E353D',
@@ -111,16 +109,7 @@ export default async function WebhooksSettingsPage() {
               textDecoration: 'none',
               flex: '1 1 200px',
               maxWidth: '280px',
-              transition: 'all 200ms ease',
               display: 'block',
-            }}
-            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.currentTarget.style.borderColor = 'rgba(232, 93, 4, 0.4)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.currentTarget.style.borderColor = '#2E353D';
-              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             <div className="flex items-center justify-center mb-3"
@@ -140,6 +129,7 @@ export default async function WebhooksSettingsPage() {
           <Link
             href="/dashboard/settings/webhooks/new?preset=slack"
             data-testid="preset-slack-link"
+            className="preset-card"
             style={{
               background: '#161A1F',
               border: '1px solid #2E353D',
@@ -148,16 +138,7 @@ export default async function WebhooksSettingsPage() {
               textDecoration: 'none',
               flex: '1 1 200px',
               maxWidth: '280px',
-              transition: 'all 200ms ease',
               display: 'block',
-            }}
-            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.currentTarget.style.borderColor = 'rgba(232, 93, 4, 0.4)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-              e.currentTarget.style.borderColor = '#2E353D';
-              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             <div className="flex items-center justify-center mb-3"
