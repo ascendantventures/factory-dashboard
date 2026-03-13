@@ -427,3 +427,30 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/84_
 **New E2E test files:**
 - `tests/e2e/signout-redirect.spec.ts`
 - `tests/e2e/stats-consistency.spec.ts`
+
+## CR #85 — Templates Sidebar Discoverability & Mobile Nav
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/85_
+
+### Changes Made
+
+**REQ-85-001: Templates link in admin sidebar**
+- File: `src/components/layout/Sidebar.tsx`
+- Added `FileStack` icon import from lucide-react
+- Added Templates nav item (after Audit Log, before Settings): `{ href: '/dashboard/settings?tab=templates', label: 'Templates', icon: FileStack, exact: false }`
+- Updated `isActive()` to detect query-param-based active state (`?tab=templates`)
+
+**REQ-85-002: Templates in mobile bottom nav**
+- File: `src/components/layout/MobileBottomNav.tsx`
+- Added `FileStack` icon + Templates as 6th nav item (between Metrics and Settings)
+- Added `data-testid="mobile-nav"` to `<nav>` element
+
+**REQ-85-003: QuickCreate repository dropdown**
+- New file: `src/components/ui/RepositorySelector.tsx` — shared dropdown fetching `/api/build-repos`, display names, loading/empty/error states
+- File: `src/components/NewIssueModal.tsx` — `trackedRepos` prop removed; Target Repository uses `RepositorySelector`
+- File: `src/components/ui/NewIssueButton.tsx` — added `data-testid="quick-create-trigger"`, removed `trackedRepos={[]}`
+
+### data-testid attributes added
+- `data-testid="mobile-nav"` — mobile bottom nav
+- `data-testid="quick-create-trigger"` — New Issue button
+- `data-testid="repo-selector"` — repository selector dropdown
+- `data-testid="repo-selector-error"` — inline validation error
