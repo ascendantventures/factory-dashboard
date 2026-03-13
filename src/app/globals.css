@@ -174,3 +174,55 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #52525B; }
+
+/* Users table horizontal scroll container */
+.table-scroll-container {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+}
+
+.table-scroll-container::before,
+.table-scroll-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.table-scroll-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(255,255,255,0.9), transparent);
+}
+
+.table-scroll-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
+}
+
+.table-scroll-container[data-scroll-left="true"]::before {
+  opacity: 1;
+}
+
+.table-scroll-container[data-scroll-right="true"]::after {
+  opacity: 1;
+}
+
+.users-table th:nth-child(1),
+.users-table td:nth-child(1) { min-width: 48px; }
+.users-table th:nth-child(2),
+.users-table td:nth-child(2) { min-width: 200px; }
+.users-table th:nth-child(3),
+.users-table td:nth-child(3) { min-width: 80px; }
+.users-table th:nth-child(4),
+.users-table td:nth-child(4) { min-width: 80px; }
+.users-table th:nth-child(5),
+.users-table td:nth-child(5) { min-width: 100px; }
+.users-table th:nth-child(6),
+.users-table td:nth-child(6) { min-width: 48px; }

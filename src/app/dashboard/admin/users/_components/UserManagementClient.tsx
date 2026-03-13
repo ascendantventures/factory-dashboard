@@ -1,6 +1,42 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+
+function TableScrollContainer({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    function update() {
+      if (!el) return;
+      setCanScrollLeft(el.scrollLeft > 0);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+    }
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="table-scroll-container"
+      role="region"
+      aria-label="Users table"
+      data-scroll-left={canScrollLeft}
+      data-scroll-right={canScrollRight}
+    >
+      {children}
+    </div>
+  );
+}
 import { UserPlus, MoreVertical, Search, Users } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { StatusBadge } from './StatusBadge';
@@ -205,7 +241,8 @@ export function UserManagementClient({ currentUserId }: Props) {
 
       {/* Table */}
       <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <TableScrollContainer>
+        <table className="users-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
               <th style={{ width: '48px', padding: '12px 16px', textAlign: 'center' }}>
@@ -357,6 +394,7 @@ export function UserManagementClient({ currentUserId }: Props) {
             )}
           </tbody>
         </table>
+        </TableScrollContainer>
 
         {/* Pagination */}
         {total > pageSize && (

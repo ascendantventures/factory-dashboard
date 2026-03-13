@@ -361,3 +361,49 @@ _Core: Issue #37_
 - /api/designs/attachment/[attachmentId] (GET — signed URL)
 - /api/designs/parse (POST)
 - /api/designs/upload (POST)
+
+---
+
+## UX Enhancements — User Management Panel (Issue #61)
+_Added: 2026-03-13_
+
+### REQ-UMP-001: Email + Addressing [auth]
+- [ ] Go to /dashboard/admin/users — click "Invite User"
+- [ ] Enter `test+regression@example.com` in the email field, then blur — no "invalid" error appears
+- [ ] Enter `notanemail` in the email field, then blur — "Email address is invalid." error appears
+- [ ] Enter valid plain email `user@example.com` — no error
+
+### REQ-UMP-002: Profile Save Toast [auth]
+- [ ] Go to /dashboard/settings/profile — change display name, click "Save Changes"
+- [ ] A Sonner success toast appears with "Profile updated" (role="status")
+- [ ] No custom fixed-position div toast is shown (old pattern removed)
+
+### REQ-UMP-003: Friendly Rate Limit Error [auth]
+- [ ] If invite API returns rate limit error, UI shows: "Too many invites sent. Please wait a moment before trying again."
+- [ ] Raw Supabase error string "email rate limit exceeded" is NOT shown to users
+
+### REQ-UMP-004: Invite Button Loading State [auth]
+- [ ] Go to /dashboard/admin/users — click "Invite User"
+- [ ] Enter `valid@example.com`, click "Send Invite"
+- [ ] Button immediately becomes disabled and shows Loader2 spinner + "Sending..." text
+- [ ] After API resolves (success or error), button re-enables and reverts to "Send Invite"
+- [ ] Double-clicking does not submit twice (button is disabled after first click)
+
+### REQ-UMP-005: Admin Mobile Bottom Nav [auth, admin role required]
+- [ ] Using 375px viewport, log in as admin — bottom nav shows "Admin" item with Shield icon
+- [ ] Tapping "Admin" navigates to /dashboard/admin/users
+- [ ] `data-testid="bottom-nav-admin"` element is present
+- [ ] Log in as non-admin (operator/viewer) — "Admin" item is NOT in bottom nav
+
+### REQ-UMP-006: Responsive Users Table [auth]
+- [ ] Go to /dashboard/admin/users at 375px viewport width
+- [ ] Users table is horizontally scrollable (overflow-x: auto or scroll)
+- [ ] All columns (User, Role, Status, Last Login, Actions) are accessible via horizontal scroll
+- [ ] Right scroll shadow fades in when content overflows right
+- [ ] Left scroll shadow fades in when scrolled right and content overflows left
+- [ ] `aria-label="Users table"` on the scroll container
+
+### Routes/Endpoints
+- /dashboard/admin/users — table scroll, invite modal enhancements
+- /dashboard/settings/profile — save toast
+- MobileBottomNav — admin entry (mobile only, admin role only)

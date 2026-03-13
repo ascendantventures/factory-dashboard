@@ -393,3 +393,14 @@
 - **GitHub label:** `has-design-reference` (color #0075ca) auto-created and applied on user .pen upload
 - **storage.objects.owner policy:** uses `owner::uuid = auth.uid()` to avoid uuid=text type mismatch
 - **data-testid attributes:** `pen-frame-thumbnail`, `pen-frame-detail`, `pen-tab-tokens`, `pen-tab-frames`, `pen-tokens-panel`, `pen-download-btn`, `nav-tab-designs`, `design-gallery-item`, `design-gallery-empty`, `pen-upload-input`, `design-reference-tag`, `upload-error`
+
+## UX Polish — User Management Panel (Issue #61)
+- **ProfileForm** no longer uses custom fixed-position toast div — replaced with `toast.success('Profile updated')` via Sonner
+- **InviteUserModal** email input changed to `type="text"` with explicit RFC 5321 regex validation (local part allows `+`); inline emailError state shown on blur
+- **InviteUserModal** rate limit errors mapped to friendly message: "Too many invites sent. Please wait a moment before trying again."
+- **InviteUserModal** Send Invite button now shows `Loader2` spinner + "Sending..." during API call; `pointerEvents: none` prevents double-submit
+- **MobileBottomNav** now accepts `userRole?: 'admin' | 'operator' | 'viewer'` prop; renders "Admin" (Shield icon) nav item only for admins; `data-testid="bottom-nav-admin"`
+- **DashboardLayout** converted to async server component — fetches user role with `getUserRole()` and passes to `AppShell`
+- **AppShell** accepts `userRole` prop and forwards to `MobileBottomNav`
+- **UserManagementClient** table wrapped in `TableScrollContainer` (overflow-x:auto) with scroll shadow affordances (data-scroll-left/right); `aria-label="Users table"` on container
+- **globals.css** added `.table-scroll-container` styles + `.users-table` min-width column rules

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
+
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 interface Props {
   onClose: () => void;
@@ -10,12 +12,20 @@ interface Props {
 
 export function InviteUserModal({ onClose, onSuccess }: Props) {
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [role, setRole] = useState<'viewer' | 'operator' | 'admin'>('viewer');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  function validateEmail(value: string) {
+    if (!value) return '';
+    return EMAIL_REGEX.test(value) ? '' : 'Email address is invalid.';
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) { setEmailError(emailValidationError); return; }
     setLoading(true);
     setError('');
     try {
@@ -26,7 +36,12 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? 'Invite failed');
+        const rawError: string = data.error ?? 'Invite failed';
+        setError(
+          rawError.toLowerCase().includes('rate limit')
+            ? 'Too many invites sent. Please wait a moment before trying again.'
+            : rawError
+        );
         return;
       }
       onSuccess();
@@ -78,21 +93,22 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
                 Email address
               </label>
               <input
-                type="email"
+                type="text"
                 name="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); if (emailError) setEmailError(validateEmail(e.target.value)); }}
+                onBlur={e => setEmailError(validateEmail(e.target.value))}
                 placeholder="Enter email"
                 required
                 style={{
                   height: '40px', width: '100%', boxSizing: 'border-box',
-                  border: '1px solid #E2E8F0', borderRadius: '6px',
+                  border: `1px solid ${emailError ? '#DC2626' : '#E2E8F0'}`, borderRadius: '6px',
                   padding: '0 12px', fontSize: '14px', color: '#334155',
                   outline: 'none',
                 }}
-                onFocus={e => { e.currentTarget.style.border = '1px solid #2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)'; }}
-                onBlur={e => { e.currentTarget.style.border = '1px solid #E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+                onFocus={e => { if (!emailError) { e.currentTarget.style.border = '1px solid #2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)'; } }}
               />
+              {emailError && <p style={{ fontSize: '12px', color: '#DC2626', fontWeight: 500, marginTop: '6px' }}>{emailError}</p>}
             </div>
 
             <div>
@@ -144,11 +160,22 @@ export function InviteUserModal({ onClose, onSuccess }: Props) {
               data-testid="send-invite-btn"
               disabled={loading}
               style={{
-                padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
-                background: loading ? '#93C5FD' : '#2563EB', color: '#FFFFFF', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                padding: '10px 20px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
+                background: loading ? '#93C5FD' : '#2563EB', color: '#FFFFFF', border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                minWidth: '120px',
+                pointerEvents: loading ? 'none' : 'auto',
               }}
             >
-              {loading ? 'Sending…' : 'Send Invite'}
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  Sending...
+                </>
+              ) : (
+                'Send Invite'
+              )}
             </button>
           </div>
         </form>

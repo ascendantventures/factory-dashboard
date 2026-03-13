@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
+import { toast } from 'sonner';
 import { RoleBadge } from '@/app/dashboard/admin/users/_components/RoleBadge';
 
 interface Props {
@@ -14,7 +15,6 @@ export function ProfileForm({ displayName: initialName, email, role }: Props) {
   const [displayName, setDisplayName] = useState(initialName);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const nameError = displayName.length > 0 && (displayName.length < 2 || displayName.length > 50)
     ? 'Display name must be 2–50 characters' : '';
@@ -24,7 +24,6 @@ export function ProfileForm({ displayName: initialName, email, role }: Props) {
     if (nameError) return;
     setLoading(true);
     setError('');
-    setSuccess(false);
     try {
       const res = await fetch('/api/auth/profile', {
         method: 'PATCH',
@@ -33,10 +32,10 @@ export function ProfileForm({ displayName: initialName, email, role }: Props) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Update failed'); return; }
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      toast.success('Profile updated');
     } catch {
       setError('Network error');
+      toast.error('Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -113,30 +112,14 @@ export function ProfileForm({ displayName: initialName, email, role }: Props) {
           disabled={loading || !!nameError}
           style={{
             padding: '10px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: 600,
-            background: loading || nameError ? '#93C5FD' : success ? '#059669' : '#2563EB',
+            background: loading || nameError ? '#93C5FD' : '#2563EB',
             color: '#FFFFFF', border: 'none', cursor: loading || nameError ? 'not-allowed' : 'pointer',
           }}
         >
-          {success ? 'Saved!' : loading ? 'Saving…' : 'Save Changes'}
+          {loading ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 
-      {/* Success toast */}
-      {success && (
-        <div
-          data-testid="toast-success"
-          style={{
-            position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
-            background: '#0F172A', color: '#FFFFFF', padding: '14px 16px',
-            borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px',
-            minWidth: '280px', boxShadow: '0 10px 15px -3px rgba(15,23,42,0.25)',
-            fontSize: '14px', fontWeight: 500,
-          }}
-        >
-          <span style={{ color: '#10B981', fontSize: '18px' }}>✓</span>
-          Profile updated
-        </div>
-      )}
     </form>
   );
 }
