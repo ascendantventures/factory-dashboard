@@ -62,7 +62,7 @@ export async function GET() {
   // Fetch all issues
   const { data: allIssues, error: issuesError } = await supabase
     .from('dash_issues')
-    .select('id, issue_number, repo, title, body, state, station, labels, updated_at, github_issue_url');
+    .select('id, issue_number, repo, title, body, state, station, labels, updated_at');
 
   if (issuesError) {
     return NextResponse.json({ error: issuesError.message }, { status: 500 });
