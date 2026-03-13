@@ -319,22 +319,33 @@ export function AttachmentGallery({ issueNumber, currentUserId, isAdmin }: Attac
                 onClick={() => setPdfPreview(null)}
                 aria-label="Close"
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: '6px',
                   background: 'transparent',
-                  border: 'none',
-                  borderRadius: '6px',
+                  border: '1px solid #E2E4E9',
+                  color: '#0F172A',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  fontFamily: 'Instrument Sans, Inter, sans-serif',
+                  padding: '10px 16px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  color: '#475569',
-                  transition: 'background 150ms ease',
+                  transition: 'all 150ms ease',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#F3F4F6'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                onMouseEnter={(e) => {
+                  const btn = e.currentTarget;
+                  btn.style.background = '#F3F4F6';
+                  btn.style.borderColor = '#CBD0D8';
+                }}
+                onMouseLeave={(e) => {
+                  const btn = e.currentTarget;
+                  btn.style.background = 'transparent';
+                  btn.style.borderColor = '#E2E4E9';
+                }}
               >
-                <X size={20} />
+                <X size={16} />
+                Close
               </button>
             </div>
 
