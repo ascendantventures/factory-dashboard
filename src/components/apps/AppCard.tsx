@@ -105,7 +105,7 @@ export default function AppCard({ app, onClick }: AppCardProps) {
           gap: '4px',
         }}
       >
-        <span>{app.issue_counts.total} total</span>
+        <span data-testid="app-issue-count-stats">{app.issue_counts.total} total</span>
         <span>·</span>
         <span>{app.issue_counts.open} open</span>
         <span>·</span>

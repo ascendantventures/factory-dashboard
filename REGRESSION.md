@@ -361,3 +361,50 @@ _Core: Issue #37_
 - /api/designs/attachment/[attachmentId] (GET — signed URL)
 - /api/designs/parse (POST)
 - /api/designs/upload (POST)
+
+---
+
+## Sign-out Redirect (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] [auth] Click the Sign Out button in the sidebar — browser redirects to `/auth/login`
+- [ ] [auth] Verify the redirect URL hostname is NOT a `build-work-*.vercel.app` preview URL
+- [ ] [auth] Verify the redirect URL is on the same origin as where the user was signed in
+- [ ] Sign in on production (`factory-dashboard-tau.vercel.app`), sign out — redirected to `factory-dashboard-tau.vercel.app/auth/login`
+
+### Routes/Endpoints
+- Sign-out button: `[data-testid="sign-out-button"]` in sidebar
+
+---
+
+## Test DB Fixtures (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/apps` — Factory Dashboard app card appears
+- [ ] App card shows `3 total` in the issue count row (with fixture data applied)
+- [ ] Click the Factory Dashboard app card — navigates to detail page
+- [ ] Detail page header shows `3 issues · 2 open · 1 done` (with fixture data applied)
+- [ ] Issues section on detail page shows 3 issue rows (not empty)
+- [ ] Stats bar timeline shows activity from the seeded issues
+
+### Routes/Endpoints
+- Apps list: `/dashboard/apps`
+- App detail: `/dashboard/apps/:repoId`
+- API: `GET /api/apps`, `GET /api/apps/:repoId`
+
+---
+
+## Stats Count Consistency (Issue #84)
+_Added: 2026-03-13_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/apps` — note the `X total` count on any app card (`[data-testid="app-issue-count-stats"]`)
+- [ ] Click that app card to open the detail page
+- [ ] Verify the number before "issues ·" in the page header (`[data-testid="app-issue-count-header"]`) matches the `X total` from step 1
+- [ ] With fixture data: both header and stats bar count should show `3`
+
+### Routes/Endpoints
+- Apps list: `/dashboard/apps`
+- App detail: `/dashboard/apps/:repoId`

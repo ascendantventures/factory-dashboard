@@ -87,8 +87,11 @@ export default function Sidebar({ onCollapsedChange }: SidebarProps) {
       const { createSupabaseBrowserClient } = await import('@/lib/supabase');
       supabaseRef.current = createSupabaseBrowserClient();
     }
-    await supabaseRef.current.auth.signOut();
-    router.push('/auth/login');
+    const redirectTo = process.env.NEXT_PUBLIC_APP_URL
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/login`
+      : '/auth/login';
+    await supabaseRef.current.auth.signOut({ scope: 'global' });
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -195,6 +198,7 @@ export default function Sidebar({ onCollapsedChange }: SidebarProps) {
           onClick={handleSignOut}
           disabled={signingOut}
           title={collapsed ? 'Sign Out' : undefined}
+          data-testid="sign-out-button"
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors hover:opacity-80 disabled:opacity-50"
           style={{ color: 'var(--text-muted)' }}
         >
