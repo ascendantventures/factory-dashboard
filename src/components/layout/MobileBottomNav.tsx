@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Grid3X3,
   Activity,
   BarChart3,
   Settings,
+  FileStack,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -15,19 +16,25 @@ const NAV_ITEMS = [
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false },
+  { href: '/dashboard/settings?tab=templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
 ];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   function isActive(href: string, exact: boolean) {
+    if (href.includes('?tab=templates')) {
+      return pathname === '/dashboard/settings' && searchParams.get('tab') === 'templates';
+    }
     return exact ? pathname === href : pathname.startsWith(href);
   }
 
   return (
     <nav
       aria-label="bottom-nav"
+      data-testid="mobile-nav"
       className="md:hidden fixed bottom-0 left-0 right-0 border-t z-50"
       style={{
         height: '64px',

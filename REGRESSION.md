@@ -451,3 +451,40 @@ _Added: 2026-03-13_
 - /dashboard (Kanban board page)
 - No new routes — UI-only change
 
+
+---
+
+## Templates Sidebar Discoverability & Mobile Nav (Issue #85)
+_Added: 2026-03-13_
+
+### Test Steps [auth]
+
+#### Sidebar Templates Link (REQ-85-001)
+- [ ] Navigate to /dashboard — sidebar must contain a "Templates" nav item visible in the left rail
+- [ ] The Templates link href must be `/dashboard/settings?tab=templates`
+- [ ] Click "Templates" in the sidebar — navigates to /dashboard/settings and the Templates tab is active
+- [ ] The "Templates" item uses the FileStack icon, consistent with other nav items
+- [ ] Collapse the sidebar — Templates item shows FileStack icon only (no label) with tooltip "Templates" on hover
+- [ ] Active state: visiting /dashboard/settings?tab=templates highlights Templates link (indigo background + left border)
+
+#### Mobile Bottom Nav Templates (REQ-85-002)
+- [ ] At 375px viewport width, the bottom nav shows 6 items: Dashboard, Apps, Activity, Metrics, Templates, Settings
+- [ ] "Templates" item has the FileStack icon and label "Templates"
+- [ ] Items do not overflow or truncate at 375px width
+- [ ] Tapping "Templates" on mobile navigates to /dashboard/settings?tab=templates
+- [ ] Active state: FileStack icon turns indigo (#6366F1) when on /dashboard/settings?tab=templates
+
+#### Repository Selector in Issue Modal (REQ-85-003)
+- [ ] Click "New Issue" button (data-testid="quick-create-trigger") — modal opens
+- [ ] "Target Repository" field shows a dropdown (not a free-text input with placeholder "owner/repo")
+- [ ] Dropdown is populated with repositories from /api/build-repos showing display names like "Factory Dashboard (ascendantventures/factory-dashboard)"
+- [ ] While repos load, a shimmer skeleton shows with "Loading repositories..." text
+- [ ] Clicking "Create Issue" with no repository selected shows inline error: "Repository is required" (data-testid="repo-selector-error")
+- [ ] Selecting a valid repository and submitting creates the issue successfully
+- [ ] No plain `<input placeholder="owner/repo">` is visible anywhere in the modal
+
+### Routes/Endpoints
+- /dashboard (sidebar Templates link visible)
+- /dashboard/settings?tab=templates (Templates tab renders)
+- /dashboard (mobile nav at 375px viewport)
+- Modal: data-testid="quick-create-trigger" → repo-selector → repo-selector-error

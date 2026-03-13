@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/84
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/85
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -46,7 +46,8 @@
 - `/dashboard/metrics` → Metrics charts
 - `/dashboard/analytics` → Cost Analytics & ROI Dashboard (Issue #25) — charts, ROI metrics, CSV export
 - `/dashboard/costs` → Cost tracking
-- `/dashboard/settings` → Settings
+- `/dashboard/settings` → Settings (tabs: general, users, templates, environment, api-keys)
+- `/dashboard/settings?tab=templates` → Templates tab (accessible via sidebar "Templates" link)
 
 ## Design System (CR #14 — DESIGN.md spec)
 - **Primary:** #6366F1 (indigo — changed from old #3B82F6 blue)
@@ -99,8 +100,9 @@
 - `src/components/activity/ActivityFeed.tsx` — AnimatePresence slide-in list, loading skeleton, empty state
 - `src/components/activity/ActivityEvent.tsx` — Single event row with icon+color per event_type, data-testid="activity-event" + data-event-type
 - `src/components/activity/ActivityTimestamp.tsx` — Auto-updating relative time (30s interval), title=ISO for a11y
-- `src/components/NewIssueModal.tsx` — Create issue form with Target App dropdown
-- `src/components/TargetAppDropdown.tsx` — Build repo selector populated from completed builds
+- `src/components/NewIssueModal.tsx` — Create issue form. Target Repository now uses `RepositorySelector` (no longer takes `trackedRepos` prop).
+- `src/components/TargetAppDropdown.tsx` — Optional "Target App" dropdown for change requests (fetches /api/build-repos)
+- `src/components/ui/RepositorySelector.tsx` — Shared required repo selector (Issue #85). Fetches /api/build-repos, shows display names, inline validation error, data-testid="repo-selector".
 - `src/app/api/sync/route.ts` — GitHub → Supabase sync endpoint
 - `src/app/api/sync/status/route.ts` — Sync status endpoint (used by SyncStatus component)
 - `src/app/api/issues/route.ts` — Create GitHub issue with station:intake label

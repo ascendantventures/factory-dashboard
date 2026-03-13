@@ -3,26 +3,25 @@
 import { useState, useEffect, useRef as useRefFQ, DragEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { X, Plus, Loader2, AlertCircle, FolderOpen, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
+import { X, Plus, Loader2, AlertCircle, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
 import { TargetAppDropdown } from './TargetAppDropdown';
+import { RepositorySelector } from './ui/RepositorySelector';
 import type { IssueAttachment } from '@/lib/attachments';
 import { isAllowedFileType, MAX_FILE_SIZE, formatFileSize } from '@/lib/attachments';
 
 interface FormData {
   title: string;
   description: string;
-  repo: string;
   complexityHint: string;
   issueType: string;
 }
 
 interface NewIssueModalProps {
-  trackedRepos: string[];
   onClose: () => void;
   onSync?: () => void;
 }
 
-export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalProps) {
+export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
   const {
     register,
     handleSubmit,
@@ -34,6 +33,8 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [selectedTargetApp, setSelectedTargetApp] = useState<string>('');
+  const [selectedRepo, setSelectedRepo] = useState<string>('');
+  const [repoError, setRepoError] = useState<string>('');
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [uploadedAttachments, setUploadedAttachments] = useState<IssueAttachment[]>([]);
@@ -61,6 +62,11 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
   }, [onClose]);
 
   async function onSubmit(data: FormData) {
+    if (!selectedRepo) {
+      setRepoError('Repository is required');
+      return;
+    }
+    setRepoError('');
     setApiError(null);
     try {
       const res = await fetch('/api/issues', {
@@ -69,7 +75,7 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
         body: JSON.stringify({
           title: data.title,
           body: data.description,
-          repo: data.repo,
+          repo: selectedRepo,
           complexityHint: data.complexityHint || null,
           issueType: data.issueType || null,
         }),
@@ -114,6 +120,8 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
       });
 
       reset();
+      setSelectedRepo('');
+      setRepoError('');
       setPendingAttachments([]);
       setUploadedAttachments([]);
       setCreatedIssueNumber(null);
@@ -354,75 +362,17 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
               </div>
 
               {/* Target Repository */}
-              <div>
-                <label style={labelStyle} htmlFor="new-issue-repo">
-                  Target Repository <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>
-                </label>
-                {trackedRepos.length === 0 ? (
-                  <div
-                    style={{
-                      background: '#1C1C1C',
-                      border: '1px solid #262626',
-                      borderRadius: '6px',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <FolderOpen size={24} style={{ color: '#71717A', margin: '0 auto 8px' }} />
-                    <p style={{ fontSize: '13px', color: '#71717A', margin: '0 0 4px', fontFamily: 'Inter, sans-serif' }}>
-                      No repositories tracked
-                    </p>
-                    <a
-                      href="/dashboard/settings"
-                      style={{ fontSize: '12px', fontWeight: 500, color: '#10B981', fontFamily: 'Inter, sans-serif' }}
-                    >
-                      Add repos in Settings
-                    </a>
-                  </div>
-                ) : (
-                  <div style={{ position: 'relative' }}>
-                    <select
-                      id="new-issue-repo"
-                      style={{
-                        ...selectStyle,
-                        ...(errors.repo ? { borderColor: '#EF4444', boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.2)' } : {}),
-                      }}
-                      onFocus={(e) => {
-                        if (!errors.repo) {
-                          e.currentTarget.style.borderColor = '#10B981';
-                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
-                        }
-                      }}
-                      {...register('repo', { required: 'Repository is required' })}
-                    >
-                      <option value="" style={{ background: '#1C1C1C', color: '#71717A' }}>
-                        Select a repository
-                      </option>
-                      {trackedRepos.map((r) => (
-                        <option key={r} value={r} style={{ background: '#1C1C1C', color: '#FAFAFA' }}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      size={16}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        color: '#71717A',
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  </div>
-                )}
-                {errors.repo && (
-                  <p style={errorStyle} role="alert">
-                    <AlertCircle size={14} /> {errors.repo.message}
-                  </p>
-                )}
-              </div>
+              <RepositorySelector
+                label="Target Repository"
+                required
+                value={selectedRepo}
+                onChange={(repo) => {
+                  setSelectedRepo(repo);
+                  if (repo) setRepoError('');
+                }}
+                error={repoError}
+                helperText="The repository where this issue will be created"
+              />
 
               {/* Complexity + Type row */}
               <div
@@ -576,6 +526,7 @@ export function NewIssueModal({ trackedRepos, onClose, onSync }: NewIssueModalPr
               </button>
               <button
                 type="submit"
+                data-testid="quick-create-submit"
                 disabled={isSubmitting}
                 style={{
                   background: isSubmitting ? 'rgba(16, 185, 129, 0.4)' : '#10B981',
