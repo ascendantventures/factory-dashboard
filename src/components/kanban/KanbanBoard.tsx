@@ -8,11 +8,10 @@ import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
 import { IssueDetailPanel } from './IssueDetailPanel';
 import { SpecReviewPanel } from '@/components/spec-review/SpecReviewPanel';
-import { RefreshCw, Loader2, Plus, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
+import { RefreshCw, Loader2, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
 import { ActivitySidebar } from '@/components/activity/ActivitySidebar';
 import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { NewIssueModal } from '@/components/NewIssueModal';
 import {
   DndContext,
   DragOverlay,
@@ -85,7 +84,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [issues, setIssues] = useState<DashIssue[]>(initialIssues);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
-  const [showNewIssueModal, setShowNewIssueModal] = useState(false);
   const [activeIssue, setActiveIssue] = useState<DashIssue | null>(null);
   const [draggingIssueIds, setDraggingIssueIds] = useState<Set<number>>(new Set());
   const [prefs, setPrefs] = useState<KanbanPrefs>(DEFAULT_PREFS);
@@ -393,19 +391,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
             </button>
           )}
 
-          {/* New issue */}
-          <button
-            data-testid="new-issue-btn"
-            onClick={() => setShowNewIssueModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={{ background: '#22C55E', color: '#fff' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#16A34A'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#22C55E'; }}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Issue</span>
-          </button>
-
           {/* Sync */}
           <button
             onClick={handleSync}
@@ -514,14 +499,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         {/* Activity Sidebar */}
         <ActivitySidebar isOpen={activityOpen} onToggle={toggleActivity} />
       </div>
-
-      {showNewIssueModal && (
-        <NewIssueModal
-          trackedRepos={trackedRepos}
-          onClose={() => setShowNewIssueModal(false)}
-          onSync={handleSync}
-        />
-      )}
 
       {selectedIssue && selectedIssue.station === 'spec' ? (
         <SpecReviewPanel
