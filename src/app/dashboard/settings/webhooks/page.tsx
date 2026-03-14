@@ -6,8 +6,31 @@ import WebhookCard from '@/components/webhooks/WebhookCard';
 export const dynamic = 'force-dynamic';
 
 export default async function WebhooksSettingsPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  let webhooks: { id: string; url: string; events: string[]; enabled: boolean; created_at: string }[] | null = null;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    user = authUser;
+
+    if (user) {
+      const { data, error: webhooksError } = await supabase
+        .from('fd_webhooks')
+        .select('id, url, events, enabled, created_at')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      if (webhooksError) {
+        console.error('[WebhooksPage] Failed to fetch webhooks:', webhooksError.message);
+      } else {
+        webhooks = data;
+      }
+    }
+  } catch (err) {
+    console.error('[WebhooksPage] Unexpected error during data fetch:', err);
+    // webhooks remains null — page will render empty state
+  }
 
   if (!user) {
     return (
@@ -15,16 +38,6 @@ export default async function WebhooksSettingsPage() {
         Please log in to manage webhooks.
       </div>
     );
-  }
-
-  const { data: webhooks, error: webhooksError } = await supabase
-    .from('fd_webhooks')
-    .select('id, url, events, enabled, created_at')
-    .eq('created_by', user.id)
-    .order('created_at', { ascending: false });
-
-  if (webhooksError) {
-    console.error('[WebhooksPage] Failed to fetch webhooks:', webhooksError.message);
   }
 
   return (

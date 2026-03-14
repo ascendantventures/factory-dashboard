@@ -684,3 +684,30 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /dashboard (mobile bottom nav at 375px viewport)
 - /dashboard/admin/users (Admin nav link target)
+
+---
+
+## Webhooks Page — Authenticated User Access (Issue #90)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+
+#### REQ-WBHFIX-003: Page renders without crashing
+- [ ] Log in at /auth/login with valid credentials — redirects to /dashboard
+- [ ] Navigate to /dashboard/settings/webhooks — page loads with HTTP 200, NO "Application error" message, NO "Digest: 2416468996" in page content
+- [ ] Page shows either a webhook list or the "No webhooks yet" empty state — never a blank page or error digest
+
+#### REQ-WBHFIX-003 (AC-003.2): Empty state
+- [ ] When no webhooks exist, the empty state card is visible with text "No webhooks yet"
+- [ ] "Add your first webhook" button is present in the empty state and links to /dashboard/settings/webhooks/new
+
+#### REQ-WBHFIX-003 (AC-003.3): Error boundary
+- [ ] If a data-fetch error occurs, the error boundary (`error.tsx`) renders "Unable to load webhooks" instead of a server exception
+- [ ] "Try again" button is visible in the error boundary UI and triggers re-render on click
+
+#### REQ-WBHFIX-004: Unauthenticated redirect
+- [ ] In a fresh browser session (no auth), navigate to /dashboard/settings/webhooks — redirects to /auth/login
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks
+- /auth/login
