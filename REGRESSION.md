@@ -785,3 +785,31 @@ _Added: 2026-03-14_
 - Fix is in `src/app/dashboard/settings/SettingsClient.tsx` line ~852
 - Inner `<main className="flex-1 md:pl-8 md:pt-0">` changed to `<section>` — outer layout main unchanged
 - WCAG 2.1 SC 1.3.6 compliance: only one `<main>` landmark per page
+
+---
+
+## Pipeline Control Panel — Harness Heartbeat Connection (Issue #105)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Navigate to `/pipeline` — page loads without error, shows "Pipeline Control" header
+- [ ] Page shows status badge with either "Running" (green dot) or "Stopped" (red dot) — NOT static placeholder
+- [ ] `data-testid="harness-status-badge"` element exists on page
+- [ ] `data-testid="harness-pid"` element exists — shows a number or "—"
+- [ ] `data-testid="active-agents-count"` element exists — shows a number
+- [ ] `data-testid="processed-today"` element exists — shows a number
+- [ ] `data-testid="processed-week"` element exists — shows a number
+- [ ] `data-testid="processed-all-time"` element exists — shows a number
+- [ ] "Last Heartbeat" row visible in the status card meta grid
+- [ ] Wait 30 seconds — page auto-refreshes (check "Auto-refreshes every 30s" text in header)
+- [ ] `GET /api/harness-status` returns JSON with keys: `status`, `pid`, `activeAgents`, `processedToday`, `processedThisWeek`, `processedAllTime`, `lastSeen`
+- [ ] When harness is running: status badge is green "Running", PID is a positive integer, activeAgents ≥ 0
+- [ ] When harness last heartbeat is >5 min old or missing: status shows red "Stopped", PID shows "—", agents show 0
+
+### Routes/Endpoints
+- `/pipeline` (Pipeline Control page)
+- `GET /api/harness-status` (new — reads Supabase harness_heartbeat table)
+
+### Supabase
+- `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
+- RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
