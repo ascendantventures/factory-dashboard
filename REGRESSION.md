@@ -810,6 +810,8 @@ _Added: 2026-03-14_
 - [ ] Log out; log in as a **non-admin** user
 - [ ] Navigate to `/dashboard`
 - [ ] Verify element with `data-testid="bottom-nav-admin"` is **NOT present/visible**
+- [ ] Run `npx playwright test tests/e2e/mobile-admin-nav.spec.ts` — both tests pass
+- [ ] Run `npx playwright test tests/e2e/repo-selector-empty.spec.ts` — test passes
 
 #### Routes
 - `/dashboard` at 375px viewport
