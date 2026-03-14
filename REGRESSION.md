@@ -872,3 +872,51 @@ _Added: 2026-03-14_
 - `GET /api/admin/users?filter=test&search=qa` — returns filtered users with isTestAccount
 - `POST /api/admin/users/bulk` (body: `{ user_ids, action: "delete" }`) — bulk delete
 - `PATCH /api/admin/users/[id]/role` (body: `{ role }`) — role change with confirmation
+
+---
+
+## Users Page — Search, Filter, Pagination & Cleanup (Issue #108)
+_Added: 2026-03-14_
+
+### Context
+The users admin page (`/dashboard/admin/users`) was enhanced with search, filter tabs (All/Real/Test Accounts), pagination (20/page), role change confirmation dialog, bulk permanent delete, and visual test account tagging.
+
+### Test Steps (All require Admin login) [auth]
+
+**Search (REQ-USR-001):**
+- [ ] Navigate to /dashboard/admin/users
+- [ ] Type "qa_login" in search box (data-testid="user-search") — results filter within 300ms
+- [ ] Type string matching no users — "No users found" empty state appears
+- [ ] Clear search — full user list reloads
+- [ ] Search is case-insensitive
+
+**Filter Tabs (REQ-USR-002):**
+- [ ] Three tabs: "All", "Real", "Test Accounts" with count badges (data-testid="filter-tab-all/real/test")
+- [ ] "Test Accounts" tab shows only rows with amber "TEST" badge (data-testid="test-account-badge")
+- [ ] "Real" tab shows only non-test users
+- [ ] "All" tab shows all users
+
+**Pagination (REQ-USR-003):**
+- [ ] Pagination control visible (data-testid="pagination") — shows "Page N of M"
+- [ ] Max 20 rows per page; Prev disabled on page 1, Next disabled on last page
+- [ ] Changing search or filter resets to page 1
+
+**Role Change Confirmation (REQ-USR-004):**
+- [ ] Click role dropdown (data-testid="role-dropdown") on non-self row
+- [ ] Select different role — confirmation dialog (data-testid="role-confirm-dialog") appears
+- [ ] Click Cancel (data-testid="confirm-cancel") — dialog closes, no change
+- [ ] Click Confirm (data-testid="confirm-submit") — role updated, success toast
+
+**Bulk Delete (REQ-USR-005):**
+- [ ] Check select-all (data-testid="select-all-checkbox") — all rows selected
+- [ ] Bulk bar appears (data-testid="bulk-action-bar") with "Delete N Selected" (data-testid="bulk-delete-btn")
+- [ ] Click bulk delete — confirmation dialog (data-testid="bulk-delete-dialog") appears
+- [ ] Click "Keep Users" (data-testid="confirm-cancel") — cancelled, nothing deleted
+- [ ] For >5 users: warning box shown in dialog
+
+### Routes/Endpoints
+- /dashboard/admin/users
+- GET /api/admin/users?search=&filter=all|real|test&page=N&pageSize=20
+- DELETE /api/admin/users/bulk (body: { userIds: string[] })
+- PATCH /api/admin/users/[id]/role (body: { role: string })
+
