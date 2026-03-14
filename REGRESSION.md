@@ -645,3 +645,42 @@ _Added: 2026-03-14_
 - /dashboard/settings/webhooks/new?preset=discord
 - /dashboard/settings/webhooks/new?preset=slack
 - /dashboard/settings/webhooks/new
+
+## Mobile Bottom Nav — Role-Aware Admin Entry (Issue #86)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Log in as admin user (ajrrac@gmail.com), resize viewport to 375px — mobile bottom nav (data-testid="mobile-nav") shows 5 items: Dashboard, Apps, Activity, Metrics, **Admin**
+- [ ] Admin link has data-testid="bottom-nav-admin" and href="/dashboard/admin/users"
+- [ ] Settings link (href="/dashboard/settings") is NOT present in mobile bottom nav when logged in as admin
+- [ ] Admin link uses Shield icon (lucide-react)
+- [ ] Click Admin link — navigates to /dashboard/admin/users
+- [ ] Log in as non-admin (viewer) user, resize viewport to 375px — mobile bottom nav shows Settings item (href="/dashboard/settings"), NOT Admin
+- [ ] data-testid="bottom-nav-admin" is NOT present in DOM for non-admin user
+- [ ] At desktop viewport (≥768px) — mobile bottom nav is hidden (md:hidden)
+
+### Routes
+- /dashboard (mobile bottom nav visible at <768px)
+- /dashboard/admin/users (target of Admin nav link)
+- /dashboard/settings (Settings link for non-admin)
+
+
+## Admin Nav Data & Code Hardening (Issue #89)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Log in as ajrrac@gmail.com (admin), resize viewport to 375px — verify `fd_user_roles` row has `is_active = true` in DB
+- [ ] Admin user at 375px viewport: bottom nav 5th item has `data-testid="bottom-nav-admin"` with href `/dashboard/admin/users` and Shield icon — NOT Settings
+- [ ] Admin user at 375px viewport: `data-testid="bottom-nav-settings"` is NOT present in the DOM
+- [ ] Non-admin user at 375px viewport: bottom nav 5th item has `data-testid="bottom-nav-settings"` with href `/dashboard/settings`
+- [ ] Non-admin user at 375px viewport: `data-testid="bottom-nav-admin"` is NOT present in the DOM
+- [ ] getUserRole() returns 'admin' when fd_user_roles row has is_active = NULL (code hardening)
+- [ ] getUserRole() returns 'admin' when fd_user_roles row has is_active = true
+
+### DB Verification
+- [ ] `SELECT role, is_active FROM fd_user_roles WHERE user_id = 'b4c20f13-15de-4ef4-b297-8358f9049262'` returns `role='admin', is_active=true`
+- [ ] `fd_user_roles.is_active` column default is `true` (INSERT without is_active → defaults to true)
+
+### Routes/Endpoints
+- /dashboard (mobile bottom nav at 375px viewport)
+- /dashboard/admin/users (Admin nav link target)
