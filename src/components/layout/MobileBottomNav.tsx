@@ -51,7 +51,7 @@ export default function MobileBottomNav() {
           .select('role, is_active')
           .eq('user_id', user.id)
           .single();
-        if (data?.is_active && data.role === 'admin') setIsAdmin(true);
+        if (data?.role === 'admin' && data.is_active !== false) setIsAdmin(true);
       } catch {
         // Default to non-admin on error
       }
