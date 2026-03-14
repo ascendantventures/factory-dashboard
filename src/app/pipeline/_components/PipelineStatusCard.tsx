@@ -30,7 +30,7 @@ export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Prop
   const { running, pid, uptime_seconds, last_tick_at } = loop;
 
   const heartbeatStale =
-    lastSeen == null ||
+    lastSeen != null &&
     Date.now() - new Date(lastSeen).getTime() > 5 * 60 * 1000;
 
   return (

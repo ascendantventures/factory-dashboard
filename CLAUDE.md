@@ -553,3 +553,75 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
+
+## CR #108 — Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
+
+### Changes Made
+
+**New file: `src/lib/users.ts`**
+- `TEST_ACCOUNT_PATTERNS` — regex array matching: `qa_`, `qa-`, `_test`, `+test`, `testuser+`, `test_*`, `test-*`
+- `USERS_PAGE_SIZE = 20`
+- `isTestAccount(email: string): boolean`
+
+**Updated: `src/app/api/admin/users/route.ts`**
+- Added `filter` query param (`all` | `real` | `test`) — filters by `isTestAccount()`
+- Added `isTestAccount` field to each user in response
+- Added `counts: { all, real, test }` to response (for tab badges)
+- Added `totalPages` to response
+
+**Updated: `src/app/api/admin/users/bulk/route.ts`**
+- Added `delete` action — calls `supabase.auth.admin.deleteUser()` + cleans `fd_user_roles`
+- Added `DELETE` HTTP method handler for `{ userIds: string[] }` body
+
+**New file: `src/app/api/admin/users/[id]/role/route.ts`**
+- `PATCH /api/admin/users/[id]/role` — dedicated role-change endpoint with audit log
+
+**New file: `src/app/dashboard/admin/users/_components/UserFilterTabs.tsx`**
+- Tabs: All / Real / Test Accounts with count badges
+- `data-testid`: `filter-tab-all`, `filter-tab-real`, `filter-tab-test`
+
+**New file: `src/app/dashboard/admin/users/_components/TestAccountBadge.tsx`**
+- Amber "TEST" badge with FlaskConical icon
+- `data-testid`: `test-account-badge`
+
+**New file: `src/app/dashboard/admin/users/_components/RoleChangeConfirmDialog.tsx`**
+- Modal: "Change {email} from {oldRole} → {newRole}?"
+- `data-testid`: `role-confirm-dialog`, `confirm-cancel`, `confirm-submit`
+
+**New file: `src/app/dashboard/admin/users/_components/BulkDeleteConfirmDialog.tsx`**
+- Modal with AlertTriangle icon + warning for >5 users
+- `data-testid`: `bulk-delete-dialog`
+
+**Overhauled: `src/app/dashboard/admin/users/_components/UserManagementClient.tsx`**
+- Dark mode design (matching DESIGN.md: #18181B surface, #6366F1 primary, #FAFAFA text)
+- Inline `RoleSelector` dropdown per row — triggers `RoleChangeConfirmDialog` on change
+- `TestAccountBadge` shown inline with email for matching users
+- `BulkActionBar` (sticky bottom) with "Delete N Selected" → `BulkDeleteConfirmDialog`
+- Single-user delete via Trash2 icon in actions column
+- Pagination: Prev/Next with page count display
+- All required `data-testid` attributes added
+
+### data-testid Reference (Issue #108 additions)
+| Element | data-testid |
+|---------|-------------|
+| Search input | `user-search` |
+| Filter tab: All | `filter-tab-all` |
+| Filter tab: Real | `filter-tab-real` |
+| Filter tab: Test | `filter-tab-test` |
+| User table | `user-table` |
+| User row | `user-row` |
+| User email | `user-email` |
+| Test account badge | `test-account-badge` |
+| Role dropdown | `role-dropdown` |
+| Role confirm dialog | `role-confirm-dialog` |
+| Confirm cancel button | `confirm-cancel` |
+| Confirm submit button | `confirm-submit` |
+| Select all checkbox | `select-all-checkbox` |
+| Bulk action bar | `bulk-action-bar` |
+| Bulk delete button | `bulk-delete-btn` |
+| Bulk delete dialog | `bulk-delete-dialog` |
+| Pagination | `pagination` |
+
+### No DB migrations required
+All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
