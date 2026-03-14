@@ -629,3 +629,19 @@ _Added: 2026-03-13_
 - [ ] Step 2 shows data-testid="repo-selector" dropdown populated from /api/build-repos
 - [ ] Click "← Back" on Step 2 — returns to Step 1 with filled fields preserved
 - [ ] On Step 2, click "Create Issue" without selecting repo — shows data-testid="repo-selector-error"
+
+---
+
+## Webhook Preset Auto-Apply (Issue #81) [auth]
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/settings/webhooks/new?preset=discord` — Discord tile SHALL be pre-selected (`aria-selected="true"`) on page load, no manual click required
+- [ ] Navigate to `/dashboard/settings/webhooks/new?preset=slack` — Slack tile SHALL be pre-selected (`aria-selected="true"`) on page load
+- [ ] Navigate to `/dashboard/settings/webhooks/new` (no query param) — no preset tile is selected, form loads blank
+- [ ] Inspect page.tsx TypeScript — `searchParams` is typed as `Promise<{ preset?: string }>` and awaited, no TypeScript errors
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks/new?preset=discord
+- /dashboard/settings/webhooks/new?preset=slack
+- /dashboard/settings/webhooks/new
