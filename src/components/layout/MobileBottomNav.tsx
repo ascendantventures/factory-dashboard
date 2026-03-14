@@ -35,17 +35,13 @@ const SETTINGS_ITEM = {
   label: 'Settings',
   icon: Settings,
   exact: false,
-  testId: 'bottom-nav-settings',
+  testId: undefined,
 };
 
 export default function MobileBottomNav({ isAdmin }: MobileBottomNavProps) {
   const pathname = usePathname();
 
-  const navItems = [
-    ...BASE_NAV_ITEMS,
-    ...(isAdmin ? [ADMIN_ITEM] : []),
-    SETTINGS_ITEM,
-  ];
+  const navItems = [...BASE_NAV_ITEMS, isAdmin ? ADMIN_ITEM : SETTINGS_ITEM];
 
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href);

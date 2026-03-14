@@ -10,6 +10,7 @@ export default async function DashboardLayout({
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const role = user ? await getUserRole(user.id) : 'viewer';
+  const isAdmin = role === 'admin';
 
-  return <AppShell isAdmin={role === 'admin'}>{children}</AppShell>;
+  return <AppShell isAdmin={isAdmin}>{children}</AppShell>;
 }
