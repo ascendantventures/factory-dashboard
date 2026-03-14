@@ -7,21 +7,39 @@ import IntegrationPresets from '@/components/webhooks/IntegrationPresets';
 export const dynamic = 'force-dynamic';
 
 export default async function WebhooksSettingsPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string }> | null = null;
 
-  if (!user) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return (
+        <div style={{ padding: '32px', fontFamily: 'DM Sans, sans-serif', color: '#6B7380' }}>
+          Please log in to manage webhooks.
+        </div>
+      );
+    }
+
+    const { data, error: webhooksError } = await supabase
+      .from('fd_webhooks')
+      .select('id, url, events, enabled, created_at')
+      .eq('created_by', user.id)
+      .order('created_at', { ascending: false });
+
+    if (webhooksError) {
+      console.error('[WebhooksPage] Failed to fetch webhooks:', webhooksError.message);
+    } else {
+      webhooks = data;
+    }
+  } catch (err) {
+    console.error('[WebhooksPage] Unexpected server error:', err);
     return (
-      <div style={{ padding: '32px', fontFamily: 'DM Sans, sans-serif', color: '#6B7380' }}>
-        Please log in to manage webhooks.
+      <div style={{ padding: '32px', fontFamily: 'DM Sans, sans-serif', color: '#EF4444' }}>
+        Failed to load webhooks. Please refresh or contact support.
       </div>
     );
   }
-
-  const { data: webhooks } = await supabase
-    .from('fd_webhooks')
-    .select('id, url, events, enabled, created_at')
-    .order('created_at', { ascending: false });
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
