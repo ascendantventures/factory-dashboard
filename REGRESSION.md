@@ -785,3 +785,39 @@ _Added: 2026-03-14_
 - Fix is in `src/app/dashboard/settings/SettingsClient.tsx` line ~852
 - Inner `<main className="flex-1 md:pl-8 md:pt-0">` changed to `<section>` — outer layout main unchanged
 - WCAG 2.1 SC 1.3.6 compliance: only one `<main>` landmark per page
+
+## [Kanban Card Readability] (Issue #102)
+_Added: 2026-03-14_
+
+### REQ-001: Card Title Legibility
+- [ ] [auth] Navigate to /dashboard/pipeline — verify Kanban board loads with issue cards
+- [ ] Inspect card titles — confirm NO card uses `truncate` (single-line); all titles use 2-line clamp (`line-clamp-2`)
+- [ ] Cards with similar prefixes (e.g. "Enhancement: Analytics...") must show enough text to differentiate one from another
+- [ ] Confirm `data-testid="card-title"` exists on title elements
+
+### REQ-002: Status Badge Visibility
+- [ ] [auth] Verify every card's complexity/status badge shows abbreviated text: SIMPLE→S, MEDIUM→M, COMPLEX→C
+- [ ] Confirm badges have `data-testid="status-badge"` (NOT `complexity-badge`)
+- [ ] Resize browser to 1024px wide — badges must remain fully visible and NOT clip at column edges
+- [ ] Confirm badge `title` attribute shows full label on hover
+
+### REQ-003: Horizontal Scroll Affordance
+- [ ] [auth] On a viewport narrower than the full board width, confirm horizontal scroll is present on the Kanban board
+- [ ] Confirm board container (`data-testid="kanban-board"`) has `overflow-x: auto` or `scroll`
+- [ ] Confirm each Kanban column has minimum width of 280px
+- [ ] Confirm styled scrollbar is visible at the bottom of the board when content overflows
+- [ ] Scroll to the right edge — confirm the "Build" column is reachable
+
+### REQ-004: Hide Zero-Value Cost Display
+- [ ] [auth] Confirm NO card shows `$0.00` — cost element must be hidden when `totalCost <= 0`
+- [ ] Confirm `[data-testid="card-cost"]` is NOT present for cards with no agent runs
+- [ ] If any card has a real cost (>$0), confirm it shows formatted cost (e.g. `$1.23`)
+
+### REQ-005: Drag Handle Visibility
+- [ ] [auth] On dark background, confirm drag handle (⠿) icon is visible without hovering (opacity ≥ 0.5)
+- [ ] Hover over a card — confirm drag handle increases to full opacity
+- [ ] Confirm `data-testid="drag-handle"` exists on drag handle elements
+- [ ] Confirm drag handle color is `#A1A1AA` (not `#71717A`)
+
+### Routes/Endpoints
+- `/dashboard/pipeline` — main Kanban board page

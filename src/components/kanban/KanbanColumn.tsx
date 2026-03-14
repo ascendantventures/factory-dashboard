@@ -63,14 +63,14 @@ export function KanbanColumn({ station, issues, draggingIssueIds, enrichmentMap,
       ) : (
         <motion.div
           key="expanded"
-          data-testid={`kanban-column-station-${station}`}
+          data-testid="kanban-column"
           data-column={station}
           className="flex flex-col rounded-xl border overflow-hidden transition-colors flex-shrink-0"
           style={{
             background: isOver ? `${color}08` : '#18181B',
             borderColor: isOver ? color : '#27272A',
-            minWidth: '200px',
-            width: '240px',
+            minWidth: '280px',
+            width: '280px',
           }}
           initial={{ opacity: 0, x: -16 }}
           animate={{ opacity: 1, x: 0 }}
