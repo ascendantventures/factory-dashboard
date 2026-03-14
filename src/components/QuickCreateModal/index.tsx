@@ -4,8 +4,8 @@ import { useState, useEffect, useRef as useRefFQ, DragEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { X, Plus, Loader2, AlertCircle, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
-import { TargetAppDropdown } from './TargetAppDropdown';
-import { RepositorySelector } from './ui/RepositorySelector';
+import { TargetAppDropdown } from '@/components/TargetAppDropdown';
+import { RepositorySelector } from '@/components/ui/RepositorySelector';
 import type { IssueAttachment } from '@/lib/attachments';
 import { isAllowedFileType, MAX_FILE_SIZE, formatFileSize } from '@/lib/attachments';
 
@@ -16,12 +16,12 @@ interface FormData {
   issueType: string;
 }
 
-interface NewIssueModalProps {
+interface QuickCreateModalProps {
   onClose: () => void;
   onSync?: () => void;
 }
 
-export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
+export default function QuickCreateModal({ onClose, onSync }: QuickCreateModalProps) {
   const {
     register,
     handleSubmit,
@@ -66,7 +66,6 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
     const title = watch('title');
     const description = watch('description');
     if (!title || !description) {
-      // Trigger validation by submitting — react-hook-form will surface errors
       await handleSubmit(() => {})();
       return;
     }
@@ -707,7 +706,7 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
   );
 }
 
-// ── Inline file queue for the NewIssueModal (deferred upload) ─────────────────
+// ── Inline file queue for QuickCreateModal (deferred upload) ─────────────────
 
 interface ModalFileQueueProps {
   files: File[];

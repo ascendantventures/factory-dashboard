@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { NewIssueModal } from '@/components/NewIssueModal';
+import QuickCreateModal from '@/components/QuickCreateModal';
 
 export function NewIssueButton() {
   const [open, setOpen] = useState(false);
@@ -26,7 +26,7 @@ export function NewIssueButton() {
       </button>
 
       {open && (
-        <NewIssueModal
+        <QuickCreateModal
           onClose={() => setOpen(false)}
         />
       )}
