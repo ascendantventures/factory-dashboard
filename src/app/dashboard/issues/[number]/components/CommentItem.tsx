@@ -56,7 +56,7 @@ export function CommentItem({ comment, isNew = false }: Props) {
         borderRadius: 10,
         padding: '16px 20px',
         marginBottom: 12,
-        transition: flash ? 'none' : 'background-color 1.5s ease-out',
+        transition: 'background-color 1.5s ease-out',
       }}
     >
       {/* Header row */}

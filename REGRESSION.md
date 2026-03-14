@@ -298,3 +298,24 @@ _Added: 2026-03-14 — Bug Fix for #30_
 - `[data-testid="comment-submit"]` — Post Comment button in ReplyEditor
 - `[data-testid="comment-item"]` — each comment item root div
 
+
+---
+
+## Amber Flash Animation on New Comments [auth]
+_Bug fix: Issue #73 (parent: #30)_
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] [auth] Navigate to /dashboard/issues/1 (or any issue with a comment thread visible)
+- [ ] Scroll to the "GitHub Comments" section at the bottom of the page
+- [ ] Fill in the comment textarea (`data-testid="comment-input"`) with any text
+- [ ] Click the Submit button (`data-testid="comment-submit"`)
+- [ ] **Immediately after submit:** the new comment (`data-testid="comment-item"` — last in list) must display an amber/yellow background (#FEF3C7)
+- [ ] **Within ~1.5–2 seconds:** the amber background must smoothly fade to white/base background — this is a CSS transition, not an instant swap
+- [ ] **After ~2 seconds:** the new comment must appear visually identical to pre-existing comments (no amber tint)
+- [ ] Pre-existing comments loaded on page open must NOT have any amber flash — only the just-posted comment flashes
+
+### Routes/Endpoints
+- /dashboard/issues/[number] — issue detail page with comment thread
+- GET /api/issues/[number]/comments
+- POST /api/issues/[number]/comments
