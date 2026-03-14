@@ -155,7 +155,8 @@
 - **Station order:** intake → spec → design → build → qa → done
 - **Issue action menu:** also exported from `_components/IssueActionMenu.tsx` for use in Kanban + issue detail
 - **Audit log polling:** page queries `pipeline_audit_log` via Supabase browser client on same 5s cycle
-- **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
+- **data-testid attributes:** `pipeline-status-card`, `harness-status-badge`, `harness-pid`, `pipeline-metrics-bar`, `active-agents-count`, `processed-today`, `processed-week`, `processed-all-time`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
+- **Harness heartbeat (CR #105):** Dashboard reads from `harness_heartbeat` Supabase table (singleton row id='main'). `GET /api/harness-status` replaces old local-file-based `/api/pipeline/status`. Staleness threshold: 5 min. Poll interval: 30s.
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
 ## Known Issues & Gotchas
