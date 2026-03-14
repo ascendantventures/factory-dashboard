@@ -629,3 +629,22 @@ _Added: 2026-03-13_
 - [ ] Step 2 shows data-testid="repo-selector" dropdown populated from /api/build-repos
 - [ ] Click "← Back" on Step 2 — returns to Step 1 with filled fields preserved
 - [ ] On Step 2, click "Create Issue" without selecting repo — shows data-testid="repo-selector-error"
+
+## Mobile Bottom Nav — Role-Aware Admin Entry (Issue #86)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Log in as admin user (ajrrac@gmail.com), resize viewport to 375px — mobile bottom nav (data-testid="mobile-nav") shows 5 items: Dashboard, Apps, Activity, Metrics, **Admin**
+- [ ] Admin link has data-testid="bottom-nav-admin" and href="/dashboard/admin/users"
+- [ ] Settings link (href="/dashboard/settings") is NOT present in mobile bottom nav when logged in as admin
+- [ ] Admin link uses Shield icon (lucide-react)
+- [ ] Click Admin link — navigates to /dashboard/admin/users
+- [ ] Log in as non-admin (viewer) user, resize viewport to 375px — mobile bottom nav shows Settings item (href="/dashboard/settings"), NOT Admin
+- [ ] data-testid="bottom-nav-admin" is NOT present in DOM for non-admin user
+- [ ] At desktop viewport (≥768px) — mobile bottom nav is hidden (md:hidden)
+
+### Routes
+- /dashboard (mobile bottom nav visible at <768px)
+- /dashboard/admin/users (target of Admin nav link)
+- /dashboard/settings (Settings link for non-admin)
+
