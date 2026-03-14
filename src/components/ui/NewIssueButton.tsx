@@ -11,7 +11,7 @@ export function NewIssueButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        data-testid="quick-create-trigger"
+        data-testid="new-issue-btn"
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors hover:opacity-90"
         style={{
           background: '#6366F1',

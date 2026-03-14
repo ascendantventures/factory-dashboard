@@ -608,7 +608,7 @@ _Added: 2026-03-13_
 - [ ] Active state: FileStack icon turns indigo (#6366F1) when on /dashboard/templates
 
 #### Repository Selector in Issue Modal (REQ-85-003)
-- [ ] Click "New Issue" button (data-testid="quick-create-trigger") — modal opens
+- [ ] Click "New Issue" button (data-testid="new-issue-btn") — modal opens
 - [ ] "Target Repository" field shows a dropdown (not a free-text input with placeholder "owner/repo")
 - [ ] Dropdown is populated with repositories from /api/build-repos showing display names like "Factory Dashboard (ascendantventures/factory-dashboard)"
 - [ ] While repos load, a shimmer skeleton shows with "Loading repositories..." text
@@ -620,10 +620,10 @@ _Added: 2026-03-13_
 - /dashboard (sidebar Templates link visible)
 - /dashboard/templates (Templates tab renders)
 - /dashboard (mobile nav at 375px viewport)
-- Modal: data-testid="quick-create-trigger" → repo-selector → repo-selector-error
+- Modal: data-testid="new-issue-btn" → repo-selector → repo-selector-error
 
 ### QuickCreate Two-Step Flow (Issue #85 — quick-create-next)
-- [ ] Click "New Issue" button (data-testid="quick-create-trigger") — Step 1 modal opens showing Title + Description + Target App
+- [ ] Click "New Issue" button (data-testid="new-issue-btn") — Step 1 modal opens showing Title + Description + Target App
 - [ ] Click "Next →" button (data-testid="quick-create-next") without filling fields — validation errors appear
 - [ ] Fill Title + Description, click "Next →" — advances to Step 2 showing Repository selector
 - [ ] Step 2 shows data-testid="repo-selector" dropdown populated from /api/build-repos
@@ -747,7 +747,7 @@ _Added: 2026-03-14_
 ### REQ-FIX-005: Exactly one New Issue button on /dashboard [auth]
 - [ ] Load `/dashboard` at 1280px viewport while logged in
 - [ ] `button:has-text("New Issue"), [data-testid="new-issue-btn"]` selector SHALL match exactly 1 element
-- [ ] `data-testid="quick-create-trigger"` is present on the button (in Header)
+- [ ] `data-testid="new-issue-btn"` is present on the button (in Header)
 - [ ] No duplicate New Issue button visible
 
 #### Dashboard Error Boundary
