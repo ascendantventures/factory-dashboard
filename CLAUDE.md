@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/92
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/90
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -174,6 +174,7 @@
 - **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
+- **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel

@@ -706,3 +706,22 @@ _Added: 2026-03-14_
 - /dashboard (mobile bottom nav visible at <768px)
 - /dashboard/admin/users (target of Admin nav link)
 - /dashboard/settings (Settings link always visible)
+
+---
+
+## [Webhooks Error Boundary + Authenticated Flow] (Issue #90)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Log in with valid credentials and navigate to /dashboard/settings/webhooks — page renders HTTP 200, NO "Application error" or "Digest:" string visible in page content
+- [ ] With no webhooks configured — empty state renders: icon, "No webhooks yet" text, and "Add your first webhook" link are visible (no crash)
+- [ ] Page content does NOT contain "Digest: 2416468996" or "Application error: a server-side exception has occurred"
+- [ ] Unauthenticated user navigates to /dashboard/settings/webhooks — redirected to /auth/login (not a 500)
+
+### Error Boundary (error.tsx)
+- [ ] If webhooks data fetch fails (simulate by checking network errors): error boundary shows AlertTriangle icon, "Unable to load webhooks" heading, user-friendly message, and "Try again" button
+- [ ] "Try again" button re-renders the route segment without a full page reload
+- [ ] Error boundary container matches design: dark #161A1F background, #2E353D border, 12px radius, centered max-width 480px
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks (authenticated GET — must return 200, not 500)
