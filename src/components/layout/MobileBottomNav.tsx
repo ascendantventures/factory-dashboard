@@ -24,7 +24,7 @@ const SETTINGS_ITEM = {
   label: 'Settings',
   icon: Settings,
   exact: false,
-  testId: undefined,
+  testId: 'bottom-nav-settings',
 };
 
 const ADMIN_ITEM = {
