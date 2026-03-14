@@ -813,3 +813,27 @@ _Added: 2026-03-14_
 ### Supabase
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
+
+---
+
+## Apps Portfolio UX Enhancements (Issue #113)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Login and navigate to /dashboard/apps — app cards render
+- [ ] Click anywhere on an app card (not the external URL) — browser navigates to /dashboard/apps/[repoId] (REQ-APP-001)
+- [ ] Each app card has a visible "View details" text with chevron at bottom-right (AC-001.3)
+- [ ] Click the external live URL link on a card — opens in new tab, /dashboard/apps list page stays active (AC-001.2)
+- [ ] Verify no card shows "Add VERCEL_TOKEN to enable deployment tracking" text anywhere (AC-002.1)
+- [ ] Verify cards without deployment tracking show "Deployment tracking not configured" (AC-002.1)
+- [ ] Login as admin and check app card — if deployment not configured, "Configure →" link appears linking to /dashboard/settings (AC-002.2)
+- [ ] Login as non-admin — "Configure →" link is NOT shown, only plain status text (AC-002.3)
+- [ ] Hover over the sync badge in the top nav — tooltip appears with plain-language explanation (AC-003.1)
+- [ ] Tab to the sync badge with keyboard — tooltip appears on focus (AC-003.3)
+- [ ] Navigate to /dashboard/apps/[repoId] by clicking a card — page loads without knowing the URL (AC-004.1, AC-004.3)
+- [ ] Click the app title or "View details →" affordance on a card — navigates to correct detail page (AC-004.2)
+
+### Routes/Endpoints
+- /dashboard/apps — app card grid, all cards now navigable
+- /dashboard/apps/[repoId] — detail page, reachable via card click
+- /dashboard/settings — settings page (linked from admin deployment status)

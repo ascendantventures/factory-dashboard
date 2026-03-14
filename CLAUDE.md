@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/116
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/113
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -167,7 +167,6 @@
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
-- **Event Log route (CR #116)** — Sidebar links to `/dashboard/event-log` (fixed from `/dashboard/admin/events`). New page at `src/app/dashboard/event-log/page.tsx` queries `harness_events` via `/api/event-log`. The legacy `/api/admin/events` route still exists and queries `fdash_event_log` (always empty) — do not remove until confirmed no consumers. Uses inline dark-mode badges (DirectionBadge/StatusBadge) instead of light-mode components from `src/components/event-log/`.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
@@ -554,19 +553,3 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
-
----
-
-## Issue #116 Fix (2026-03-14)
-
-**Problem:** Sidebar "Event Log" linked to `/dashboard/admin/events` but was changed to point to `/dashboard/event-log` (which didn't exist), causing 404.
-
-**Fix:**
-1. Created `src/app/dashboard/event-log/page.tsx` — dark-mode Event Log page querying `harness_events`
-2. Created `src/app/api/event-log/route.ts` — GET route querying `harness_events` (not `fdash_event_log`)
-3. Updated `src/components/layout/Sidebar.tsx` NAV_ITEMS: Event Log href changed from `/dashboard/admin/events` → `/dashboard/event-log`
-
-**Key notes:**
-- `harness_events` is the correct table (live data). `fdash_event_log` is legacy (always empty).
-- New page uses inline dark-mode badge components (`DirectionBadge`, `StatusBadge`) to avoid breaking the light-mode legacy page at `/dashboard/admin/events`.
-- Legacy page/route at `/dashboard/admin/events` is preserved unchanged.
