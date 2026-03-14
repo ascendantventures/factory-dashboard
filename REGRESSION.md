@@ -764,3 +764,33 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+---
+
+## Notification Bell Panel (Issue #101)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — bell icon visible in header (top-right action group)
+- [ ] Bell button is exactly 44×44px (bounding box check)
+- [ ] Click bell → notification panel opens below the button
+- [ ] Panel has header "Notifications" and optional "Mark all read" button
+- [ ] Panel shows notification list or empty state ("No notifications")
+- [ ] Click bell again → panel closes
+- [ ] Click outside panel → panel closes
+- [ ] Press Escape while panel is open → panel closes, focus returns to bell
+- [ ] If unread notifications exist → red badge with count visible on bell icon
+- [ ] Click a notification item → marked as read (bold style removed), panel closes, navigates to link if present
+- [ ] Click "Mark all read" → all items lose unread styling, badge disappears
+- [ ] Badge hides when unread_count = 0
+- [ ] Badge shows "99+" when unread_count > 99
+- [ ] GET /api/notifications without auth returns 401
+- [ ] POST /api/notifications/read-all without auth returns 401
+- [ ] GET /api/notifications/preferences without auth returns 401
+
+### Routes/Endpoints
+- GET /api/notifications — returns 20 most recent notifications + unread_count
+- PATCH /api/notifications/[id]/read — marks single notification read
+- POST /api/notifications/read-all — marks all notifications read
+- GET /api/notifications/preferences — returns notification_prefs from dash_dashboard_config
+- PATCH /api/notifications/preferences — updates notification_prefs via upsert
