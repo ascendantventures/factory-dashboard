@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/87
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/86
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -476,6 +476,35 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/85_
 - `data-testid="quick-create-trigger"` — New Issue button
 - `data-testid="repo-selector"` — repository selector dropdown
 - `data-testid="repo-selector-error"` — inline validation error
+
+## Bug Fix: Mobile Bottom Nav Admin Entry (Issue #86)
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/86_
+
+### Changes Made
+
+**REQ-UMP-005-FIX-001: Role-aware MobileBottomNav**
+- File: `src/components/layout/MobileBottomNav.tsx`
+- Replaced static 6-item `NAV_ITEMS` array with role-aware logic
+- Added `useEffect` role check using `createSupabaseBrowserClient()` + `fd_user_roles` query
+- Admin users see: Dashboard, Apps, Activity, Metrics, **Admin** (Shield icon, `data-testid="bottom-nav-admin"`, href=/dashboard/admin/users)
+- Non-admin users see: Dashboard, Apps, Activity, Metrics, **Settings**
+- Removed `Templates` from mobile nav (was 6th item, now exactly 5 items)
+- Removed `FileStack` import (Templates removed), added `Shield` import
+- Initial render shows Settings (non-admin default); swaps to Admin after role check succeeds
+
+**REQ-UMP-005-FIX-002: is_active data fix**
+- BUILD verified `fd_user_roles.is_active` must be `true` for admin users
+- If `is_active` is NULL/false for any admin, apply: `UPDATE fd_user_roles SET is_active = true WHERE role = 'admin' AND (is_active IS NULL OR is_active = false);`
+
+### data-testid attributes
+- `data-testid="mobile-nav"` — nav container (unchanged)
+- `data-testid="bottom-nav-admin"` — Admin link (admin users only)
+
+### Known Gotcha
+- Role check is async (useEffect); initial render always shows Settings. Admin swap happens in <100ms. This is intentional (no loading state per DESIGN.md).
+- `fd_user_roles.is_active` MUST be `true` for admin role to render the Admin nav item.
+
+---
 
 ## UAT Fix: Webhook Preset Auto-apply + List Page Crash (Issue #87)
 - **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/87
