@@ -741,3 +741,24 @@ _Added: 2026-03-14_
 
 ### Routes/Endpoints
 - `/dashboard/apps/[repoId]/designs/[issueNumber]`
+
+## Escape Guard + Success Toast in NewIssueModal (Issue #82)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard, click "New Issue" button — modal opens
+- [ ] With modal open and idle (no submission in progress), press Escape — modal closes (AC-001.1)
+- [ ] Open modal again, click Submit while form is valid — while loading spinner is visible, press Escape — modal stays open (AC-001.2)
+- [ ] Open modal, fill in Title and Body, select a repo, click Submit — on success a sonner toast appears at bottom-right with text "Issue created" (AC-002.1)
+- [ ] Toast includes an "Open" action button — clicking it opens the GitHub issue URL in a new tab (AC-002.2)
+- [ ] Toast persists for at least 5 seconds before auto-dismissing (AC-002.3)
+- [ ] Toast fires even after modal has closed/unmounted (AC-002.4)
+
+### Notes
+- Escape handler guards on `isSubmitting` from react-hook-form
+- Toast uses `action: { label: 'Open', onClick: () => window.open(url, '_blank') }` with `duration: 6000`
+- Toast fires via `setTimeout(..., 0)` to escape the render cycle and survive modal unmount
+
+### Routes/Endpoints
+- /dashboard (New Issue button in header)
+- POST /api/issues (issue creation endpoint)
