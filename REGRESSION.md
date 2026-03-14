@@ -714,3 +714,23 @@ _Added: 2026-03-14_
 - /dashboard (mobile bottom nav at ≤767px viewport)
 - /dashboard/admin/users (Admin nav link target)
 - /dashboard/settings (Settings link for non-admin)
+
+## Issue #92 Bugfix: AC-001.1 Data Fix + Apps + Error Boundary
+_Added: 2026-03-14_
+
+### Critical Correction — Session User ID Mismatch
+The REGRESSION.md test for Issue #92 previously used the wrong user_id for the admin DB verification.
+The actual live session user is `cec59014-5d74-4ae2-9f15-a8477c8ee3d7` (not `b4c20f13-...`).
+
+### Test Steps [auth]
+
+#### AC-001.1 — Corrected DB check
+- [ ] `SELECT role, is_active FROM fd_user_roles WHERE user_id = 'cec59014-5d74-4ae2-9f15-a8477c8ee3d7'` returns `role='admin', is_active=true`
+- [ ] Log in as ajrrac@gmail.com, navigate to /dashboard at 375px — `data-testid="bottom-nav-admin"` is present in DOM
+
+#### Apps Page (Regression)
+- [ ] Navigate to /dashboard/apps — page loads without "Failed to fetch apps: 500" error
+- [ ] If SUPABASE_SERVICE_ROLE_KEY is not set, apps page shows app cards (deployment cache degrades gracefully to empty, no 500)
+
+#### Dashboard Error Boundary
+- [ ] If a client-side error occurs on /dashboard, a "Something went wrong. Please try refreshing." message is shown with a "Try again" button — NOT a full-page white crash

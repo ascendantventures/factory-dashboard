@@ -68,12 +68,7 @@ export async function GET() {
     return NextResponse.json({ error: issuesError.message }, { status: 500 });
   }
 
-  // Fetch all deployment cache rows
-  const adminClient = createSupabaseAdminClient();
-  const { data: deployments } = await adminClient
-    .from('dash_deployment_cache')
-    .select('repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at');
-
+  // Fetch all deployment cache rows (non-critical — gracefully skip if unavailable)
   type DeploymentCacheRow = {
     repo_full_name: string;
     vercel_deployment_id: string | null;
@@ -82,10 +77,18 @@ export async function GET() {
     deployed_at: string | null;
   };
   const deploymentMap = new Map<string, DeploymentCacheRow>();
-  if (deployments) {
-    for (const d of deployments) {
-      deploymentMap.set(d.repo_full_name, d as DeploymentCacheRow);
+  try {
+    const adminClient = createSupabaseAdminClient();
+    const { data: deployments } = await adminClient
+      .from('dash_deployment_cache')
+      .select('repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at');
+    if (deployments) {
+      for (const d of deployments) {
+        deploymentMap.set(d.repo_full_name, d as DeploymentCacheRow);
+      }
     }
+  } catch {
+    // Deployment cache unavailable (e.g. SUPABASE_SERVICE_ROLE_KEY not set) — continue without
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

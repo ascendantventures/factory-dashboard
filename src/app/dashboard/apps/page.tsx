@@ -60,7 +60,7 @@ export default function AppsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data } = await supabase
-          .from('dash_user_roles')
+          .from('fd_user_roles')
           .select('role')
           .eq('user_id', user.id)
           .single();
