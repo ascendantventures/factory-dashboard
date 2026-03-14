@@ -837,3 +837,51 @@ _Added: 2026-03-14_
 - /dashboard/apps — app card grid, all cards now navigable
 - /dashboard/apps/[repoId] — detail page, reachable via card click
 - /dashboard/settings — settings page (linked from admin deployment status)
+
+## Event Log Route Fix (Issue #116)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+
+#### AC-001.1: Sidebar link navigates to /dashboard/event-log
+- [ ] Log in and observe the left sidebar — "Event Log" nav item is visible
+- [ ] Click "Event Log" in the sidebar — browser navigates to `/dashboard/event-log` (not /dashboard/admin/events)
+- [ ] URL in address bar shows `/dashboard/event-log`
+
+#### AC-001.2: Page renders event list from harness_events
+- [ ] Navigate to `/dashboard/event-log` — page loads with "Event Log" H1, subtitle "View harness events and webhook deliveries"
+- [ ] `data-testid="event-log-list"` element is present in the DOM
+- [ ] Page does NOT show a 404 error or "page not found" message
+- [ ] If harness_events table has records, table rows with `data-testid="event-row"` are visible
+
+#### AC-001.3: Events display with direction badge, status badge, payload viewer
+- [ ] (With events present) Each row shows a direction badge (IN/OUT) with correct dark-mode colors
+- [ ] Each row shows a status badge (received/delivered/failed)
+- [ ] Click an event row — row expands to show payload viewer (`data-testid="payload-viewer"`)
+- [ ] Click the row again — row collapses
+
+#### AC-001.4: Direct navigation loads without 404
+- [ ] Navigate directly to `/dashboard/event-log` — page loads (HTTP status not 404)
+- [ ] Page title does NOT contain "404" or "Not Found"
+
+#### Filter Bar
+- [ ] `data-testid="filter-direction"` select is present — select "in" — table updates to show only IN events
+- [ ] `data-testid="filter-status"` select is present — select "failed" — table updates
+- [ ] `data-testid="filter-event-type"` input is present — type an event type — table filters
+- [ ] `data-testid="filter-from"` date input is present
+- [ ] `data-testid="filter-to"` date input is present
+- [ ] With filters applied, `data-testid="clear-filters"` button appears — click it — all filters reset
+
+#### Pagination
+- [ ] `data-testid="pagination"` is visible when total events > 50
+- [ ] Pagination shows "Showing X–Y of Z" count text
+
+#### API
+- [ ] `GET /api/event-log` returns JSON with keys `data` (array) and `pagination` (object)
+- [ ] `GET /api/event-log?direction=in` filters correctly
+- [ ] `GET /api/event-log` without auth returns 401
+
+### Routes/Endpoints
+- /dashboard/event-log (new page — fixes 404)
+- GET /api/event-log (new API route querying harness_events)
+
