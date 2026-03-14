@@ -750,6 +750,9 @@ _Added: 2026-03-14_
 - [ ] `data-testid="quick-create-trigger"` is present on the button (in Header)
 - [ ] No duplicate New Issue button visible
 
+#### Dashboard Error Boundary
+- [ ] If a client-side error occurs on /dashboard, a "Something went wrong. Please try refreshing." message is shown with a "Try again" button — NOT a full-page white crash
+
 ### Routes/Endpoints
 - /dashboard (mobile nav, resize, duplicate button)
 - /dashboard/apps (500 → 200 fix)

@@ -38,6 +38,7 @@ function parseTechStack(texts: string[]): string[] {
 }
 
 export async function GET() {
+  try {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -60,7 +61,7 @@ export async function GET() {
 
   if (reposError) {
     // Degrade gracefully — return empty apps list rather than 500
-    console.error('[/api/apps] dash_build_repos query failed:', reposError.message);
+    console.error('[/api/apps] dash_build_repos query failed:', reposError.message, reposError.code);
     return NextResponse.json({ apps: [] });
   }
 
@@ -71,7 +72,7 @@ export async function GET() {
 
   if (issuesError) {
     // Degrade gracefully — return empty apps list rather than 500
-    console.error('[/api/apps] dash_issues query failed:', issuesError.message);
+    console.error('[/api/apps] dash_issues query failed:', issuesError.message, issuesError.code);
     return NextResponse.json({ apps: [] });
   }
 
@@ -162,4 +163,11 @@ export async function GET() {
   });
 
   return NextResponse.json({ apps });
+  } catch (err) {
+    console.error('[/api/apps] Unexpected error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error', apps: [] },
+      { status: 500 }
+    );
+  }
 }

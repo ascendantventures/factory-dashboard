@@ -576,3 +576,42 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/92_
 
 ### No DB Changes
 Pure client/server architecture fix. No migrations, no RLS changes needed.
+
+---
+
+## UAT Critical Fixes (Issue #93)
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/93_
+_Build Repo PR: https://github.com/ascendantventures/factory-dashboard/pull/31 (do NOT merge until fixed)_
+
+### Root Causes Fixed
+
+#### Bug 1 — Admin nav still broken (cec59014 has no role row)
+`fd_user_roles` had an admin row for `b4c20f13` (old seeded user), not for the live session user `cec59014-5d74-4ae2-9f15-a8477c8ee3d7` (ajrrac@gmail.com's actual Supabase auth.users ID in the `ojazkhiqwgssduehubdu` project).
+- **Fix:** Migration `20260314100000_fix_admin_role_issue93.sql` upserts admin row for `cec59014`. Already applied to DB.
+
+#### Bug 2 — Mobile resize crash (Suspense boundary)
+`DashboardLayout` was async but not wrapped in Suspense. On viewport resize, React attempted client re-render that hit unhandled async boundary → white screen crash.
+- **Fix:** `DashboardLayout` is now a sync wrapper that renders `DashboardLayoutInner` (async) inside `<Suspense fallback={<DashboardLoadingFallback />}>`. The fallback is a dark skeleton pulse spinner.
+
+#### Bug 3 — Apps 500 (error logging + try/catch)
+`/api/apps` route could throw on unexpected errors. Added top-level try/catch and `console.error` logging for `dash_build_repos` and `dash_issues` query errors to aid diagnosis.
+Root cause of 500 was likely RLS blocking `cec59014` (viewer role) from reading tables. Fixed by admin role upsert migration.
+
+#### Bug 4 — Multiple 404s on dashboard sub-routes
+Async `DashboardLayout` called `getUserRole()` which called `createSupabaseAdminClient()`. When `SUPABASE_SERVICE_ROLE_KEY` is missing/invalid, `@supabase/supabase-js` `createClient()` throws. Layout threw → Next.js segment failed to match → 404.
+- **Fix:** try/catch in `DashboardLayoutInner` around `getUserRole()` — defaults to `isAdmin=false` (viewer) on error. Route always renders now.
+
+#### Bug 5 — Duplicate New Issue button
+Investigation confirmed: only ONE `NewIssueButton` exists in source (`src/components/layout/Header.tsx:29`). The duplicate may have been present in an earlier PR preview deployment and subsequently auto-fixed. REGRESSION.md test step now verifies exactly 1 button.
+
+### Key Architectural Notes
+- `DashboardLayout` MUST remain a Suspense wrapper pattern — do NOT revert to direct async layout without Suspense
+- `getUserRole()` in the layout MUST have try/catch — `createSupabaseAdminClient()` can throw if service role key is undefined
+- The live session user for ajrrac@gmail.com in project `ojazkhiqwgssduehubdu` is `cec59014-5d74-4ae2-9f15-a8477c8ee3d7` — this is the canonical admin user_id
+- `fd_user_roles` is the source of truth for roles — NOT `dash_user_roles` (deprecated, may not exist)
+
+### Files Changed
+- `src/app/dashboard/layout.tsx` — Added Suspense boundary + try/catch in getUserRole call
+- `src/app/api/apps/route.ts` — Added top-level try/catch + error logging
+- `supabase/migrations/20260314100000_fix_admin_role_issue93.sql` — Admin role upsert for cec59014
+- `REGRESSION.md` — Added REQ-FIX-001 through REQ-FIX-005 test steps
