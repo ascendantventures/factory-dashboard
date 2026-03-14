@@ -83,6 +83,7 @@
 - `dash_agent_runs` — Agent execution logs (cost, duration, model). **Columns:** `run_status` (not `status`), `estimated_cost_usd` (not `cost_usd`), `log_summary` (not `logs`).
 - `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
+- `dash_notifications` — In-app notifications per user (Issue #101). Columns: id (uuid), user_id, type (enum), title, body, link, read (bool), created_at. Realtime enabled. RLS: users see own rows only.
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
 - `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
