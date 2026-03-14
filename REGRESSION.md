@@ -821,3 +821,34 @@ _Added: 2026-03-14_
 
 ### Routes/Endpoints
 - `/dashboard/pipeline` — main Kanban board page
+
+---
+
+## Event Log Route Fix — /dashboard/event-log (Issue #116)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+
+- [ ] [auth] Navigate to /dashboard — sidebar contains "Event Log" nav item
+- [ ] Inspect sidebar "Event Log" link href — must be `/dashboard/event-log` (NOT `/dashboard/admin/events`)
+- [ ] Click "Event Log" in sidebar — browser navigates to `/dashboard/event-log` (AC-001.1)
+- [ ] URL in address bar is `/dashboard/event-log` — NOT a 404 page (AC-001.4)
+- [ ] Page renders the Event Log heading ("Event Log") and subtitle ("View harness events and webhook deliveries") (AC-001.2)
+- [ ] Page renders a filter bar with Direction, Event Type, Status, From, To filters (data-testid: filter-direction, filter-event-type, filter-status, filter-from, filter-to)
+- [ ] Page renders a table container (data-testid="event-log-list")
+- [ ] When harness_events has records — rows with data-testid="event-row" are visible (AC-001.3)
+- [ ] Each event row shows: timestamp (monospace), direction badge (data-testid via EventDirectionBadge), event_type (monospace), source, status badge (data-testid via EventStatusBadge)
+- [ ] Click an event row — row expands showing metadata (Source, Created, Retry Count) and PayloadViewer (data-testid="payload-viewer") (AC-001.3)
+- [ ] Click expanded row again — collapses
+- [ ] If harness_events has no records — empty state (data-testid="empty-state") shows Radio icon and "No events yet" text
+- [ ] Apply a direction filter — table updates to show only matching events
+- [ ] Apply multiple filters — table filters correctly
+- [ ] Click "Clear filters" (data-testid="clear-filters") — all filters reset, full list returns
+- [ ] With no matching events after filtering — empty state shows FilterX icon and "No events match your filters"
+- [ ] Navigate directly to `/dashboard/event-log` — page loads without 404 (AC-001.4)
+- [ ] Verify `/api/event-log` returns 200 for authenticated user
+- [ ] Verify `/api/event-log` returns 401 for unauthenticated request
+
+### Routes/Endpoints
+- /dashboard/event-log (new page)
+- GET /api/event-log (new API route — queries harness_events table)
