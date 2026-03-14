@@ -6,9 +6,10 @@ interface MetricItemProps {
   value: number;
   label: string;
   accentColor?: string;
+  testId?: string;
 }
 
-function MetricItem({ value, label, accentColor = '#3B82F6' }: MetricItemProps) {
+function MetricItem({ value, label, accentColor = '#3B82F6', testId }: MetricItemProps) {
   return (
     <div
       style={{
@@ -19,6 +20,7 @@ function MetricItem({ value, label, accentColor = '#3B82F6' }: MetricItemProps) 
       }}
     >
       <div
+        data-testid={testId}
         style={{
           fontFamily: "'DM Sans', sans-serif",
           fontSize: '32px',
@@ -65,13 +67,13 @@ export default function PipelineMetricsBar({ counts }: Props) {
         overflow: 'hidden',
       }}
     >
-      <MetricItem value={counts.processed_today} label="Processed Today" accentColor="#3B82F6" />
+      <MetricItem testId="processed-today" value={counts.processed_today} label="Processed Today" accentColor="#3B82F6" />
       <div style={{ width: '1px', background: '#2A2F42', margin: '12px 0' }} />
-      <MetricItem value={counts.processed_week} label="This Week" accentColor="#8B5CF6" />
+      <MetricItem testId="processed-week" value={counts.processed_week} label="This Week" accentColor="#8B5CF6" />
       <div style={{ width: '1px', background: '#2A2F42', margin: '12px 0' }} />
-      <MetricItem value={counts.processed_total} label="All Time" accentColor="#6B7489" />
+      <MetricItem testId="processed-all-time" value={counts.processed_total} label="All Time" accentColor="#6B7489" />
       <div style={{ width: '1px', background: '#2A2F42', margin: '12px 0' }} />
-      <MetricItem value={counts.active_agents} label="Active Agents" accentColor="#22C55E" />
+      <MetricItem testId="active-agents-count" value={counts.active_agents} label="Active Agents" accentColor="#22C55E" />
       <div style={{ width: '1px', background: '#2A2F42', margin: '12px 0' }} />
       <MetricItem value={counts.errors_today} label="Errors Today" accentColor={counts.errors_today > 0 ? '#EF4444' : '#6B7489'} />
     </div>

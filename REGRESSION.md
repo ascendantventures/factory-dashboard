@@ -786,69 +786,30 @@ _Added: 2026-03-14_
 - Inner `<main className="flex-1 md:pl-8 md:pt-0">` changed to `<section>` — outer layout main unchanged
 - WCAG 2.1 SC 1.3.6 compliance: only one `<main>` landmark per page
 
-## [Kanban Card Readability] (Issue #102)
-_Added: 2026-03-14_
-
-### REQ-001: Card Title Legibility
-- [ ] [auth] Navigate to /dashboard/pipeline — verify Kanban board loads with issue cards
-- [ ] Inspect card titles — confirm NO card uses `truncate` (single-line); all titles use 2-line clamp (`line-clamp-2`)
-- [ ] Cards with similar prefixes (e.g. "Enhancement: Analytics...") must show enough text to differentiate one from another
-- [ ] Confirm `data-testid="card-title"` exists on title elements
-
-### REQ-002: Status Badge Visibility
-- [ ] [auth] Verify every card's complexity/status badge shows abbreviated text: SIMPLE→S, MEDIUM→M, COMPLEX→C
-- [ ] Confirm badges have `data-testid="status-badge"` (NOT `complexity-badge`)
-- [ ] Resize browser to 1024px wide — badges must remain fully visible and NOT clip at column edges
-- [ ] Confirm badge `title` attribute shows full label on hover
-
-### REQ-003: Horizontal Scroll Affordance
-- [ ] [auth] On a viewport narrower than the full board width, confirm horizontal scroll is present on the Kanban board
-- [ ] Confirm board container (`data-testid="kanban-board"`) has `overflow-x: auto` or `scroll`
-- [ ] Confirm each Kanban column has minimum width of 280px
-- [ ] Confirm styled scrollbar is visible at the bottom of the board when content overflows
-- [ ] Scroll to the right edge — confirm the "Build" column is reachable
-
-### REQ-004: Hide Zero-Value Cost Display
-- [ ] [auth] Confirm NO card shows `$0.00` — cost element must be hidden when `totalCost <= 0`
-- [ ] Confirm `[data-testid="card-cost"]` is NOT present for cards with no agent runs
-- [ ] If any card has a real cost (>$0), confirm it shows formatted cost (e.g. `$1.23`)
-
-### REQ-005: Drag Handle Visibility
-- [ ] [auth] On dark background, confirm drag handle (⠿) icon is visible without hovering (opacity ≥ 0.5)
-- [ ] Hover over a card — confirm drag handle increases to full opacity
-- [ ] Confirm `data-testid="drag-handle"` exists on drag handle elements
-- [ ] Confirm drag handle color is `#A1A1AA` (not `#71717A`)
-
-### Routes/Endpoints
-- `/dashboard/pipeline` — main Kanban board page
-
 ---
 
-## Event Log Route Fix — /dashboard/event-log (Issue #116)
+## Pipeline Control Panel — Harness Heartbeat Connection (Issue #105)
 _Added: 2026-03-14_
 
 ### Test Steps [auth]
-
-- [ ] [auth] Navigate to /dashboard — sidebar contains "Event Log" nav item
-- [ ] Inspect sidebar "Event Log" link href — must be `/dashboard/event-log` (NOT `/dashboard/admin/events`)
-- [ ] Click "Event Log" in sidebar — browser navigates to `/dashboard/event-log` (AC-001.1)
-- [ ] URL in address bar is `/dashboard/event-log` — NOT a 404 page (AC-001.4)
-- [ ] Page renders the Event Log heading ("Event Log") and subtitle ("View harness events and webhook deliveries") (AC-001.2)
-- [ ] Page renders a filter bar with Direction, Event Type, Status, From, To filters (data-testid: filter-direction, filter-event-type, filter-status, filter-from, filter-to)
-- [ ] Page renders a table container (data-testid="event-log-list")
-- [ ] When harness_events has records — rows with data-testid="event-row" are visible (AC-001.3)
-- [ ] Each event row shows: timestamp (monospace), direction badge (data-testid via EventDirectionBadge), event_type (monospace), source, status badge (data-testid via EventStatusBadge)
-- [ ] Click an event row — row expands showing metadata (Source, Created, Retry Count) and PayloadViewer (data-testid="payload-viewer") (AC-001.3)
-- [ ] Click expanded row again — collapses
-- [ ] If harness_events has no records — empty state (data-testid="empty-state") shows Radio icon and "No events yet" text
-- [ ] Apply a direction filter — table updates to show only matching events
-- [ ] Apply multiple filters — table filters correctly
-- [ ] Click "Clear filters" (data-testid="clear-filters") — all filters reset, full list returns
-- [ ] With no matching events after filtering — empty state shows FilterX icon and "No events match your filters"
-- [ ] Navigate directly to `/dashboard/event-log` — page loads without 404 (AC-001.4)
-- [ ] Verify `/api/event-log` returns 200 for authenticated user
-- [ ] Verify `/api/event-log` returns 401 for unauthenticated request
+- [ ] Navigate to `/pipeline` — page loads without error, shows "Pipeline Control" header
+- [ ] Page shows status badge with either "Running" (green dot) or "Stopped" (red dot) — NOT static placeholder
+- [ ] `data-testid="harness-status-badge"` element exists on page
+- [ ] `data-testid="harness-pid"` element exists — shows a number or "—"
+- [ ] `data-testid="active-agents-count"` element exists — shows a number
+- [ ] `data-testid="processed-today"` element exists — shows a number
+- [ ] `data-testid="processed-week"` element exists — shows a number
+- [ ] `data-testid="processed-all-time"` element exists — shows a number
+- [ ] "Last Heartbeat" row visible in the status card meta grid
+- [ ] Wait 30 seconds — page auto-refreshes (check "Auto-refreshes every 30s" text in header)
+- [ ] `GET /api/harness-status` returns JSON with keys: `status`, `pid`, `activeAgents`, `processedToday`, `processedThisWeek`, `processedAllTime`, `lastSeen`
+- [ ] When harness is running: status badge is green "Running", PID is a positive integer, activeAgents ≥ 0
+- [ ] When harness last heartbeat is >5 min old or missing: status shows red "Stopped", PID shows "—", agents show 0
 
 ### Routes/Endpoints
-- /dashboard/event-log (new page)
-- GET /api/event-log (new API route — queries harness_events table)
+- `/pipeline` (Pipeline Control page)
+- `GET /api/harness-status` (new — reads Supabase harness_heartbeat table)
+
+### Supabase
+- `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
+- RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
