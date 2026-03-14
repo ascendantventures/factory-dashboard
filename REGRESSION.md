@@ -272,3 +272,29 @@ _Added: 2026-03-12 — Issue #30_
 ### Prerequisite Check (run before testing comment threading)
 - **VERIFY** `GITHUB_BUILD_REPO` is set to **`ascendantventures/harness-beta-test`** in Vercel (Production + Preview + Development). Two failure modes: (1) missing → HTTP 500; (2) wrong repo (e.g. `factory-dashboard`) → GitHub 404 → HTTP 500. Dashboard issue numbers live in `harness-beta-test`, not `factory-dashboard`. Both bugs confirmed in QA for issue #30 (rounds 1 and 2).
 
+
+---
+
+## Amber Flash Animation on New Comments (Issue #73)
+_Added: 2026-03-14 — Bug Fix for #30_
+
+### Test Steps
+- [ ] Navigate to /dashboard/issues/[any issue number with comments] [auth]
+- [ ] Scroll to "GitHub Comments" section — existing comments have white/violet background (no amber)
+- [ ] Fill `[data-testid="comment-input"]` with any text (e.g. "Test amber flash")
+- [ ] Click `[data-testid="comment-submit"]` ("Post Comment" button)
+- [ ] The newly appended comment IMMEDIATELY shows an amber background (#FEF3C7) — visible before API returns
+- [ ] The amber background fades smoothly to white over ~1.5 seconds via CSS transition
+- [ ] After fade completes, the comment looks identical to pre-existing comments (white/violet background)
+- [ ] Pre-existing comments (loaded on page open) do NOT flash amber
+- [ ] Post a second comment sequentially — only the latest comment flashes; the previous new comment is now static
+
+### Routes/Endpoints
+- /dashboard/issues/[number] — issue detail page with comment thread
+- POST /api/issues/[number]/comments — comment submission (unchanged)
+
+### Test Selectors (required for E2E)
+- `[data-testid="comment-input"]` — textarea in ReplyEditor
+- `[data-testid="comment-submit"]` — Post Comment button in ReplyEditor
+- `[data-testid="comment-item"]` — each comment item root div
+

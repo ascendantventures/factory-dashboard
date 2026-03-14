@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/30
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/73
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -163,6 +163,7 @@
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
+- **Amber flash animation (CR #73)** — `CommentItem.tsx` now uses `useState(isNew)` + CSS `transition: background-color 1.5s ease-out` instead of CSS keyframe animation. The key fix: `handleOptimisticInsert` in `CommentThread.tsx` now marks the optimistic comment as new immediately (so the flash is visible right after submit, before the API returns). `data-testid` on textarea is `comment-input` and submit button is `comment-submit` (not `submit-reply-btn`).
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel

@@ -210,6 +210,7 @@ export function ReplyEditor({ issueNumber, onSuccess, onOptimisticInsert, onRoll
           {/* Textarea */}
           <textarea
             ref={textareaRef}
+            data-testid="comment-input"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Leave a comment…"
@@ -259,7 +260,7 @@ export function ReplyEditor({ issueNumber, onSuccess, onOptimisticInsert, onRoll
           <span style={{ fontSize: 12, color: '#DC2626', flex: 1 }}>{error}</span>
         )}
         <button
-          data-testid="submit-reply-btn"
+          data-testid="comment-submit"
           onClick={handleSubmit}
           disabled={isPosting || !value.trim()}
           style={{

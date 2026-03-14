@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { BotBadge } from './BotBadge';
 import { CommentBody } from './CommentBody';
@@ -30,7 +31,18 @@ export function CommentItem({ comment, isNew = false }: Props) {
   const isAgent = comment.authorType === 'Bot';
   const isDocument = isDocumentComment(comment.body);
 
-  const cardBg = isAgent ? '#F5F3FF' : '#FFFFFF';
+  // Flash state: start amber when isNew, then fade to base bg after 200ms hold
+  const [flash, setFlash] = useState(isNew);
+
+  useEffect(() => {
+    if (!isNew) return;
+    setFlash(true);
+    const timer = setTimeout(() => setFlash(false), 200);
+    return () => clearTimeout(timer);
+  }, [isNew]);
+
+  const baseBg = isAgent ? '#F5F3FF' : '#FFFFFF';
+  const cardBg = flash ? '#FEF3C7' : baseBg;
   const cardBorder = isAgent ? '#DDD6FE' : '#E7E5E4';
 
   const timeAgo = formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true });
@@ -44,8 +56,7 @@ export function CommentItem({ comment, isNew = false }: Props) {
         borderRadius: 10,
         padding: '16px 20px',
         marginBottom: 12,
-        ['--comment-bg' as string]: cardBg,
-        ...(isNew ? { animation: 'amberFlash 2s ease-out forwards' } : {}),
+        transition: flash ? 'none' : 'background-color 1.5s ease-out',
       }}
     >
       {/* Header row */}

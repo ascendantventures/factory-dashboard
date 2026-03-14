@@ -158,10 +158,17 @@ export function CommentThread({ issueNumber }: Props) {
 
   const handleOptimisticInsert = useCallback((comment: GithubComment) => {
     setComments((prev) => [...prev, comment]);
+    // Flash the optimistic comment immediately so user sees confirmation on submit
+    setNewCommentIds((prev) => new Set(prev).add(comment.id));
   }, []);
 
   const handleRollback = useCallback((tempId: number) => {
     setComments((prev) => prev.filter((c) => c.id !== tempId));
+    setNewCommentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(tempId);
+      return next;
+    });
   }, []);
 
   const handleNewComment = useCallback((comment: GithubComment) => {
@@ -191,15 +198,11 @@ export function CommentThread({ issueNumber }: Props) {
         padding: '24px',
       }}
     >
-      {/* Pulse keyframes */}
+      {/* Pulse keyframes for skeleton loading */}
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
-        }
-        @keyframes amberFlash {
-          0% { background-color: #FEF3C7; }
-          100% { background-color: var(--comment-bg, #FFFFFF); }
         }
       `}</style>
 
