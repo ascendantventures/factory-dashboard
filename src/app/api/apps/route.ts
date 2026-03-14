@@ -59,8 +59,9 @@ export async function GET() {
     .order('display_name');
 
   if (reposError) {
-    console.error('[/api/apps] dash_build_repos query failed:', reposError.message, reposError);
-    return NextResponse.json({ error: reposError.message }, { status: 500 });
+    // Degrade gracefully — return empty apps list rather than 500
+    console.error('[/api/apps] dash_build_repos query failed:', reposError.message);
+    return NextResponse.json({ apps: [] });
   }
 
   // Fetch all issues
@@ -69,8 +70,9 @@ export async function GET() {
     .select('id, issue_number, repo, title, body, state, station, labels, updated_at');
 
   if (issuesError) {
-    console.error('[/api/apps] dash_issues query failed:', issuesError.message, issuesError);
-    return NextResponse.json({ error: issuesError.message }, { status: 500 });
+    // Degrade gracefully — return empty apps list rather than 500
+    console.error('[/api/apps] dash_issues query failed:', issuesError.message);
+    return NextResponse.json({ apps: [] });
   }
 
   // Fetch all deployment cache rows

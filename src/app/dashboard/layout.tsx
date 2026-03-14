@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getUserRole } from '@/lib/roles';
 import AppShell from '@/components/layout/AppShell';
 
+export const dynamic = 'force-dynamic';
+
 async function DashboardShell({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
