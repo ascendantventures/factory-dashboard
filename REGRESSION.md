@@ -801,3 +801,19 @@ _Added: 2026-03-14_
 - Fix is in `src/app/dashboard/settings/SettingsClient.tsx` line ~852
 - Inner `<main className="flex-1 md:pl-8 md:pt-0">` changed to `<section>` — outer layout main unchanged
 - WCAG 2.1 SC 1.3.6 compliance: only one `<main>` landmark per page
+
+## Sidebar Event Log Navigation Fix [auth]
+_Issue #114 — UAT Fix for #106_
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Log in and navigate to /dashboard
+- [ ] Click 'Event Log' in the left sidebar — browser should navigate to /dashboard/event-log (NOT /dashboard/admin/events)
+- [ ] Verify the URL in the address bar shows /dashboard/event-log
+- [ ] Verify the Event Log page loads and displays harness_events data (not empty, not fdash_event_log errors)
+- [ ] Verify the 'Event Log' sidebar item is highlighted/active when on /dashboard/event-log
+- [ ] Verify no sidebar nav link points to /dashboard/admin/events (inspect all nav anchor hrefs)
+
+### Routes/Endpoints
+- /dashboard/event-log (correct destination)
+- /dashboard/admin/events (must NOT be linked from sidebar)
