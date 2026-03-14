@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
-import { visit } from 'unist-util-visit';
+import { visit, CONTINUE } from 'unist-util-visit';
 import type { Components } from 'react-markdown';
 import type { CSSProperties } from 'react';
 import type { Root, Text, Element } from 'hast';
@@ -62,6 +62,10 @@ function rehypeTokenHighlight() {
       const parentEl = parent as Element;
       const idx = parentEl.children.indexOf(node);
       parentEl.children.splice(idx, 1, ...replacement);
+      // Skip over replacement nodes to prevent infinite recursion:
+      // visit would otherwise traverse into the new span/anchor elements,
+      // find the same REQ/AC text nodes, and loop forever.
+      return [CONTINUE, idx + replacement.length];
     });
   };
 }

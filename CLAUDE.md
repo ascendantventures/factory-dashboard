@@ -164,6 +164,7 @@
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
 - **Amber flash animation (CR #73)** — `CommentItem.tsx` now uses `useState(isNew)` + CSS `transition: background-color 1.5s ease-out` instead of CSS keyframe animation. The key fix: `handleOptimisticInsert` in `CommentThread.tsx` now marks the optimistic comment as new immediately (so the flash is visible right after submit, before the API returns). `data-testid` on textarea is `comment-input` and submit button is `comment-submit` (not `submit-reply-btn`).
+- **rehypeTokenHighlight infinite recursion (CR #73 bugfix)** — The `rehypeTokenHighlight` plugin in `CommentBody.tsx` must return `[CONTINUE, idx + replacement.length]` after splicing replacement nodes into the parent's children. Without this, `unist-util-visit` traverses INTO the newly-created `<span>`/`<a>` elements, finds the same REQ/AC token text nodes inside them, and processes them again → infinite recursion → stack overflow → client-side React crash on ALL issue detail pages. The guard `if (p.tagName === 'code' || p.tagName === 'pre')` is insufficient; the cursor-advance return is required.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel

@@ -258,6 +258,7 @@ _Added: 2026-03-12 — Issue #30_
 - [ ] Page polls for new comments every 30 seconds (verify by waiting)
 - [ ] REQ-FDC-XXX tokens in spec comments appear with amber highlight background (rendered by rehypeTokenHighlight plugin, NOT pre-processed markdown)
 - [ ] AC-NNN.N tokens appear as amber-colored links — verify by viewing a spec comment that contains AC tokens inside backtick code spans; they must render as links, NOT as literal `<a>` HTML text
+- [ ] **CRITICAL — No crash on page load:** The issue detail page must not show "Application error: a client-side exception has occurred". If any issue with spec/design comments (containing REQ/AC tokens) crashes, the rehypeTokenHighlight plugin has the infinite-recursion bug (it must return `[CONTINUE, idx + replacement.length]` after splicing replacement nodes)
 
 ### Routes/Endpoints
 - /dashboard/issues/[number] — issue detail page with comment thread
