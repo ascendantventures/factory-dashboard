@@ -725,3 +725,19 @@ _Added: 2026-03-14_
 
 ### Routes/Endpoints
 - /dashboard/settings/webhooks (authenticated GET — must return 200, not 500)
+
+## Design Detail Breadcrumb Fix (Issue #80)
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/apps/3761c3bd-f41f-4600-be24-b69bea58368f/designs/37`
+- [ ] Verify exactly **one** `<nav>` element is rendered on the page (no duplicate breadcrumb)
+- [ ] Verify the breadcrumb has `aria-label="breadcrumb"`
+- [ ] Verify the breadcrumb does NOT show the raw UUID `3761c3bd-f41f-4600-be24-b69bea58368f`
+- [ ] Verify the app name segment shows a human-readable display name (e.g. "Factory Dashboard")
+- [ ] Verify the issue segment reads `Issue #37` (not `#37`)
+- [ ] Verify breadcrumb links: Apps → `/dashboard/apps`, App name → `/dashboard/apps/[repoId]`, Designs → `/dashboard/apps/[repoId]/designs`
+- [ ] Verify the last segment (Issue #37) is not a link (it is the current page)
+
+### Routes/Endpoints
+- `/dashboard/apps/[repoId]/designs/[issueNumber]`

@@ -52,25 +52,6 @@ export default function PenFileViewer({
         }}
       >
         <div>
-          {repoId && issueNumber && (
-            <nav style={{
-              fontFamily: '"Instrument Sans", system-ui, sans-serif',
-              fontSize: '14px',
-              color: '#9C9792',
-              marginBottom: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}>
-              <a href="/dashboard/apps" style={{ color: '#9C9792', textDecoration: 'none' }}>Apps</a>
-              <span>/</span>
-              <a href={`/dashboard/apps/${repoId}`} style={{ color: '#9C9792', textDecoration: 'none' }}>{repoId}</a>
-              <span>/</span>
-              <a href={`/dashboard/apps/${repoId}/designs`} style={{ color: '#9C9792', textDecoration: 'none' }}>Designs</a>
-              <span>/</span>
-              <span style={{ color: '#1F1E1C' }}>#{issueNumber}</span>
-            </nav>
-          )}
           <h1 style={{
             fontFamily: '"Instrument Serif", Georgia, serif',
             fontSize: '40px',
