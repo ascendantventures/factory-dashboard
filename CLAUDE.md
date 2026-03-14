@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/113
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/116
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -169,6 +169,8 @@
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
+- **harness_events vs fdash_event_log** — Two event tables exist. `fdash_event_log` is used by the webhook ingest handler (GitHub events). `harness_events` is written by the agentic harness itself (direction=incoming/outgoing/internal, status=success/failure/pending). The `/dashboard/event-log` page (issue #116) queries `harness_events` via `/api/event-log`. Schema differences are mapped in the API route: direction incoming→in, outgoing/internal→out; status success→delivered, failure→failed, pending→received.
+- **Event Log route fix (issue #116)** — Sidebar now links to `/dashboard/event-log` (not `/dashboard/admin/events`). Files: `src/components/layout/Sidebar.tsx`, `src/app/dashboard/event-log/page.tsx`, `src/app/api/event-log/route.ts`.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — static placeholder, no real notification data wired up.
