@@ -2,64 +2,34 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Grid3X3,
   Activity,
   BarChart3,
   Settings,
+  FileStack,
   Shield,
 } from 'lucide-react';
 
-const BASE_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true, testId: undefined },
-  { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined },
-  { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined },
-  { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined },
-];
+interface MobileBottomNavProps {
+  isAdmin: boolean;
+}
 
-const SETTINGS_ITEM = {
-  href: '/dashboard/settings',
-  label: 'Settings',
-  icon: Settings,
-  exact: false,
-  testId: 'bottom-nav-settings',
-};
-
-const ADMIN_ITEM = {
-  href: '/dashboard/admin/users',
-  label: 'Admin',
-  icon: Shield,
-  exact: false,
-  testId: 'bottom-nav-admin',
-};
-
-export default function MobileBottomNav() {
+export default function MobileBottomNav({ isAdmin }: MobileBottomNavProps) {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    async function checkRole() {
-      try {
-        const { createSupabaseBrowserClient } = await import('@/lib/supabase');
-        const supabase = createSupabaseBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from('fd_user_roles')
-          .select('role, is_active')
-          .eq('user_id', user.id)
-          .single();
-        if (data?.role === 'admin' && data.is_active !== false) setIsAdmin(true);
-      } catch {
-        // Default to non-admin on error
-      }
-    }
-    checkRole();
-  }, []);
-
-  const navItems = [...BASE_NAV_ITEMS, isAdmin ? ADMIN_ITEM : SETTINGS_ITEM];
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true, testId: undefined as string | undefined },
+    { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined as string | undefined },
+    { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined as string | undefined },
+    { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined as string | undefined },
+    { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false, testId: undefined as string | undefined },
+    ...(isAdmin
+      ? [{ href: '/dashboard/admin/users', label: 'Admin', icon: Shield, exact: false, testId: 'bottom-nav-admin' as string | undefined }]
+      : []),
+    { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false, testId: undefined as string | undefined },
+  ];
 
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href);
