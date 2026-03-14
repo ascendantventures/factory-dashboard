@@ -813,3 +813,110 @@ _Added: 2026-03-14_
 ### Supabase
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
+
+## [Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete] (Issue #108)
+_Added: 2026-03-14_
+
+### Route
+`/dashboard/admin/users`
+
+### Test Steps
+
+#### REQ-USR-001: User Search
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Type "qa_login" in the search bar (`data-testid="user-search"`)
+- [ ] Wait 400ms (debounce)
+- [ ] Verify rows appear and each `[data-testid="user-email"]` contains "qa_login"
+- [ ] Clear search — verify all users return
+- [ ] Type a nonexistent email — verify "No users found" empty state appears
+
+#### REQ-USR-002: Filter Tabs
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Click "Test Accounts" tab (`data-testid="filter-tab-test"`)
+- [ ] Verify every row has `[data-testid="test-account-badge"]` visible
+- [ ] Count badges should equal tab badge count
+- [ ] Click "Real" tab (`data-testid="filter-tab-real"`)
+- [ ] Verify no rows have `[data-testid="test-account-badge"]`
+- [ ] Click "All" tab (`data-testid="filter-tab-all"`)
+- [ ] Verify both test and real users appear
+
+#### REQ-USR-003: Pagination
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Verify at most 20 rows (`[data-testid="user-row"]`) are visible
+- [ ] If total > 20, verify `[data-testid="pagination"]` is visible
+- [ ] Click Next button — verify page increments
+- [ ] Verify Prev button disabled on page 1, Next button disabled on last page
+
+#### REQ-USR-004: Role Change Confirmation
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Click the first `[data-testid="role-dropdown"]` for a non-own user
+- [ ] Select a different role from the dropdown
+- [ ] Verify `[data-testid="role-confirm-dialog"]` appears
+- [ ] Verify dialog shows email, old role, new role
+- [ ] Click `[data-testid="confirm-cancel"]` — verify dialog closes, no role change applied
+- [ ] Open dropdown again, select different role, click `[data-testid="confirm-submit"]`
+- [ ] Verify dialog closes, toast appears, role updates in table
+
+#### REQ-USR-005: Bulk Delete
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Click "Test Accounts" tab
+- [ ] Click `[data-testid="select-all-checkbox"]`
+- [ ] Verify all non-own rows are checked
+- [ ] Verify `[data-testid="bulk-action-bar"]` appears with count
+- [ ] Click `[data-testid="bulk-delete-btn"]`
+- [ ] Verify `[data-testid="bulk-delete-dialog"]` appears
+- [ ] Click `[data-testid="confirm-cancel"]` — verify dialog closes, no deletion
+- [ ] (Optional destructive): Click delete button, confirm, verify users removed from table
+
+### API Endpoints
+- `GET /api/admin/users?filter=test&search=qa` — returns filtered users with isTestAccount
+- `POST /api/admin/users/bulk` (body: `{ user_ids, action: "delete" }`) — bulk delete
+- `PATCH /api/admin/users/[id]/role` (body: `{ role }`) — role change with confirmation
+
+---
+
+## Users Page — Search, Filter, Pagination & Cleanup (Issue #108)
+_Added: 2026-03-14_
+
+### Context
+The users admin page (`/dashboard/admin/users`) was enhanced with search, filter tabs (All/Real/Test Accounts), pagination (20/page), role change confirmation dialog, bulk permanent delete, and visual test account tagging.
+
+### Test Steps (All require Admin login) [auth]
+
+**Search (REQ-USR-001):**
+- [ ] Navigate to /dashboard/admin/users
+- [ ] Type "qa_login" in search box (data-testid="user-search") — results filter within 300ms
+- [ ] Type string matching no users — "No users found" empty state appears
+- [ ] Clear search — full user list reloads
+- [ ] Search is case-insensitive
+
+**Filter Tabs (REQ-USR-002):**
+- [ ] Three tabs: "All", "Real", "Test Accounts" with count badges (data-testid="filter-tab-all/real/test")
+- [ ] "Test Accounts" tab shows only rows with amber "TEST" badge (data-testid="test-account-badge")
+- [ ] "Real" tab shows only non-test users
+- [ ] "All" tab shows all users
+
+**Pagination (REQ-USR-003):**
+- [ ] Pagination control visible (data-testid="pagination") — shows "Page N of M"
+- [ ] Max 20 rows per page; Prev disabled on page 1, Next disabled on last page
+- [ ] Changing search or filter resets to page 1
+
+**Role Change Confirmation (REQ-USR-004):**
+- [ ] Click role dropdown (data-testid="role-dropdown") on non-self row
+- [ ] Select different role — confirmation dialog (data-testid="role-confirm-dialog") appears
+- [ ] Click Cancel (data-testid="confirm-cancel") — dialog closes, no change
+- [ ] Click Confirm (data-testid="confirm-submit") — role updated, success toast
+
+**Bulk Delete (REQ-USR-005):**
+- [ ] Check select-all (data-testid="select-all-checkbox") — all rows selected
+- [ ] Bulk bar appears (data-testid="bulk-action-bar") with "Delete N Selected" (data-testid="bulk-delete-btn")
+- [ ] Click bulk delete — confirmation dialog (data-testid="bulk-delete-dialog") appears
+- [ ] Click "Keep Users" (data-testid="confirm-cancel") — cancelled, nothing deleted
+- [ ] For >5 users: warning box shown in dialog
+
+### Routes/Endpoints
+- /dashboard/admin/users
+- GET /api/admin/users?search=&filter=all|real|test&page=N&pageSize=20
+- DELETE /api/admin/users/bulk (body: { userIds: string[] })
+- PATCH /api/admin/users/[id]/role (body: { role: string })
+
