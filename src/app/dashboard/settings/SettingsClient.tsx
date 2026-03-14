@@ -849,7 +849,7 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
         </div>
 
         {/* Content */}
-        <main className="flex-1 md:pl-8 md:pt-0">
+        <section className="flex-1 md:pl-8 md:pt-0">
           {activeTab === 'general' && (
             <div className="rounded-xl border p-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
               <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Tracked Repositories</h2>
@@ -983,7 +983,7 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
           {activeTab === 'templates' && <TemplateRegistryPanel isAdmin={isAdmin} />}
           {activeTab === 'environment' && <EnvStatusPanel />}
           {activeTab === 'api-keys' && isAdmin && <ApiKeyPanel />}
-        </main>
+        </section>
       </div>
     </div>
   );
