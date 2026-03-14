@@ -166,6 +166,7 @@
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
+- **Event Log route (CR #116)** — Sidebar links to `/dashboard/event-log` (fixed from `/dashboard/admin/events`). New page at `src/app/dashboard/event-log/page.tsx` queries `harness_events` via `/api/event-log`. The legacy `/api/admin/events` route still exists and queries `fdash_event_log` (always empty) — do not remove until confirmed no consumers. Uses inline dark-mode badges (DirectionBadge/StatusBadge) instead of light-mode components from `src/components/event-log/`.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
