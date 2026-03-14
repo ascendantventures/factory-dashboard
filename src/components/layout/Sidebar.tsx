@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3, exact: false },
   { href: '/pipeline', label: 'Pipeline', icon: Cpu, exact: false },
   { href: '/dashboard/docs', label: 'API Docs', icon: BookOpen, exact: false },
-  { href: '/dashboard/admin/events', label: 'Event Log', icon: Radio, exact: false },
+  { href: '/dashboard/event-log', label: 'Event Log', icon: Radio, exact: false },
   { href: '/dashboard/admin/users', label: 'Users', icon: Users, exact: false },
   { href: '/dashboard/admin/audit', label: 'Audit Log', icon: FileText, exact: false },
   { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },

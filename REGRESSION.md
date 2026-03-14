@@ -764,3 +764,19 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+## Sidebar Event Log Navigation Fix [auth]
+_Fix: Issue #114 (UAT Fix for #106)_
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Log in and navigate to /dashboard
+- [ ] Click 'Event Log' in the left sidebar — browser navigates to /dashboard/event-log (NOT /dashboard/admin/events)
+- [ ] The Event Log page at /dashboard/event-log loads without error
+- [ ] The Event Log page displays data from harness_events table (not empty, not from fdash_event_log)
+- [ ] Sidebar 'Event Log' item is shown as active/highlighted when on /dashboard/event-log
+- [ ] No sidebar link points to /dashboard/admin/events
+
+### Routes/Endpoints
+- /dashboard/event-log (must be reachable from sidebar)
+- /dashboard/admin/events (must NOT be linked from sidebar)
