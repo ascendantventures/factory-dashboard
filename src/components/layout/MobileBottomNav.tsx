@@ -24,11 +24,12 @@ export default function MobileBottomNav({ isAdmin }: MobileBottomNavProps) {
     { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined as string | undefined },
     { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined as string | undefined },
     { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined as string | undefined },
-    { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false, testId: undefined as string | undefined },
     ...(isAdmin
       ? [{ href: '/dashboard/admin/users', label: 'Admin', icon: Shield, exact: false, testId: 'bottom-nav-admin' as string | undefined }]
-      : []),
-    { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false, testId: undefined as string | undefined },
+      : [
+          { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false, testId: undefined as string | undefined },
+          { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false, testId: 'bottom-nav-settings' as string | undefined },
+        ]),
   ];
 
   function isActive(href: string, exact: boolean) {
