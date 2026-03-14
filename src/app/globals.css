@@ -165,6 +165,40 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
+/* ── Token highlighting for spec documents (CommentBody) ── */
+.req-highlight {
+  display: inline;
+  padding: 1px 6px;
+  background: #3D2A14;
+  color: #FBBF24;
+  border-radius: 4px;
+  border: 1px solid #6B4423;
+  font-weight: 600;
+  cursor: default;
+}
+
+.ac-link {
+  color: #F59E0B;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(245, 158, 11, 0.5);
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+.ac-link:hover {
+  color: #FBBF24;
+  text-decoration-color: #FBBF24;
+}
+
+.ac-link:focus-visible {
+  outline: 2px solid #F59E0B;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* Kanban board scrollbar */
 .kanban-scroll {
   scrollbar-width: thin;

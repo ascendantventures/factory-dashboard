@@ -37,7 +37,6 @@ function rehypeTokenHighlight() {
             properties: {
               id: `REQ-${reqMatch[1]}`,
               className: ['req-highlight'],
-              style: 'background:#FEF3C7;color:#92400E;padding:1px 4px;border-radius:3px;font-weight:600;',
             },
             children: [{ type: 'text', value: part }],
           } as Element;
@@ -50,7 +49,6 @@ function rehypeTokenHighlight() {
             properties: {
               href: `#REQ-${acMatch[1]}`,
               className: ['ac-link'],
-              style: 'color:#D97706;font-weight:600;text-decoration:underline;',
             },
             children: [{ type: 'text', value: part }],
           } as Element;

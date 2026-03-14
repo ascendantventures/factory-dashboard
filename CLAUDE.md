@@ -21,7 +21,7 @@
 - framer-motion (animations)
 - yet-another-react-lightbox (CR #36 — image lightbox for attachment gallery)
 - uuid (CR #36 — UUIDs for storage paths)
-- react-markdown + remark-gfm + rehype-highlight + rehype-raw (Issue #30 — markdown rendering)
+- react-markdown + remark-gfm + rehype-highlight + rehype-raw + unist-util-visit (Issue #30/#67 — markdown rendering + AST token highlighting)
 - @uiw/react-md-editor (Issue #30 — markdown editor, installed but using custom textarea editor for SSR compat)
 
 ## Architecture
@@ -153,7 +153,7 @@
 
 ## Known Issues & Gotchas
 - **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development).
-- **AC-NNN.N / REQ-XXX token highlighting must use a rehype plugin, NOT markdown pre-processing** — Injecting HTML into raw markdown before `react-markdown` processes it causes the HTML to be escaped and shown as literal text when the token appears inside a backtick code span. Fix (issue #30, round 3): replaced `processMarkdownText()` pre-processing with a custom `rehypeTokenHighlight` rehype plugin that walks hast text nodes and skips `<code>`/`<pre>` parents. Plugin is inserted between `rehype-raw` and `rehype-highlight` in the plugin chain.
+- **AC-NNN.N / REQ-XXX token highlighting must use a rehype plugin, NOT markdown pre-processing** — Injecting HTML into raw markdown before `react-markdown` processes it causes the HTML to be escaped and shown as literal text when the token appears inside a backtick code span. Fix (issue #30, round 3): replaced `processMarkdownText()` pre-processing with a custom `rehypeTokenHighlight` rehype plugin that walks hast text nodes and skips `<code>`/`<pre>` parents. Plugin is inserted between `rehype-raw` and `rehype-highlight` in the plugin chain. (Issue #67): Removed inline `style` strings from hast node properties — they were overriding CSS classes with light-mode colors. Token styling now fully comes from `.req-highlight` and `.ac-link` CSS classes in globals.css using dark-mode colors (`#3D2A14`/`#FBBF24` for REQ, `#F59E0B` for AC).
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.
 - **Repo input format** — Expects `owner/repo` format (e.g., `ascendantventures/harness-beta-test`). Full URLs silently fail.

@@ -272,3 +272,28 @@ _Added: 2026-03-12 — Issue #30_
 ### Prerequisite Check (run before testing comment threading)
 - **VERIFY** `GITHUB_BUILD_REPO` is set to **`ascendantventures/harness-beta-test`** in Vercel (Production + Preview + Development). Two failure modes: (1) missing → HTTP 500; (2) wrong repo (e.g. `factory-dashboard`) → GitHub 404 → HTTP 500. Dashboard issue numbers live in `harness-beta-test`, not `factory-dashboard`. Both bugs confirmed in QA for issue #30 (rounds 1 and 2).
 
+
+## AC/REQ Token Rendering Fix (Issue #67)
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] [auth] Navigate to /dashboard/issues/30
+- [ ] Scroll to GitHub Comments section — wait for comments to load
+- [ ] Find the Spec comment (starts with "# Spec:") — DocumentViewer renders it
+- [ ] Verify AC tokens in plain text (e.g. AC-001.1, AC-003.1) appear as amber underlined links (color #F59E0B) — NOT as raw `<a href=...>` HTML text
+- [ ] Verify clicking an AC link scrolls to its target anchor on the page
+- [ ] Verify AC tokens inside backtick code spans (e.g. `AC-003.1`) render as plain inline code — no link, no amber color
+- [ ] Verify REQ tokens in plain text (e.g. REQ-SPEC-001) appear with amber background (#3D2A14) and amber text (#FBBF24)
+- [ ] Verify REQ tokens inside backtick code spans render as plain code — no highlight
+- [ ] Inspect any fenced code block containing AC/REQ tokens — tokens must be plain text inside the code block
+- [ ] Confirm NO visible raw HTML text (`<a href=`, `&lt;a href=`) appears anywhere in comment output
+
+### Routes/Endpoints
+- /dashboard/issues/30 (GitHub Comments section)
+- CommentBody.tsx — rehypeTokenHighlight plugin
+
+### What was changed
+- Removed light-mode inline styles from rehypeTokenHighlight hast nodes (was overriding CSS classes)
+- Added `.req-highlight` and `.ac-link` CSS classes to globals.css with dark-mode colors (#3D2A14 bg, #FBBF24 text for REQ; #F59E0B for AC)
+- Added `unist-util-visit` to package.json dependencies
+- Added `@types/hast` to devDependencies
