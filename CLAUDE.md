@@ -543,3 +543,11 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Bug 2 (REQ-WHK-FIX-002):** Webhook list server crash — caused by unused `import IntegrationPresets` in `page.tsx` (Server Component importing a `'use client'` component in a way that triggered SSR exception). Removed the import and added graceful error handling for the `fd_webhooks` query.
 - **Key pattern:** In Next.js 16 App Router, never use `useEffect` to initialize state from props — initialize directly in `useState()`. `useEffect` runs post-hydration and causes visible flicker/failure.
 - **No DB migrations required** — pure client/SSR bug fixes.
+
+## CR #80 — Duplicate Breadcrumb Fix (Design Detail Page)
+- **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/80
+- **Route affected:** `/dashboard/apps/[repoId]/designs/[issueNumber]`
+- **Root cause:** `PenFileViewer.tsx` contained an inline `<nav>` (lines 55-73) rendering raw `repoId` UUID with no `aria-label`. The design detail page already had a correct breadcrumb above it.
+- **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
+- **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
+- **No DB migrations required** — UI-only fix.
