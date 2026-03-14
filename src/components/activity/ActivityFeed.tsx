@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { Radio } from 'lucide-react';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { ActivityEventRow } from './ActivityEvent';
 
@@ -9,7 +10,7 @@ export function ActivityFeed() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-2 px-2 py-3">
+      <div data-testid="activity-loading" className="flex flex-col gap-2 px-2 py-3">
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
@@ -45,7 +46,12 @@ export function ActivityFeed() {
         data-testid="activity-empty"
         className="flex flex-col items-center justify-center py-12 px-4 text-center gap-2"
       >
-        <div className="text-2xl">📡</div>
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(99,102,241,0.12)' }}
+        >
+          <Radio className="w-5 h-5" style={{ color: '#A5B4FC' }} />
+        </div>
         <p className="text-sm font-medium" style={{ color: '#A1A1AA' }}>
           No activity yet
         </p>

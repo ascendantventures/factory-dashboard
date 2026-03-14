@@ -837,3 +837,43 @@ _Added: 2026-03-14_
 - /dashboard/apps — app card grid, all cards now navigable
 - /dashboard/apps/[repoId] — detail page, reachable via card click
 - /dashboard/settings — settings page (linked from admin deployment status)
+
+---
+
+## Activity Feed Data Fix — Webhook Ingestion (Issue #104)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+
+**Activity Page (after backfill)**
+- [ ] Log in and navigate to `/dashboard/activity` — page loads without JavaScript error
+- [ ] After running `POST /api/admin/backfill-activity`, the activity page SHALL display event cards (`data-testid="activity-item"`) — NOT the empty state ("No activity yet")
+- [ ] Each activity item shows: station icon (Lucide SVG), event description, issue number and title, relative timestamp
+- [ ] Events are ordered newest-first
+- [ ] `data-testid="activity-item"` elements are present in the DOM (Playwright compatibility)
+- [ ] Loading state: while events load, `data-testid="activity-loading"` skeleton is visible (not the empty state message)
+- [ ] Error state: if API call fails, "Failed to load activity" message shown (not the empty-events message)
+- [ ] Empty state: `data-testid="activity-empty"` with Radio icon (not 📡 emoji) — only shown when events are genuinely zero
+
+**Webhook Handler (station label events)**
+- [ ] POST to `/api/webhooks/github` with invalid signature returns HTTP 401 (not 500 — table must exist)
+- [ ] After webhook receives `issues.labeled` with `station:build` for a new issue not yet in `dash_issues`: a row is created in `dash_issues` AND a row inserted in `dash_stage_transitions`
+- [ ] After webhook receives `issues.opened` event: row created in `dash_issues` with `station = null`
+- [ ] After webhook receives `issues.closed` event: `dash_issues.state` updated to `'closed'`
+- [ ] `dash_webhook_events` table accepts inserts (no "relation does not exist" error)
+
+**Backfill Endpoint**
+- [ ] `POST /api/admin/backfill-activity` without `x-admin-secret` header returns HTTP 401
+- [ ] `POST /api/admin/backfill-activity` with valid `x-admin-secret` and body `{"repo":"ascendantventures/harness-beta-test","limit":10}` returns HTTP 200 with `{ issues_upserted, transitions_inserted, errors }`
+- [ ] After successful backfill call, `dash_issues` table has rows and `GET /api/activity` returns at least 1 event
+
+**Icon System**
+- [ ] No emoji characters (🚀 ✅ 🔨 🧪 🐛 💰 📡) are visible in the activity feed
+- [ ] Each activity item has an SVG icon (Lucide) in the icon circle
+
+### Routes/Endpoints
+- `/dashboard/activity` — activity feed page
+- `GET /api/activity` — returns events from `dash_stage_transitions` and `dash_agent_runs`
+- `POST /api/webhooks/github` — receives GitHub webhook events
+- `POST /api/admin/backfill-activity` — seeds historical data from GitHub API
+

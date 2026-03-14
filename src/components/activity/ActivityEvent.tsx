@@ -2,20 +2,44 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import {
+  Rocket,
+  CheckCircle2,
+  Hammer,
+  FlaskConical,
+  Bug,
+  DollarSign,
+  Inbox,
+  FileText,
+  Palette,
+  Code2,
+} from 'lucide-react';
 import { ActivityTimestamp } from './ActivityTimestamp';
 import type { ActivityEvent as ActivityEventType } from '@/hooks/useActivityFeed';
 import { LogViewer } from '@/components/agents/LogViewer';
 
+type LucideIcon = React.ComponentType<{ className?: string }>;
+
 const EVENT_CONFIG: Record<
   ActivityEventType['event_type'],
-  { icon: string; color: string; bg: string }
+  { Icon: LucideIcon; color: string; bg: string }
 > = {
-  agent_spawned: { icon: '🚀', color: '#A5B4FC', bg: 'rgba(99,102,241,0.12)' },
-  stage_completed: { icon: '✅', color: '#4ADE80', bg: 'rgba(34,197,94,0.12)' },
-  build_deployed: { icon: '🔨', color: '#60A5FA', bg: 'rgba(59,130,246,0.12)' },
-  qa_result: { icon: '🧪', color: '#4ADE80', bg: 'rgba(34,197,94,0.12)' },
-  bug_filed: { icon: '🐛', color: '#FB923C', bg: 'rgba(249,115,22,0.12)' },
-  cost_logged: { icon: '💰', color: '#FDE047', bg: 'rgba(234,179,8,0.12)' },
+  agent_spawned: { Icon: Rocket, color: '#A5B4FC', bg: 'rgba(99,102,241,0.12)' },
+  stage_completed: { Icon: CheckCircle2, color: '#4ADE80', bg: 'rgba(34,197,94,0.12)' },
+  build_deployed: { Icon: Hammer, color: '#60A5FA', bg: 'rgba(59,130,246,0.12)' },
+  qa_result: { Icon: FlaskConical, color: '#4ADE80', bg: 'rgba(34,197,94,0.12)' },
+  bug_filed: { Icon: Bug, color: '#FB923C', bg: 'rgba(249,115,22,0.12)' },
+  cost_logged: { Icon: DollarSign, color: '#FDE047', bg: 'rgba(234,179,8,0.12)' },
+};
+
+const STATION_ICON: Record<string, LucideIcon> = {
+  intake: Inbox,
+  spec: FileText,
+  design: Palette,
+  build: Code2,
+  qa: FlaskConical,
+  bugfix: Bug,
+  done: CheckCircle2,
 };
 
 function truncate(str: string | null | undefined, max: number): string {
@@ -136,9 +160,15 @@ export function ActivityEventRow({ event }: ActivityEventProps) {
 
   const isAgentSpawned = event.event_type === 'agent_spawned' && event.source === 'run';
 
+  // Determine the icon component — use station-specific icon for stage_completed if available
+  let IconComponent: LucideIcon = config.Icon;
+  if (event.event_type === 'stage_completed' && event.to_station && STATION_ICON[event.to_station]) {
+    IconComponent = STATION_ICON[event.to_station];
+  }
+
   const inner = (
     <div
-      data-testid="activity-event"
+      data-testid="activity-item"
       data-event-type={event.event_type}
       className="flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer"
       style={{ background: 'transparent' }}
@@ -151,10 +181,10 @@ export function ActivityEventRow({ event }: ActivityEventProps) {
     >
       {/* Icon */}
       <div
-        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-sm"
+        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
         style={{ background: effectiveBg, color: effectiveColor }}
       >
-        {config.icon}
+        <IconComponent className="w-3.5 h-3.5" />
       </div>
 
       {/* Content */}

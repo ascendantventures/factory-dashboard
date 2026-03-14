@@ -82,40 +82,93 @@ export async function POST(request: NextRequest) {
   let processError: string | null = null;
 
   try {
-    // Process issues labeled/unlabeled events
-    if (eventType === 'issues' && (payload.action === 'labeled' || payload.action === 'unlabeled')) {
-      const label = (payload.label as Record<string, unknown> | null)?.name as string ?? '';
+    if (eventType === 'issues') {
+      const issue = payload.issue as Record<string, unknown>;
+      const action = payload.action as string;
+      const issueId = issue?.id as number | null;
 
-      if (label.startsWith('station:')) {
-        const newStation = label.replace('station:', '') as Station;
+      if (issue && issueId && repo && issueNumber !== null) {
+        const now = new Date().toISOString();
 
-        if (STATIONS.includes(newStation) && repo && issueNumber !== null) {
-          // Find issue in our DB
-          const { data: existingIssue } = await admin
-            .from('dash_issues')
-            .select('id, station')
-            .eq('repo', repo)
-            .eq('issue_number', issueNumber)
-            .single();
+        // Handle issues.opened — upsert into dash_issues
+        if (action === 'opened') {
+          await admin.from('dash_issues').upsert({
+            id: issueId,
+            issue_number: issueNumber,
+            repo,
+            title: (issue.title as string) ?? '',
+            body: (issue.body as string) ?? null,
+            state: 'open',
+            station: null,
+            labels: (issue.labels as unknown[]) ?? [],
+            author: (issue as Record<string, Record<string, unknown>>).user?.login ?? null,
+            created_at: issue.created_at as string,
+            updated_at: issue.updated_at as string,
+            synced_at: now,
+          }, { onConflict: 'id' });
+        }
 
-          if (existingIssue) {
-            const oldStation = existingIssue.station;
-            const targetStation = payload.action === 'labeled' ? newStation : null;
+        // Handle issues.closed — update state and closed_at
+        if (action === 'closed') {
+          await admin.from('dash_issues').upsert({
+            id: issueId,
+            issue_number: issueNumber,
+            repo,
+            title: (issue.title as string) ?? '',
+            body: (issue.body as string) ?? null,
+            state: 'closed',
+            station: null,
+            labels: (issue.labels as unknown[]) ?? [],
+            author: (issue as Record<string, Record<string, unknown>>).user?.login ?? null,
+            created_at: issue.created_at as string,
+            updated_at: issue.updated_at as string,
+            closed_at: (issue.closed_at as string) ?? now,
+            synced_at: now,
+          }, { onConflict: 'id' });
+        }
 
-            await admin
-              .from('dash_issues')
-              .update({ station: targetStation, updated_at: new Date().toISOString() })
-              .eq('id', existingIssue.id);
+        // Handle issues.labeled / issues.unlabeled with station:* labels
+        if (action === 'labeled' || action === 'unlabeled') {
+          const label = (payload.label as Record<string, unknown> | null)?.name as string ?? '';
 
-            // Record transition
-            await admin.from('dash_stage_transitions').insert({
-              issue_id: existingIssue.id,
-              repo,
-              issue_number: issueNumber,
-              from_station: oldStation,
-              to_station: targetStation,
-              transitioned_at: new Date().toISOString(),
-            });
+          if (label.startsWith('station:')) {
+            const newStation = label.replace('station:', '') as Station;
+
+            if (STATIONS.includes(newStation)) {
+              const targetStation = action === 'labeled' ? newStation : null;
+
+              // Upsert the issue record first — always, regardless of whether it exists
+              const { data: upsertedIssue } = await admin
+                .from('dash_issues')
+                .upsert({
+                  id: issueId,
+                  issue_number: issueNumber,
+                  repo,
+                  title: (issue.title as string) ?? '',
+                  body: (issue.body as string) ?? null,
+                  state: (issue.state as string) ?? 'open',
+                  station: targetStation,
+                  labels: (issue.labels as unknown[]) ?? [],
+                  author: (issue as Record<string, Record<string, unknown>>).user?.login ?? null,
+                  created_at: issue.created_at as string,
+                  updated_at: issue.updated_at as string,
+                  synced_at: now,
+                }, { onConflict: 'id' })
+                .select('id, station')
+                .single();
+
+              // Always insert transition — even for newly upserted issues
+              if (upsertedIssue) {
+                await admin.from('dash_stage_transitions').insert({
+                  issue_id: upsertedIssue.id,
+                  repo,
+                  issue_number: issueNumber,
+                  from_station: null,
+                  to_station: targetStation,
+                  transitioned_at: now,
+                });
+              }
+            }
           }
         }
       }
