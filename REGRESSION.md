@@ -764,3 +764,15 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+## Settings Page: Single <main> Landmark (Issue #107)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/settings — page loads with settings tabs visible
+- [ ] Verify the DOM contains exactly one `<main>` element (no strict-mode violation on `get text 'main'`)
+- [ ] Click each settings tab (General, Environment, API Keys if admin) — each tab renders content correctly
+- [ ] Verify page visual layout is unchanged — no style or spacing differences vs. before fix
+
+### Routes/Endpoints
+- /dashboard/settings
