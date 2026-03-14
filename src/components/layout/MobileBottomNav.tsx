@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Grid3X3,
@@ -12,20 +11,16 @@ import {
   Shield,
 } from 'lucide-react';
 
+interface MobileBottomNavProps {
+  isAdmin: boolean;
+}
+
 const BASE_NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true, testId: undefined },
   { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined },
   { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined },
 ];
-
-const SETTINGS_ITEM = {
-  href: '/dashboard/settings',
-  label: 'Settings',
-  icon: Settings,
-  exact: false,
-  testId: 'bottom-nav-settings',
-};
 
 const ADMIN_ITEM = {
   href: '/dashboard/admin/users',
@@ -35,31 +30,22 @@ const ADMIN_ITEM = {
   testId: 'bottom-nav-admin',
 };
 
-export default function MobileBottomNav() {
+const SETTINGS_ITEM = {
+  href: '/dashboard/settings',
+  label: 'Settings',
+  icon: Settings,
+  exact: false,
+  testId: 'bottom-nav-settings',
+};
+
+export default function MobileBottomNav({ isAdmin }: MobileBottomNavProps) {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    async function checkRole() {
-      try {
-        const { createSupabaseBrowserClient } = await import('@/lib/supabase');
-        const supabase = createSupabaseBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from('fd_user_roles')
-          .select('role, is_active')
-          .eq('user_id', user.id)
-          .single();
-        if (data?.role === 'admin' && data.is_active !== false) setIsAdmin(true);
-      } catch {
-        // Default to non-admin on error
-      }
-    }
-    checkRole();
-  }, []);
-
-  const navItems = [...BASE_NAV_ITEMS, isAdmin ? ADMIN_ITEM : SETTINGS_ITEM];
+  const navItems = [
+    ...BASE_NAV_ITEMS,
+    ...(isAdmin ? [ADMIN_ITEM] : []),
+    SETTINGS_ITEM,
+  ];
 
   function isActive(href: string, exact: boolean) {
     return exact ? pathname === href : pathname.startsWith(href);
