@@ -813,3 +813,25 @@ _Added: 2026-03-14_
 ### Supabase
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
+
+## [Event Log Route Fix] (Issue #116)
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Log in to the dashboard
+- [ ] Click "Event Log" in the left sidebar — browser should navigate to `/dashboard/event-log` (not 404)
+- [ ] Verify page title "Event Log" is visible
+- [ ] Verify the event table or empty state renders (no error page)
+- [ ] Navigate directly to `/dashboard/event-log` — page should load with HTTP 200
+- [ ] Apply direction filter "Incoming (IN)" — table should filter results
+- [ ] Apply status filter "failed" — table should filter results
+- [ ] Click "Clear filters" — filters should reset and all events appear
+- [ ] If events exist: click any row to expand — payload viewer should appear below the row
+- [ ] Verify `/dashboard/admin/events` still works (legacy route not broken)
+- [ ] Verify `/api/event-log?page=1&per_page=50` returns JSON with `data` array and `pagination` object
+
+### Routes/Endpoints
+- `/dashboard/event-log` — new Event Log page
+- `GET /api/event-log` — new API route querying `harness_events`
+- `/dashboard/admin/events` — legacy page (must remain functional)
+- `GET /api/admin/events` — legacy API route (must remain functional)

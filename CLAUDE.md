@@ -554,3 +554,19 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
+
+---
+
+## Issue #116 Fix (2026-03-14)
+
+**Problem:** Sidebar "Event Log" linked to `/dashboard/admin/events` but was changed to point to `/dashboard/event-log` (which didn't exist), causing 404.
+
+**Fix:**
+1. Created `src/app/dashboard/event-log/page.tsx` — dark-mode Event Log page querying `harness_events`
+2. Created `src/app/api/event-log/route.ts` — GET route querying `harness_events` (not `fdash_event_log`)
+3. Updated `src/components/layout/Sidebar.tsx` NAV_ITEMS: Event Log href changed from `/dashboard/admin/events` → `/dashboard/event-log`
+
+**Key notes:**
+- `harness_events` is the correct table (live data). `fdash_event_log` is legacy (always empty).
+- New page uses inline dark-mode badge components (`DirectionBadge`, `StatusBadge`) to avoid breaking the light-mode legacy page at `/dashboard/admin/events`.
+- Legacy page/route at `/dashboard/admin/events` is preserved unchanged.
