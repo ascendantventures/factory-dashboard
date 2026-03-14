@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/92
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/93
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -171,7 +171,10 @@
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
-- **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
+- **MobileBottomNav role resolution (Issue #92/93)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in `DashboardShell` (async inner component) via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `role='admin'` and `is_active=true` for the user, (2) `DashboardShell` is an async server component inside a `<Suspense>` boundary in `DashboardLayout`, (3) AppShell receives `isAdmin` prop.
+- **Session user mismatch (Issue #93)** — Live session user `cec59014-5d74-4ae2-9f15-a8477c8ee3d7` previously had no row in `fd_user_roles` because the DB was seeded with user `b4c20f13` from a different Supabase project. The admin role was upserted via REST API PATCH on 2026-03-14. If admin nav disappears again, check `fd_user_roles` for this user_id in Supabase project `ojazkhiqwgssduehubdu`.
+- **Apps API uses admin client (Issue #93)** — `/api/apps` switched `dash_build_repos` and `dash_issues` queries to `createSupabaseAdminClient()` to bypass RLS. Previously failed with 500 for users without explicit table access. All authenticated users can now view apps.
+- **DashboardLayout Suspense boundary (Issue #93)** — `DashboardLayout` now wraps an async `DashboardShell` component in `<Suspense>`. This prevents resize crashes and provides a graceful loading fallback. Do NOT make `DashboardLayout` itself async — keep the outer component sync and delegate async work to `DashboardShell`.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 

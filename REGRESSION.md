@@ -714,3 +714,47 @@ _Added: 2026-03-14_
 - /dashboard (mobile bottom nav at ≤767px viewport)
 - /dashboard/admin/users (Admin nav link target)
 - /dashboard/settings (Settings link for non-admin)
+
+## UAT Fix — Admin Nav + Multiple Regressions (Issue #93)
+_Added: 2026-03-14_
+
+### REQ-FIX-001: Admin mobile nav renders for live session user cec59014 [auth]
+- [ ] Log in as admin user (ajrrac@gmail.com / cec59014), resize viewport to 375px
+- [ ] `data-testid="bottom-nav-admin"` SHALL be present in the DOM
+- [ ] Clicking Admin nav item navigates to /dashboard/admin/users
+- [ ] `getUserRole('cec59014-5d74-4ae2-9f15-a8477c8ee3d7')` returns `'admin'` (verified via admin nav appearing)
+
+### REQ-FIX-002: Mobile resize does not crash [auth]
+- [ ] Log in, load `/dashboard` at 1280px viewport
+- [ ] Resize viewport to 375px using devtools / Playwright setViewportSize
+- [ ] Page SHALL NOT show "Application error: a client-side exception has occurred"
+- [ ] No uncaught errors in browser console after resize
+- [ ] Page renders correctly at 375px with mobile bottom nav visible
+
+### REQ-FIX-003: Apps page returns 200 [auth]
+- [ ] Navigate to `/dashboard/apps` while logged in as cec59014
+- [ ] HTTP response status SHALL be 200 (not 500)
+- [ ] If no apps exist, empty state SHALL render (not error message)
+- [ ] "Failed to fetch apps" error SHALL NOT appear
+
+### REQ-FIX-004: All 404 routes return 200 [auth]
+- [ ] Navigate to `/dashboard/analytics` — SHALL return 200
+- [ ] Navigate to `/dashboard/admin/users` — SHALL return 200 (admin user only)
+- [ ] Navigate to `/dashboard/settings/profile` — SHALL return 200
+- [ ] Navigate to `/dashboard/settings/webhooks` — SHALL return 200
+- [ ] Navigate to `/dashboard/settings/webhooks/new` — SHALL return 200
+
+### REQ-FIX-005: Exactly one New Issue button on /dashboard [auth]
+- [ ] Load `/dashboard` at 1280px viewport while logged in
+- [ ] `button:has-text("New Issue"), [data-testid="new-issue-btn"]` selector SHALL match exactly 1 element
+- [ ] `data-testid="quick-create-trigger"` is present on the button (in Header)
+- [ ] No duplicate New Issue button visible
+
+### Routes/Endpoints
+- /dashboard (mobile nav, resize, duplicate button)
+- /dashboard/apps (500 → 200 fix)
+- /dashboard/analytics (404 → 200 fix)
+- /dashboard/admin/users (404 → 200 fix)
+- /dashboard/settings/profile (404 → 200 fix)
+- /dashboard/settings/webhooks (404 → 200 fix)
+- /dashboard/settings/webhooks/new (404 → 200 fix)

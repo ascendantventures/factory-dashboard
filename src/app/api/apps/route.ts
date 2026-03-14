@@ -49,27 +49,31 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Use admin client for system tables — bypasses RLS so all authenticated users can see apps
+  const adminClient = createSupabaseAdminClient();
+
   // Fetch all build repos
-  const { data: buildRepos, error: reposError } = await supabase
+  const { data: buildRepos, error: reposError } = await adminClient
     .from('dash_build_repos')
     .select('*')
     .order('display_name');
 
   if (reposError) {
+    console.error('[/api/apps] dash_build_repos query failed:', reposError.message, reposError);
     return NextResponse.json({ error: reposError.message }, { status: 500 });
   }
 
   // Fetch all issues
-  const { data: allIssues, error: issuesError } = await supabase
+  const { data: allIssues, error: issuesError } = await adminClient
     .from('dash_issues')
     .select('id, issue_number, repo, title, body, state, station, labels, updated_at');
 
   if (issuesError) {
+    console.error('[/api/apps] dash_issues query failed:', issuesError.message, issuesError);
     return NextResponse.json({ error: issuesError.message }, { status: 500 });
   }
 
   // Fetch all deployment cache rows
-  const adminClient = createSupabaseAdminClient();
   const { data: deployments } = await adminClient
     .from('dash_deployment_cache')
     .select('repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at');
