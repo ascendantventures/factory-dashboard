@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef as useRefFQ, DragEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { X, Plus, Loader2, AlertCircle, ExternalLink, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
+import { X, Plus, Loader2, AlertCircle, ChevronDown, Upload as UploadIcon, X as XIcon } from 'lucide-react';
 import { TargetAppDropdown } from './TargetAppDropdown';
 import { RepositorySelector } from './ui/RepositorySelector';
 import type { IssueAttachment } from '@/lib/attachments';
@@ -53,14 +53,14 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
     }
   }
 
-  // Close on Escape
+  // Close on Escape — blocked during submission
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isSubmitting) onClose();
     }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, isSubmitting]);
 
   async function handleNext() {
     const title = watch('title');
@@ -117,19 +117,17 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
         }
       }
 
-      toast.success('Issue created', {
-        description: (
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#10B981', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'underline' }}
-          >
-            {result.url} <ExternalLink size={12} />
-          </a>
-        ) as unknown as string,
-        duration: 5000,
-      });
+      const githubIssueUrl = result.url;
+      setTimeout(() => {
+        toast.success('Issue created', {
+          description: 'View on GitHub',
+          action: {
+            label: 'Open',
+            onClick: () => window.open(githubIssueUrl, '_blank'),
+          },
+          duration: 6000,
+        });
+      }, 0);
 
       reset();
       setSelectedRepo('');
