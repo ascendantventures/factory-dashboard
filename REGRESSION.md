@@ -951,3 +951,24 @@ The users admin page (`/dashboard/admin/users`) was enhanced with search, filter
 - GET /api/admin/users?search=&filter=all|real|test&page=N&pageSize=20
 - DELETE /api/admin/users/bulk (body: { userIds: string[] })
 - PATCH /api/admin/users/[id]/role (body: { role: string })
+
+---
+
+## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
+_Added: 2026-03-14_
+
+### Test Steps — PipelineStatusCard "Never connected" state [auth]
+- [ ] Navigate to /pipeline — page loads
+- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
+- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
+- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
+- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
+
+### Test Steps — ActivityFeed empty state explanation [auth]
+- [ ] Navigate to /dashboard or any page with the activity feed sidebar
+- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
+- [ ] All four elements are visible simultaneously in the empty state
+
+### Routes/Endpoints
+- /pipeline (PipelineStatusCard)
+- /dashboard (ActivityFeed sidebar)
