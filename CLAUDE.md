@@ -504,6 +504,33 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/86_
 - Role check is async (useEffect); initial render always shows Settings. Admin swap happens in <100ms. This is intentional (no loading state per DESIGN.md).
 - `fd_user_roles.is_active` MUST be `true` for admin role to render the Admin nav item.
 
+## Bug Fix: fd_user_roles Data + Code Hardening (Issue #89)
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
+
+### Root Cause
+`fd_user_roles.is_active` was NULL/false for the admin user (`ajrrac@gmail.com`), causing `getUserRole()` to return `'viewer'` (since `!null === true`). Mobile nav showed Settings instead of Admin.
+
+### Changes Made
+
+**REQ-BUG89-001: SQL data fix (applied directly to Supabase `xvniwehnspnxlnerbfwj`)**
+- Migration: `supabase/migrations/20260314020000_fix_fd_user_roles_default_issue89.sql`
+- `ALTER TABLE fd_user_roles ALTER COLUMN is_active SET DEFAULT true` — prevents future NULL inserts
+- `UPDATE fd_user_roles SET is_active = true WHERE role = 'admin' AND (is_active IS NULL OR is_active = false)` — idempotent data fix
+- Admin row for `ajrrac@gmail.com` (UUID: `b4c20f13-15de-4ef4-b297-8358f9049262`) upserted with `is_active = true`
+- RLS policy `fd_user_roles_self_select` added (users can read their own row)
+
+**REQ-BUG89-002: getUserRole() hardening (`src/lib/roles.ts`)**
+- Changed `if (!data || !data.is_active)` → `if (!data || data.is_active === false)`
+- NULL `is_active` is now treated as truthy — legacy rows without the flag set are not silently demoted
+
+**REQ-BUG89-003: MobileBottomNav settings testid (`src/components/layout/MobileBottomNav.tsx`)**
+- Added `testId: 'bottom-nav-settings'` to `SETTINGS_ITEM` — enables QA to verify settings item is absent for admin users
+
+### Critical: fd_user_roles table setup
+- The `fd_user_roles` table is in Supabase project `xvniwehnspnxlnerbfwj` (the project the app actually uses per Vercel env vars)
+- This is different from the `factory-dashboard` supabase project (`dkibmvieqomkznxuugri`) — do NOT link to that one for migrations
+- Always `supabase link --project-ref xvniwehnspnxlnerbfwj` before pushing migrations for this app
+
 ---
 
 ## UAT Fix: Webhook Preset Auto-apply + List Page Crash (Issue #87)

@@ -14,7 +14,7 @@ export async function getUserRole(userId: string): Promise<UserRole> {
     .eq('user_id', userId)
     .single();
 
-  if (!data || !data.is_active) return 'viewer';
+  if (!data || data.is_active === false) return 'viewer';
   return (data.role as UserRole) ?? 'viewer';
 }
 
