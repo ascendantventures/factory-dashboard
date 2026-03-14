@@ -1,91 +1,85 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
-  onAction: (action: 'role_change' | 'deactivate' | 'reactivate', role?: string) => Promise<void>;
+  onDelete: () => void;
   onClear: () => void;
 }
 
-export function BulkActionsBar({ selectedCount, onAction, onClear }: Props) {
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function handleAction(action: 'role_change' | 'deactivate' | 'reactivate', role?: string) {
-    setLoading(true);
-    setShowRoleMenu(false);
-    await onAction(action, role);
-    setLoading(false);
-  }
-
+export function BulkActionsBar({ selectedCount, onDelete, onClear }: Props) {
   return (
-    <div style={{
-      background: '#DBEAFE', borderRadius: '8px', padding: '12px 16px',
-      display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px',
-    }}>
-      <span style={{ fontSize: '14px', fontWeight: 600, color: '#1D4ED8' }}>
-        {selectedCount} user{selectedCount !== 1 ? 's' : ''} selected
+    <div
+      data-testid="bulk-action-bar"
+      style={{
+        position: 'sticky',
+        bottom: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        background: '#323238',
+        border: '1px solid #3F3F46',
+        borderRadius: '8px',
+        padding: '12px 20px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+        zIndex: 40,
+        width: 'fit-content',
+        marginBottom: '16px',
+        animation: 'slide-up 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+      }}
+    >
+      <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '14px', fontWeight: 500, color: '#FAFAFA' }}>
+        {selectedCount} selected
       </span>
 
-      {/* Change Role dropdown */}
-      <div style={{ position: 'relative' }}>
-        <button
-          onClick={() => setShowRoleMenu(v => !v)}
-          disabled={loading}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500,
-            border: '1px solid #BFDBFE', background: '#FFFFFF', color: '#1D4ED8', cursor: 'pointer',
-          }}
-        >
-          Change Role <ChevronDown size={14} />
-        </button>
-        {showRoleMenu && (
-          <div style={{
-            position: 'absolute', top: '100%', left: 0, marginTop: '4px',
-            background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px',
-            boxShadow: '0 10px 15px -3px rgba(15,23,42,0.1)', zIndex: 10,
-            minWidth: '160px', padding: '4px 0',
-          }}>
-            {(['viewer', 'operator', 'admin'] as const).map(r => (
-              <button
-                key={r}
-                onClick={() => handleAction('role_change', r)}
-                style={{
-                  width: '100%', textAlign: 'left', padding: '10px 12px',
-                  border: 'none', background: 'transparent', fontSize: '14px', color: '#334155', cursor: 'pointer',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F1F5F9'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-              >
-                {r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <div style={{ width: '1px', height: '24px', background: '#3F3F46' }} />
 
       <button
-        onClick={() => handleAction('deactivate')}
-        disabled={loading}
-        style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', cursor: 'pointer' }}
+        data-testid="bulk-delete-btn"
+        onClick={onDelete}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '10px 16px',
+          background: '#EF4444',
+          border: 'none',
+          borderRadius: '6px',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: '14px',
+          fontWeight: 600,
+          color: '#fff',
+          cursor: 'pointer',
+          transition: 'background 150ms ease',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#DC2626'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#EF4444'; }}
       >
-        Deactivate
-      </button>
-
-      <button
-        onClick={() => handleAction('reactivate')}
-        disabled={loading}
-        style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, border: '1px solid #BBF7D0', background: '#F0FDF4', color: '#059669', cursor: 'pointer' }}
-      >
-        Reactivate
+        <Trash2 size={16} />
+        Delete {selectedCount} Selected
       </button>
 
       <button
         onClick={onClear}
-        style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 500, border: 'none', background: 'transparent', color: '#64748B', cursor: 'pointer' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: '14px',
+          fontWeight: 500,
+          border: 'none',
+          background: 'transparent',
+          color: '#71717A',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#FAFAFA'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#71717A'; }}
       >
         <X size={14} /> Clear
       </button>

@@ -1,48 +1,15 @@
 import Link from 'next/link';
 import { Plus, Webhook } from 'lucide-react';
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import WebhookCard from '@/components/webhooks/WebhookCard';
+import HarnessWebhooksClient from './HarnessWebhooksClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WebhooksSettingsPage() {
-  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string }> | null = null;
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return (
-        <div style={{ padding: '32px', fontFamily: 'DM Sans, sans-serif', color: '#6B7380' }}>
-          Please log in to manage webhooks.
-        </div>
-      );
-    }
-
-    const { data, error: webhooksError } = await supabase
-      .from('fd_webhooks')
-      .select('id, url, events, enabled, created_at')
-      .eq('created_by', user.id)
-      .order('created_at', { ascending: false });
-
-    if (webhooksError) {
-      console.error('[WebhooksPage] Failed to fetch webhooks:', webhooksError.message);
-    } else {
-      webhooks = data;
-    }
-  } catch (err) {
-    console.error('[WebhooksPage] Unexpected error:', err);
-    // webhooks stays null — empty state will render below
-  }
-
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
       <style>{`
-        .webhook-add-btn { background: #E85D04; transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1); }
-        .webhook-add-btn:hover { background: #C44D03; }
         .preset-card { transition: all 200ms ease; }
-        .preset-card:hover { border-color: rgba(232, 93, 4, 0.4) !important; transform: translateY(-2px); }
+        .preset-card:hover { border-color: rgba(99, 102, 241, 0.4) !important; transform: translateY(-2px); }
       `}</style>
       {/* Page Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap" style={{ marginBottom: '32px' }}>
@@ -70,27 +37,6 @@ export default async function WebhooksSettingsPage() {
             Send pipeline events to external services
           </p>
         </div>
-        <Link
-          href="/dashboard/settings/webhooks/new"
-          className="webhook-add-btn flex items-center gap-2"
-          style={{
-            border: 'none',
-            borderRadius: '8px',
-            padding: '12px 20px',
-            fontFamily: 'DM Sans, sans-serif',
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#FFFFFF',
-            textDecoration: 'none',
-            minHeight: '44px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <Plus size={16} />
-          Add Webhook
-        </Link>
       </div>
 
       {/* Integration Presets */}
@@ -109,7 +55,6 @@ export default async function WebhooksSettingsPage() {
           Quick Setup
         </div>
         <div className="flex gap-4 flex-wrap">
-          {/* Presets with redirect to new page */}
           <Link
             href="/dashboard/settings/webhooks/new?preset=discord"
             data-testid="preset-discord-link"
@@ -170,82 +115,22 @@ export default async function WebhooksSettingsPage() {
         </div>
       </div>
 
-      {/* Webhooks List */}
+      {/* Harness Webhooks Section */}
       <div>
-        {(webhooks?.length ?? 0) > 0 && (
-          <div
-            style={{
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: '#6B7380',
-              marginBottom: '12px',
-            }}
-          >
-            Your Webhooks
-          </div>
-        )}
-
-        {(webhooks?.length ?? 0) === 0 ? (
-          <div
-            style={{
-              padding: '48px 32px',
-              textAlign: 'center',
-              background: '#161A1F',
-              border: '1px solid #2E353D',
-              borderRadius: '12px',
-            }}
-          >
-            <div className="flex justify-center mb-4">
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '16px',
-                  background: '#1E2329',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Webhook size={28} color="#6B7380" />
-              </div>
-            </div>
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '16px', fontWeight: 600, color: '#F0F2F4', marginBottom: '8px' }}>
-              No webhooks yet
-            </div>
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px', color: '#6B7380', marginBottom: '20px' }}>
-              Add a webhook to receive pipeline events at an external endpoint.
-            </div>
-            <Link
-              href="/dashboard/settings/webhooks/new"
-              style={{
-                background: '#E85D04',
-                borderRadius: '8px',
-                padding: '10px 16px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <Plus size={14} />
-              Add your first webhook
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {webhooks!.map((webhook) => (
-              <WebhookCard key={webhook.id} webhook={webhook} />
-            ))}
-          </div>
-        )}
+        <div
+          style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: '#6B7380',
+            marginBottom: '12px',
+          }}
+        >
+          Your Webhooks
+        </div>
+        <HarnessWebhooksClient />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/90
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/106
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -551,3 +551,18 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
+
+## CR #106 — Event Log + Webhooks Settings (Issue #106)
+- **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/106
+- **New DB tables:** `harness_events` (pipeline event log, RLS service_role only), `harness_webhooks` (user-configured outbound endpoints, RLS owner-only)
+- **Migration:** `20260314160000_spec_schema_issue106.sql` — includes all indexes, RLS policies, and `harness_webhooks_set_updated_at` trigger
+- **New API route:** `GET /api/events` — queries `harness_events` with filters: direction/event_type/status/issue_number, pagination via limit+offset. Returns `{ events, total }`.
+- **New API routes:** `GET /POST /api/harness/webhooks` + `PATCH /DELETE /api/harness/webhooks/[webhookId]` — full CRUD for `harness_webhooks` table, HTTPS validation, owner-scoped via RLS
+- **New page:** `/dashboard/event-log` — full event log UI (filter bar, expandable table rows with PayloadViewer, skeleton, empty states, pagination, refresh). All `data-testid` attrs per spec.
+- **Updated page:** `/dashboard/settings/webhooks` — now uses `HarnessWebhooksClient.tsx` for inline modal-based webhook CRUD. Keeps existing presets section.
+- **Factory loop:** `writeEventAsync()` added to `factory/src/notify/supabase.ts` (fire-and-forget, never blocks pipeline). Call sites: station_transition, agent_spawn, agent_complete, notification_sent, thread_push.
+- **harness_events schema:** id (uuid PK), created_at, direction (incoming/outgoing/internal), event_type, status (success/failure/pending), issue_number (int), submission_id (uuid, no FK), payload (jsonb), error_message, duration_ms
+- **harness_webhooks schema:** webhook_id (uuid PK), created_at, updated_at (auto-trigger), name, url, secret, enabled, events (text[]), created_by (FK auth.users)
+- **Design tokens:** Dark mode matching existing dashboard — #09090B bg, #18181B surface, #6366F1 primary, direction/status badges per DESIGN.md
+- **data-testid map (event-log):** page-title, event-filters, filter-direction, filter-event-type, filter-status, clear-filters-btn, refresh-btn, event-table, event-row, event-details, empty-state, pagination-info, pagination-prev, pagination-next
+- **data-testid map (webhooks):** webhook-card, enabled-toggle, delete-webhook-btn, confirm-dialog, confirm-delete-btn, add-webhook-btn, webhook-modal, webhook-name, webhook-url, webhook-secret, event-{eventName}, webhook-save-btn, url-error

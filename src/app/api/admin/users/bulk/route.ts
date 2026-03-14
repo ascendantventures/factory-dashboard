@@ -2,6 +2,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase-server';
 import { getUserRole, writeAuditLog } from '@/lib/roles';
 
+export async function DELETE(req: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const role = await getUserRole(user.id);
+  if (!['admin'].includes(role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const body = await req.json() as { userIds: string[] };
+  const targets = (body.userIds ?? []).filter((id) => id !== user.id);
+
+  const admin = createSupabaseAdminClient();
+  const failed: string[] = [];
+  let deleted = 0;
+
+  for (const targetId of targets) {
+    try {
+      await admin.from('fd_user_roles').delete().eq('user_id', targetId);
+      const { error } = await admin.auth.admin.deleteUser(targetId);
+      if (error) throw error;
+      await writeAuditLog({
+        actorId: user.id,
+        targetUserId: targetId,
+        action: 'deactivate',
+        details: { permanent: true, bulk: true },
+      });
+      deleted++;
+    } catch (err) {
+      failed.push(`${targetId}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }
+
+  return NextResponse.json({ deleted, failed });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();

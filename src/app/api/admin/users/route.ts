@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase-server';
 import { getUserRole } from '@/lib/roles';
+import { isTestAccount } from '@/lib/users';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search') ?? '';
   const roleFilter = searchParams.get('role') ?? '';
   const statusFilter = searchParams.get('status') ?? '';
+  const testFilter = searchParams.get('filter') ?? 'all'; // all | real | test
   const page = parseInt(searchParams.get('page') ?? '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') ?? '20', 10);
 
@@ -44,9 +46,17 @@ export async function GET(req: NextRequest) {
     is_active: rolesMap[u.id]?.is_active ?? true,
     last_sign_in_at: u.last_sign_in_at ?? null,
     created_at: u.created_at,
+    isTestAccount: isTestAccount(u.email ?? ''),
   }));
 
-  // Apply filters
+  // Apply test account filter
+  if (testFilter === 'test') {
+    users = users.filter((u) => u.isTestAccount);
+  } else if (testFilter === 'real') {
+    users = users.filter((u) => !u.isTestAccount);
+  }
+
+  // Apply search filter
   if (search) {
     const q = search.toLowerCase();
     users = users.filter(
@@ -64,6 +74,22 @@ export async function GET(req: NextRequest) {
   const total = users.length;
   const offset = (page - 1) * pageSize;
   const paginated = users.slice(offset, offset + pageSize);
+  const totalPages = Math.ceil(total / pageSize);
 
-  return NextResponse.json({ users: paginated, total, page });
+  // Compute counts for filter tabs (before test filter but after search/role/status)
+  const allUsersForCount = (usersData?.users ?? []).map((u) => ({
+    isTestAccount: isTestAccount(u.email ?? ''),
+  }));
+  const testCount = allUsersForCount.filter((u) => u.isTestAccount).length;
+  const realCount = allUsersForCount.filter((u) => !u.isTestAccount).length;
+  const allCount = allUsersForCount.length;
+
+  return NextResponse.json({
+    users: paginated,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    counts: { all: allCount, real: realCount, test: testCount },
+  });
 }

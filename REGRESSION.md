@@ -764,3 +764,65 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+---
+
+## Event Log Page [auth]
+_Added: Issue #106 (2026-03-14)_
+
+### Test Steps
+- [ ] Navigate to /dashboard/event-log — page renders without 404 or error
+- [ ] Page title shows "Event Log" (data-testid="page-title")
+- [ ] Filter bar is visible with Direction, Event Type, and Status dropdowns
+- [ ] Direction dropdown (data-testid="filter-direction") has options: All directions, Incoming, Outgoing, Internal
+- [ ] Event Type dropdown (data-testid="filter-event-type") has options including station_transition, agent_spawn, etc.
+- [ ] Status dropdown (data-testid="filter-status") has options: All statuses, Success, Failure, Pending
+- [ ] Refresh button (data-testid="refresh-btn") is visible and clickable
+- [ ] If no events exist: empty state (data-testid="empty-state") shows "No events yet" with Activity icon
+- [ ] If events exist: table (data-testid="event-table") renders with columns Time, Direction, Type, Issue, Status, Duration
+- [ ] Each event row has data-testid="event-row" and is clickable
+- [ ] Clicking a row expands it (data-testid="event-details") showing payload JSON via PayloadViewer
+- [ ] Clicking an expanded row collapses it
+- [ ] Selecting "internal" from direction filter → table re-fetches (network request to /api/events)
+- [ ] Selecting a status filter → table updates without full page reload
+- [ ] When filters are active: "Clear filters" button (data-testid="clear-filters-btn") appears
+- [ ] Clicking "Clear filters" resets all filters and re-fetches
+- [ ] When filters return no results: empty state shows "No events matching filters" (NOT "No events yet")
+- [ ] Pagination shows "Showing X–Y of Z events" (data-testid="pagination-info")
+- [ ] Pagination prev/next buttons (data-testid="pagination-prev", data-testid="pagination-next") work correctly
+
+### Routes/Endpoints
+- /dashboard/event-log
+- GET /api/events?direction=&event_type=&status=&limit=50&offset=0
+
+---
+
+## Webhooks Settings — Harness Webhooks [auth]
+_Added: Issue #106 (2026-03-14)_
+
+### Test Steps
+- [ ] Navigate to /dashboard/settings/webhooks — page renders without 404 or error
+- [ ] Page shows "Webhooks" heading and "Send pipeline events to external services" subtitle
+- [ ] Discord and Slack preset cards are visible
+- [ ] If no webhooks exist: empty state (data-testid="empty-state") shows "No webhooks configured" with Webhook icon
+- [ ] "Add Webhook" button (data-testid="add-webhook-btn") is visible (in empty state or as top-level CTA)
+- [ ] Clicking "Add Webhook" opens modal (data-testid="webhook-modal") without page navigation
+- [ ] Modal has fields: Name (data-testid="webhook-name"), URL (data-testid="webhook-url"), Secret (data-testid="webhook-secret")
+- [ ] Modal shows event checkboxes, e.g. data-testid="event-station_transition"
+- [ ] Entering "http://example.com" (non-HTTPS) and clicking save shows URL error (data-testid="url-error")
+- [ ] Modal stays open when URL validation fails
+- [ ] Filling valid data (Name="Test Hook", URL="https://example.com/hook", checking station_transition) and clicking save (data-testid="webhook-save-btn") → webhook appears in list without page reload
+- [ ] Webhook card (data-testid="webhook-card") shows name, URL in monospace, event tags
+- [ ] Enable/disable toggle (data-testid="enabled-toggle") toggles the webhook's enabled state
+- [ ] Pencil icon opens edit modal pre-populated with webhook data
+- [ ] Delete button (data-testid="delete-webhook-btn") shows confirm dialog (data-testid="confirm-dialog")
+- [ ] Confirm dialog shows webhook name and "Delete" button (data-testid="confirm-delete-btn")
+- [ ] Confirming delete removes webhook from list without page reload
+- [ ] Canceling delete closes dialog, webhook remains
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks
+- GET /api/harness/webhooks
+- POST /api/harness/webhooks
+- PATCH /api/harness/webhooks/[webhookId]
+- DELETE /api/harness/webhooks/[webhookId]
