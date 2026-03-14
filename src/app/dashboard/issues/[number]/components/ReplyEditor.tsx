@@ -95,8 +95,8 @@ export function ReplyEditor({ issueNumber, onSuccess, onOptimisticInsert, onRoll
       // Rollback optimistic comment and restore editor text
       onRollback?.(tempId);
       setValue(trimmed);
-      toast.error("Couldn't post comment. Please try again.");
-      setError("Couldn't post comment. Please try again.");
+      toast.error('Failed to post comment. Please try again.');
+      setError('Failed to post comment. Please try again.');
     } finally {
       setIsPosting(false);
     }
@@ -259,7 +259,7 @@ export function ReplyEditor({ issueNumber, onSuccess, onOptimisticInsert, onRoll
           <span style={{ fontSize: 12, color: '#DC2626', flex: 1 }}>{error}</span>
         )}
         <button
-          data-testid="submit-reply-btn"
+          data-testid="post-comment-btn"
           onClick={handleSubmit}
           disabled={isPosting || !value.trim()}
           style={{

@@ -93,6 +93,7 @@ export function CommentThread({ issueNumber }: Props) {
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [newCommentIds, setNewCommentIds] = useState<Set<number>>(new Set());
+  const [pendingCommentIds, setPendingCommentIds] = useState<Set<number>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchComments = useCallback(
@@ -158,10 +159,16 @@ export function CommentThread({ issueNumber }: Props) {
 
   const handleOptimisticInsert = useCallback((comment: GithubComment) => {
     setComments((prev) => [...prev, comment]);
+    setPendingCommentIds((prev) => new Set(prev).add(comment.id));
   }, []);
 
   const handleRollback = useCallback((tempId: number) => {
     setComments((prev) => prev.filter((c) => c.id !== tempId));
+    setPendingCommentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(tempId);
+      return next;
+    });
   }, []);
 
   const handleNewComment = useCallback((comment: GithubComment) => {
@@ -169,6 +176,12 @@ export function CommentThread({ issueNumber }: Props) {
       // Avoid duplicates
       if (prev.find((c) => c.id === comment.id)) return prev;
       return [...prev, comment];
+    });
+    // Remove from pending (optimistic replaced by server comment)
+    setPendingCommentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(comment.id);
+      return next;
     });
     // Mark as new for amber flash animation, clear after animation completes
     setNewCommentIds((prev) => new Set(prev).add(comment.id));
@@ -299,7 +312,12 @@ export function CommentThread({ issueNumber }: Props) {
           ) : (
             <div style={{ marginBottom: 20 }}>
               {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} isNew={newCommentIds.has(comment.id)} />
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  isNew={newCommentIds.has(comment.id)}
+                  isPending={pendingCommentIds.has(comment.id)}
+                />
               ))}
             </div>
           )}

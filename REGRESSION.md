@@ -250,10 +250,15 @@ _Added: 2026-03-12 — Issue #30_
 - [ ] Reply editor has "Write" and "Preview" tabs
 - [ ] Click "Preview" tab — renders markdown preview of current text
 - [ ] Toolbar buttons work: Bold wraps selected text in **, Italic in *, Code in backticks
-- [ ] Type a comment in editor, click "Post Comment" — comment appears in thread immediately (optimistic insert)
+- [ ] Type a comment in editor (`data-testid="reply-editor"`), click "Post Comment" (`data-testid="post-comment-btn"`) — comment appears in thread immediately (optimistic insert), before API responds
+- [ ] Optimistic comment has indigo-tinted border/background and shows a spinner with "Posting..." label (`data-testid="comment-pending"`)
+- [ ] Each comment card has `data-testid="comment-{id}"` (e.g. `comment-12345`)
+- [ ] After API succeeds, optimistic comment transitions to confirmed state (indigo styling removed, amber flash applied)
 - [ ] New comment has an amber flash background animation fading to white
-- [ ] After posting, editor is cleared
-- [ ] If comment post fails, a toast notification appears: "Couldn't post comment. Please try again."
+- [ ] After posting, editor is cleared immediately
+- [ ] If comment post fails (API error), toast notification appears: "Failed to post comment. Please try again."
+- [ ] On failure, optimistic comment is removed from the thread
+- [ ] On failure, editor content is restored (user does not lose their text)
 - [ ] Skeleton loaders appear during initial comment fetch
 - [ ] Page polls for new comments every 30 seconds (verify by waiting)
 - [ ] REQ-FDC-XXX tokens in spec comments appear with amber highlight background (rendered by rehypeTokenHighlight plugin, NOT pre-processed markdown)
@@ -271,4 +276,31 @@ _Added: 2026-03-12 — Issue #30_
 
 ### Prerequisite Check (run before testing comment threading)
 - **VERIFY** `GITHUB_BUILD_REPO` is set to **`ascendantventures/harness-beta-test`** in Vercel (Production + Preview + Development). Two failure modes: (1) missing → HTTP 500; (2) wrong repo (e.g. `factory-dashboard`) → GitHub 404 → HTTP 500. Dashboard issue numbers live in `harness-beta-test`, not `factory-dashboard`. Both bugs confirmed in QA for issue #30 (rounds 1 and 2).
+
+
+## Optimistic Comment Insert — Bug Fix (Issue #72)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+
+#### AC-001: Optimistic insert on submit
+- [ ] Navigate to /dashboard/issues/30 — page loads with comment thread
+- [ ] Type any text in `[data-testid="reply-editor"]`
+- [ ] Click `[data-testid="post-comment-btn"]` — comment appears in thread within 500ms (before API responds)
+- [ ] The inserted comment card has `data-testid="comment-pending"` visible with spinner and "Posting..." label
+- [ ] Editor (`data-testid="reply-editor"]`) is cleared immediately after submit
+
+#### AC-002: Rollback on API failure
+- [ ] (With network blocked) Type text and click "Post Comment" — optimistic comment appears briefly then disappears
+- [ ] Sonner toast appears containing text "Failed to post comment"
+- [ ] Editor content is restored to the original text after failure
+
+#### AC-003: Replace optimistic with server comment on success
+- [ ] After successful post, `data-testid="comment-pending"` is no longer visible on that comment
+- [ ] Comment shows real timestamp (not "Posting...")
+- [ ] Amber flash animation plays on the confirmed comment
+
+### Routes/Endpoints
+- /dashboard/issues/[number] (comment thread with optimistic insert)
+- POST /api/issues/[number]/comments
 

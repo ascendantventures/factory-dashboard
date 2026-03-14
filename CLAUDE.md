@@ -149,7 +149,7 @@
 - **Polling:** 30s interval, paused when tab hidden (Page Visibility API)
 - **Light mode island:** Comment thread uses inline styles with light-mode amber design system (#D97706 primary, #FAFAF9 background) within the dark dashboard
 - **Reply editor:** Custom textarea with toolbar (not @uiw/react-md-editor which has SSR issues)
-- **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
+- **Optimistic insert (Issue #72):** New comment appended immediately on submit with temp id (`-Date.now()`); replaced by server comment on success; removed on error with Sonner toast. Key testids: `[data-testid="post-comment-btn"]` (submit), `[data-testid="comment-{id}"]` (each card), `[data-testid="comment-pending"]` (pending indicator). Toast message on failure: "Failed to post comment. Please try again."
 
 ## Known Issues & Gotchas
 - **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development).
