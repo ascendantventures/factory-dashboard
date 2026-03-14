@@ -35,6 +35,7 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
   const [selectedTargetApp, setSelectedTargetApp] = useState<string>('');
   const [selectedRepo, setSelectedRepo] = useState<string>('');
   const [repoError, setRepoError] = useState<string>('');
+  const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
   const [createdIssueNumber, setCreatedIssueNumber] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [uploadedAttachments, setUploadedAttachments] = useState<IssueAttachment[]>([]);
@@ -74,6 +75,7 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
   }
 
   async function onSubmit(data: FormData) {
+    setHasSubmitAttempted(true);
     if (!selectedRepo) {
       setRepoError('Repository is required');
       return;
@@ -422,7 +424,7 @@ export function NewIssueModal({ onClose, onSync }: NewIssueModalProps) {
                   setSelectedRepo(repo);
                   if (repo) setRepoError('');
                 }}
-                error={repoError}
+                error={hasSubmitAttempted ? repoError : ''}
                 helperText="The repository where this issue will be created"
               />
 

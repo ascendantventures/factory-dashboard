@@ -186,18 +186,18 @@ export function AttachmentGallery({ issueNumber, currentUserId, isAdmin }: Attac
       {attachments.length === 0 && !showUploader && (
         <div
           style={{
-            background: '#FAFBFC',
-            border: '1px dashed #E2E4E9',
+            background: 'var(--surface)',
+            border: '1px dashed var(--border)',
             borderRadius: '12px',
             padding: '48px 24px',
             textAlign: 'center',
           }}
         >
-          <ImagePlus size={48} color="#CBD0D8" style={{ margin: '0 auto 16px' }} />
-          <div style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>
+          <ImagePlus size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 16px' }} />
+          <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
             No attachments yet
           </div>
-          <div style={{ fontSize: '14px', color: '#94A3B8', marginTop: '8px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
             Images, mockups, and design files attached to this issue will appear here.
           </div>
           {currentUserId && (
@@ -208,7 +208,7 @@ export function AttachmentGallery({ issueNumber, currentUserId, isAdmin }: Attac
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: '#2563EB',
+                background: 'var(--primary)',
                 color: '#FFFFFF',
                 fontSize: '14px',
                 fontWeight: 600,
@@ -220,12 +220,12 @@ export function AttachmentGallery({ issueNumber, currentUserId, isAdmin }: Attac
               }}
               onMouseEnter={(e) => {
                 const btn = e.currentTarget;
-                btn.style.background = '#1D4ED8';
-                btn.style.boxShadow = '0 4px 12px rgba(37,99,235,0.25)';
+                btn.style.background = 'var(--primary-hover)';
+                btn.style.boxShadow = '0 4px 12px rgba(99,102,241,0.25)';
               }}
               onMouseLeave={(e) => {
                 const btn = e.currentTarget;
-                btn.style.background = '#2563EB';
+                btn.style.background = 'var(--primary)';
                 btn.style.boxShadow = 'none';
               }}
             >

@@ -741,3 +741,58 @@ _Added: 2026-03-14_
 
 ### Routes/Endpoints
 - `/dashboard/apps/[repoId]/designs/[issueNumber]`
+
+---
+
+## QuickCreate Modal — Deferred Validation (Issue #94) [auth]
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Click "New Issue" button to open the QuickCreate modal
+- [ ] Fill in Title and Description on Step 1
+- [ ] Click "Next →" to advance to Step 2 (Repository step)
+- [ ] Verify: "Repository is required" error is NOT visible on arrival at Step 2
+- [ ] Click "Create Issue" without selecting a repository
+- [ ] Verify: "Repository is required" error appears immediately after clicking submit
+- [ ] Select a repository from the dropdown
+- [ ] Verify: "Repository is required" error disappears once a repo is selected
+
+### Routes/Endpoints
+- Modal triggered from /dashboard header
+- POST /api/issues (on successful submit)
+
+---
+
+## Attachments Empty State — Dark Theme (Issue #94) [auth]
+_Added: 2026-03-14_
+
+### Test Steps
+- [ ] Navigate to /dashboard/issues/[number] for an issue with no attachments
+- [ ] Locate the "No attachments yet" empty state card
+- [ ] Verify: the card background is dark (near-black #18181B), NOT white (#FFFFFF)
+- [ ] Verify: the dashed border is dark zinc (#3F3F46), not light gray
+- [ ] Verify: the icon is muted gray, heading is off-white, subtext is light gray
+- [ ] Verify: the "Add attachment" CTA button is indigo (#6366F1), not blue (#2563EB)
+- [ ] Verify: no other cards on the page are visually affected
+- [ ] Resize viewport to mobile width — verify empty state still appears correctly
+
+### Routes/Endpoints
+- /dashboard/issues/[number]
+
+---
+
+## UAT Environment Tracked Repos Config (Issue #94)
+_Added: 2026-03-14_
+_Note: Environment/manual config task — not a code change_
+
+### Test Steps
+- [ ] In the UAT/preview Vercel deployment, navigate to Settings → General
+- [ ] Verify: at least one tracked repository is listed
+- [ ] Call GET /api/build-repos — verify response is non-empty JSON array
+- [ ] Open the QuickCreate modal → Step 2 → confirm repos appear in the selector dropdown
+- [ ] Create an issue with a repo selected → verify success toast shows "created in repo X"
+
+### Routes/Endpoints
+- /dashboard/settings (Settings → General)
+- GET /api/build-repos
+
