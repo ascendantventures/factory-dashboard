@@ -39,6 +39,7 @@ export default function QuickCreateModal({ onClose, onSync }: QuickCreateModalPr
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([]);
   const [uploadedAttachments, setUploadedAttachments] = useState<IssueAttachment[]>([]);
   const [step, setStep] = useState<1 | 2>(1);
+  const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
 
   function handleRepoSelect(repo: string | null) {
     const currentDesc = watch('description') ?? '';
@@ -73,6 +74,7 @@ export default function QuickCreateModal({ onClose, onSync }: QuickCreateModalPr
   }
 
   async function onSubmit(data: FormData) {
+    setHasSubmitAttempted(true);
     if (!selectedRepo) {
       setRepoError('Repository is required');
       return;
@@ -419,7 +421,7 @@ export default function QuickCreateModal({ onClose, onSync }: QuickCreateModalPr
                   setSelectedRepo(repo);
                   if (repo) setRepoError('');
                 }}
-                error={repoError}
+                error={hasSubmitAttempted ? repoError : ''}
                 helperText="The repository where this issue will be created"
               />
 
