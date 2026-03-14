@@ -709,7 +709,7 @@ _Added: 2026-03-14_
 
 ---
 
-## [Webhooks Error Boundary + Authenticated Flow] (Issue #90)
+## Webhooks Error Boundary + Authenticated Flow (Issue #90)
 _Added: 2026-03-14_
 
 ### Test Steps [auth]
