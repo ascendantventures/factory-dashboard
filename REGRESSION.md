@@ -725,3 +725,20 @@ _Added: 2026-03-14_
 
 ### Routes/Endpoints
 - /dashboard/settings/webhooks (authenticated GET — must return 200, not 500)
+
+## Empty Gallery Upload Flow Fix (Issue #63)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Log in, navigate to /dashboard/apps/empty-repo/designs — `[data-testid="design-gallery-empty"]` is visible
+- [ ] Click the "Upload .pen file" button — issue picker form appears with `[data-testid="upload-issue-input"]` visible
+- [ ] Enter issue number "42" in the input and click "Continue" — drag-drop upload zone appears (text "Drop a .pen file here or click to upload" is visible)
+- [ ] Enter issue number "7" in the input and press Enter key — drag-drop upload zone appears (keyboard accessibility)
+- [ ] Enter "0" in the input and click "Continue" — upload zone does NOT appear (Continue button is disabled/opacity 0.4)
+- [ ] Click "Cancel" — issue picker form disappears, empty gallery state is restored
+- [ ] Issue input uses React controlled state (no `document.getElementById` in source, `data-testid="upload-issue-input"` present, no `id="upload-issue-input"`)
+
+### Routes/Endpoints
+- /dashboard/apps/empty-repo/designs (empty gallery state + upload flow)
+- /dashboard/apps/[repoId]/designs (any repo with no designs)
+

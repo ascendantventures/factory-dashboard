@@ -47,6 +47,7 @@ export default function DesignGallery({ repoId }: Props) {
   const { designs, loading, error, refetch } = useDesigns(repoId);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadIssue, setUploadIssue] = useState<number | null>(null);
+  const [issueInputValue, setIssueInputValue] = useState('');
 
   if (loading) {
     return (
@@ -76,75 +77,120 @@ export default function DesignGallery({ repoId }: Props) {
       <div>
         <EmptyGallery onUpload={() => setShowUpload(true)} />
         {showUpload && (
-          <div style={{ marginTop: '24px' }}>
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {uploadIssue === null ? (
               <div style={{
                 background: '#FFFFFF',
                 border: '1px solid #E8E5E1',
                 borderRadius: '12px',
                 padding: '24px',
+                maxWidth: '320px',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px',
+                animation: 'pencilFadeIn 200ms ease',
               }}>
-                <label style={{
-                  display: 'block',
+                <p style={{
                   fontFamily: '"Instrument Sans", system-ui, sans-serif',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#1F1E1C',
-                  marginBottom: '8px',
+                  color: '#5C5955',
+                  textAlign: 'center',
+                  margin: 0,
                 }}>
                   Which issue is this design for?
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                </p>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <input
                     type="number"
                     min="1"
-                    placeholder="Issue number"
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      border: '1px solid #E8E5E1',
-                      borderRadius: '6px',
-                      fontFamily: '"Instrument Sans", system-ui, sans-serif',
-                      fontSize: '14px',
-                      color: '#1F1E1C',
-                      background: '#FDFCFB',
-                      outline: 'none',
-                    }}
+                    placeholder="Issue number (e.g. 42)"
+                    value={issueInputValue}
+                    onChange={(e) => setIssueInputValue(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        const val = parseInt((e.target as HTMLInputElement).value, 10);
+                        const val = parseInt(issueInputValue, 10);
                         if (val > 0) setUploadIssue(val);
                       }
                     }}
-                    id="upload-issue-input"
-                  />
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById('upload-issue-input') as HTMLInputElement;
-                      const val = parseInt(el?.value ?? '', 10);
-                      if (val > 0) setUploadIssue(val);
-                    }}
+                    data-testid="upload-issue-input"
                     style={{
-                      padding: '8px 16px',
-                      background: '#E85D4C',
-                      border: 'none',
-                      borderRadius: '6px',
+                      width: '100%',
+                      height: '44px',
+                      padding: '0 12px',
+                      border: '1px solid #E8E5E1',
+                      borderRadius: '8px',
                       fontFamily: '"Instrument Sans", system-ui, sans-serif',
                       fontSize: '14px',
-                      fontWeight: 500,
-                      color: '#FFFFFF',
-                      cursor: 'pointer',
+                      color: '#1F1E1C',
+                      background: '#FFFFFF',
+                      outline: 'none',
+                      boxSizing: 'border-box',
                     }}
-                  >
-                    Continue
-                  </button>
+                  />
+                  <span style={{
+                    fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                    fontSize: '12px',
+                    color: '#9C9792',
+                  }}>
+                    Enter the GitHub issue number to associate with this design
+                  </span>
                 </div>
+                <button
+                  disabled={!(parseInt(issueInputValue, 10) > 0)}
+                  onClick={() => {
+                    const val = parseInt(issueInputValue, 10);
+                    if (val > 0) setUploadIssue(val);
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    padding: '0 20px',
+                    background: '#E85D4C',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    cursor: parseInt(issueInputValue, 10) > 0 ? 'pointer' : 'not-allowed',
+                    opacity: parseInt(issueInputValue, 10) > 0 ? 1 : 0.4,
+                    transition: 'background 150ms ease',
+                  }}
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpload(false);
+                    setUploadIssue(null);
+                    setIssueInputValue('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontFamily: '"Instrument Sans", system-ui, sans-serif',
+                    fontSize: '13px',
+                    color: '#9C9792',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             ) : (
               <DesignUploadButton
                 repoId={repoId}
                 issueNumber={uploadIssue}
-                onSuccess={() => { setShowUpload(false); setUploadIssue(null); refetch(); }}
+                onSuccess={() => {
+                  setShowUpload(false);
+                  setUploadIssue(null);
+                  setIssueInputValue('');
+                  refetch();
+                }}
               />
             )}
           </div>

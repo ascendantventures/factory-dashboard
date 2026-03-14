@@ -52,6 +52,52 @@ test.describe('Design Gallery', () => {
     await page.goto('/dashboard/apps/empty-repo/designs');
     await expect(page.locator('[data-testid="design-gallery-empty"]')).toBeVisible();
   });
+
+  test('upload zone appears after entering issue number from empty gallery', async ({ page }) => {
+    // Navigate to a repo with no designs
+    await page.goto('/dashboard/apps/empty-repo/designs');
+    await page.waitForLoadState('networkidle');
+
+    // Empty state should be visible
+    await expect(page.locator('[data-testid="design-gallery-empty"]')).toBeVisible();
+
+    // Click the upload button in the empty state
+    await page.getByRole('button', { name: 'Upload .pen file' }).click();
+
+    // Issue number picker should appear
+    await expect(page.locator('[data-testid="upload-issue-input"]')).toBeVisible();
+
+    // Enter an issue number and click Continue
+    await page.locator('[data-testid="upload-issue-input"]').fill('42');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    // The drag-drop upload zone should now be visible
+    await expect(page.locator('[data-testid="pen-upload-input"]')).toBeAttached();
+    await expect(page.getByText('Drop a .pen file here or click to upload')).toBeVisible();
+  });
+
+  test('upload zone appears on Enter key in issue input', async ({ page }) => {
+    await page.goto('/dashboard/apps/empty-repo/designs');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: 'Upload .pen file' }).click();
+    await page.locator('[data-testid="upload-issue-input"]').fill('7');
+    await page.locator('[data-testid="upload-issue-input"]').press('Enter');
+
+    await expect(page.getByText('Drop a .pen file here or click to upload')).toBeVisible();
+  });
+
+  test('invalid issue number (0) does not advance to upload zone', async ({ page }) => {
+    await page.goto('/dashboard/apps/empty-repo/designs');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: 'Upload .pen file' }).click();
+    await page.locator('[data-testid="upload-issue-input"]').fill('0');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    // Upload zone should NOT appear
+    await expect(page.getByText('Drop a .pen file here or click to upload')).not.toBeVisible();
+  });
 });
 
 test.describe('User Design Submission', () => {
