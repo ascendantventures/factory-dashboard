@@ -186,11 +186,10 @@ export function UserManagementClient({ currentUserId }: Props) {
       {/* Filters */}
       <UserFilters
         search={search}
-        role={roleFilter}
-        status={statusFilter}
+        testFilter={statusFilter}
+        counts={{ all: users.length, real: users.filter((u: any) => !u.is_test).length, test: users.filter((u: any) => u.is_test).length }}
         onSearchChange={v => { setSearch(v); }}
-        onRoleChange={v => { setRoleFilter(v); setPage(1); }}
-        onStatusChange={v => { setStatusFilter(v); setPage(1); }}
+        onTestFilterChange={v => { setStatusFilter(v); setPage(1); }}
         onClear={() => { setSearch(''); setRoleFilter('all'); setStatusFilter('all'); setPage(1); }}
       />
 
@@ -198,7 +197,7 @@ export function UserManagementClient({ currentUserId }: Props) {
       {selectedIds.size > 0 && (
         <BulkActionsBar
           selectedCount={selectedIds.size}
-          onAction={handleBulkAction}
+          onDelete={() => handleBulkAction('deactivate')}
           onClear={() => setSelectedIds(new Set())}
         />
       )}
