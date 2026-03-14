@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/30
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/75
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -152,7 +152,7 @@
 - **Optimistic insert:** New comment appended immediately; removed on error with Sonner toast
 
 ## Known Issues & Gotchas
-- **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development).
+- **GITHUB_BUILD_REPO must be set to the HARNESS repo** — `GET /api/issues/[number]/comments` returns HTTP 500 if `GITHUB_BUILD_REPO` is missing or wrong. Dashboard issue numbers live in `ascendantventures/harness-beta-test` — NOT `ascendantventures/factory-dashboard`. Setting it to `factory-dashboard` causes 404 from GitHub (no matching issue numbers). Confirmed bugs in QA for issue #30 (rounds 1 and 2). Root cause investigated in UAT Fix #75: Vercel snapshots env vars at deploy time — vars must be set BEFORE triggering deployment. Correct value: `ascendantventures/harness-beta-test` for all environments (Production, Preview, Development). Confirmed set as of 2026-03-13.
 - **AC-NNN.N / REQ-XXX token highlighting must use a rehype plugin, NOT markdown pre-processing** — Injecting HTML into raw markdown before `react-markdown` processes it causes the HTML to be escaped and shown as literal text when the token appears inside a backtick code span. Fix (issue #30, round 3): replaced `processMarkdownText()` pre-processing with a custom `rehypeTokenHighlight` rehype plugin that walks hast text nodes and skips `<code>`/`<pre>` parents. Plugin is inserted between `rehype-raw` and `rehype-highlight` in the plugin chain.
 - **dash_issues.id is bigint, not UUID** — the sync endpoint must set `id: ghIssue.number` explicitly.
 - **Sync uses cookie-based auth** — `createSupabaseServerClient()` reads cookies. Can't test sync with Bearer tokens.

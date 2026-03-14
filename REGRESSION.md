@@ -272,3 +272,32 @@ _Added: 2026-03-12 — Issue #30_
 ### Prerequisite Check (run before testing comment threading)
 - **VERIFY** `GITHUB_BUILD_REPO` is set to **`ascendantventures/harness-beta-test`** in Vercel (Production + Preview + Development). Two failure modes: (1) missing → HTTP 500; (2) wrong repo (e.g. `factory-dashboard`) → GitHub 404 → HTTP 500. Dashboard issue numbers live in `harness-beta-test`, not `factory-dashboard`. Both bugs confirmed in QA for issue #30 (rounds 1 and 2).
 
+
+---
+
+## [UAT Fix #75] GitHub Env Var Fix — Comments, Reply Editor & Apps Page (Issue #75)
+_Added: 2026-03-14_
+
+### Context
+This fix ensures `GITHUB_BUILD_REPO=ascendantventures/harness-beta-test` and `GITHUB_TOKEN`
+are set in Vercel for all environments (Production, Preview, Development). Without these,
+the comments API and apps API both return HTTP 500.
+
+### Test Steps
+- [ ] **[API]** `GET /api/issues/30/comments` — returns HTTP 200 with `{ comments: [...] }` array (not 500)
+- [ ] **[API]** `GET /api/apps` — returns HTTP 200 (not 500)
+- [ ] Navigate to `/dashboard/issues/30` — GitHub Comments section loads (no error state)
+- [ ] Comments render with avatar, author name, timestamp
+- [ ] Agent/bot comments show purple "AGENT" badge
+- [ ] `[data-testid="reply-editor"]` is visible below the comment thread
+- [ ] Type text in reply editor and click "Post Comment" — comment appears in thread
+- [ ] Navigate to `/dashboard/apps` — app cards render with names, status, and links (no error state)
+
+### Routes/Endpoints
+- `GET /api/issues/[number]/comments` — must return 200 with `GITHUB_BUILD_REPO` set
+- `POST /api/issues/[number]/comments` — post a reply
+- `GET /api/apps` — must return 200 with `GITHUB_BUILD_REPO` and `GITHUB_TOKEN` set
+
+### Env Var Check (run before UAT)
+- `GITHUB_BUILD_REPO` must be `ascendantventures/harness-beta-test` in Vercel (all 3 scopes)
+- `GITHUB_TOKEN` must be set in Vercel with repo read scope (all 3 scopes)
