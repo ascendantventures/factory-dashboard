@@ -174,7 +174,11 @@ export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Prop
             }}
             title={lastSeen ?? undefined}
           >
-            {lastSeen ? formatRelativeTime(lastSeen) : '—'}
+            {lastSeen == null ? (
+              <span style={{ color: '#6B7489' }}>Never connected</span>
+            ) : (
+              formatRelativeTime(lastSeen)
+            )}
           </div>
         </div>
       </div>
