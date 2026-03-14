@@ -742,11 +742,11 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - `/dashboard/apps/[repoId]/designs/[issueNumber]`
 
-## Escape Guard + Success Toast in NewIssueModal (Issue #82)
-_Added: 2026-03-14_
+## Escape Guard + Success Toast in QuickCreateModal (Issue #82)
+_Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component; moved to QuickCreateModal)_
 
 ### Test Steps [auth]
-- [ ] Navigate to /dashboard, click "New Issue" button — modal opens
+- [ ] Navigate to /dashboard, click "New Issue" button — QuickCreateModal opens
 - [ ] With modal open and idle (no submission in progress), press Escape — modal closes (AC-001.1)
 - [ ] Open modal again, click Submit while form is valid — while loading spinner is visible, press Escape — modal stays open (AC-001.2)
 - [ ] Open modal, fill in Title and Body, select a repo, click Submit — on success a sonner toast appears at bottom-right with text "Issue created" (AC-002.1)
@@ -755,6 +755,8 @@ _Added: 2026-03-14_
 - [ ] Toast fires even after modal has closed/unmounted (AC-002.4)
 
 ### Notes
+- Fix is in `src/components/QuickCreateModal/index.tsx` (NOT NewIssueModal.tsx — that file is dormant)
+- `NewIssueButton` imports `QuickCreateModal` (default export)
 - Escape handler guards on `isSubmitting` from react-hook-form
 - Toast uses `action: { label: 'Open', onClick: () => window.open(url, '_blank') }` with `duration: 6000`
 - Toast fires via `setTimeout(..., 0)` to escape the render cycle and survive modal unmount
