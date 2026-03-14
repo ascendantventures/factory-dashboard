@@ -541,3 +541,35 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Bug 2 (REQ-WHK-FIX-002):** Webhook list server crash — caused by unused `import IntegrationPresets` in `page.tsx` (Server Component importing a `'use client'` component in a way that triggered SSR exception). Removed the import and added graceful error handling for the `fd_webhooks` query.
 - **Key pattern:** In Next.js 16 App Router, never use `useEffect` to initialize state from props — initialize directly in `useState()`. `useEffect` runs post-hydration and causes visible flicker/failure.
 - **No DB migrations required** — pure client/SSR bug fixes.
+
+---
+
+## Bug Fix: MobileBottomNav HttpOnly Cookie Auth Fix (Issue #92)
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/92_
+
+### Root Cause
+`MobileBottomNav` used `createSupabaseBrowserClient().auth.getUser()` inside `useEffect`. The Supabase session cookie is HttpOnly — unreadable by browser-side JS — so `getUser()` always returned `null`. Role check was skipped; Admin nav entry never rendered for admin users.
+
+### Fix Applied (Option A — Server prop passthrough)
+
+**Files changed:**
+- `src/app/dashboard/layout.tsx` — Made async; calls `createSupabaseServerClient()` + `getUserRole()` server-side; redirects unauthenticated users; passes `isAdmin={role === 'admin'}` to `AppShell`
+- `src/app/pipeline/layout.tsx` — Same pattern
+- `src/components/layout/AppShell.tsx` — Added `isAdmin: boolean` prop, threads it to `MobileBottomNav`
+- `src/components/layout/MobileBottomNav.tsx` — Removed `useEffect` + Supabase call; accepts `isAdmin: boolean` prop; conditionally renders Admin entry before Settings
+
+### Nav Items (post-fix)
+- Admin user: Dashboard | Apps | Activity | Metrics | **Admin** | Settings (6 items)
+- Non-admin: Dashboard | Apps | Activity | Metrics | Settings (5 items)
+
+### Key testids
+- `data-testid="bottom-nav-admin"` — Admin link (admin users only, `href="/dashboard/admin/users"`)
+- `data-testid="bottom-nav-settings"` — Settings link (always shown)
+
+### Critical Pattern
+- **NEVER** call `auth.getUser()` or any Supabase client in `'use client'` components for role checks
+- Always resolve role in Server Components (layout.tsx) and pass down as props
+- HttpOnly cookies are inaccessible to JS — only server-side Supabase clients can read them
+
+### No DB Changes
+Pure client/server architecture fix. No migrations, no RLS changes needed.
