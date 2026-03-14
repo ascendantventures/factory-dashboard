@@ -2,10 +2,10 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import PenFileViewer from '@/components/pencil/PenFileViewer';
 import DesignUploadButton from '@/components/pencil/DesignUploadButton';
 import type { PencilDesignRow } from '@/lib/pen-types';
+import { useAppDisplayName } from '@/hooks/useAppDisplayName';
 
 export default function DesignDetailPage({
   params,
@@ -14,6 +14,7 @@ export default function DesignDetailPage({
 }) {
   const { repoId, issueNumber } = use(params);
   const issueNum = parseInt(issueNumber, 10);
+  const displayName = useAppDisplayName(repoId);
 
   const [design, setDesign] = useState<PencilDesignRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,24 +45,34 @@ export default function DesignDetailPage({
 
   return (
     <div style={{ background: '#FDFCFB', minHeight: '100vh', padding: '32px' }}>
-      {/* Nav */}
-      <Link
-        href={`/dashboard/apps/${repoId}/designs`}
+      {/* Breadcrumb */}
+      <nav
+        aria-label="breadcrumb"
         style={{
-          display: 'inline-flex',
+          display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          marginBottom: '24px',
+          gap: '6px',
           fontFamily: '"Instrument Sans", system-ui, sans-serif',
           fontSize: '14px',
           fontWeight: 500,
           color: '#9C9792',
-          textDecoration: 'none',
+          marginBottom: '24px',
         }}
       >
-        <ArrowLeft size={16} />
-        All designs
-      </Link>
+        <Link href="/dashboard/apps" style={{ color: 'inherit', textDecoration: 'none' }}>
+          Apps
+        </Link>
+        <span>/</span>
+        <Link href={`/dashboard/apps/${repoId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+          {displayName ?? '…'}
+        </Link>
+        <span>/</span>
+        <Link href={`/dashboard/apps/${repoId}/designs`} style={{ color: 'inherit', textDecoration: 'none' }}>
+          Designs
+        </Link>
+        <span>/</span>
+        <span style={{ color: '#1F1E1C' }}>Issue #{issueNum}</span>
+      </nav>
 
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
