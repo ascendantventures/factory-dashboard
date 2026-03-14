@@ -551,3 +551,11 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
+
+## UAT Fix #114 — Sidebar Event Log Link (Issue #114)
+- **Issue:** https://github.com/ascendantventures/harness-beta-test/issues/114
+- **Fix:** One-line change in `src/components/layout/Sidebar.tsx` line 32 — changed href from `/dashboard/admin/events` to `/dashboard/event-log`
+- **Root cause:** The Event Log page built in #106 at `/dashboard/event-log` was unreachable via sidebar; link pointed to old deprecated `/dashboard/admin/events` route (queries empty `fdash_event_log` table)
+- **No DB changes** — navigation-only fix
+- **No new components** — single file edit
+- **Sidebar nav item after fix:** `{ href: '/dashboard/event-log', label: 'Event Log', icon: Radio, exact: false }`
