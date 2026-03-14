@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/90
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/96
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)

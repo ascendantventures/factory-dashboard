@@ -764,3 +764,52 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+## UX Polish — Repo Selector & Sync Status (Issue #96)
+_Added: 2026-03-14_
+
+### REQ-UX96-001: Repository Selector Empty State Copy [auth]
+
+#### Test Steps
+- [ ] Log in as any user
+- [ ] Open QuickCreate modal (click `[data-testid="quick-create-button"]` or the + button in the header)
+- [ ] Fill in issue title and click Next
+- [ ] Intercept or confirm no repos are configured (or mock `/api/build-repos` returning `{ repos: [] }`)
+- [ ] Verify the empty-state link reads **"Add a repository in Settings first"** (NOT "Create an issue on a new app first")
+- [ ] Click the link — should navigate to `/dashboard/settings`
+- [ ] Link color should remain `#10B981` (emerald green)
+
+#### Routes
+- `/dashboard` (QuickCreate modal)
+- `/api/build-repos` (mocked to return empty for this test)
+
+---
+
+### REQ-UX96-002: Sync Status Tooltip [auth]
+
+#### Test Steps
+- [ ] Log in and navigate to `/dashboard`
+- [ ] If header shows "Not synced": hover over the sync status area — a tooltip should appear: **"Sync happens automatically every 30 seconds or when you trigger a manual refresh."**
+- [ ] Trigger a manual refresh (click the sync icon) and wait for a timestamp (e.g., "Synced 5s ago") to appear
+- [ ] Hover over the synced state — **no tooltip** should appear
+- [ ] Visual appearance unchanged — no extra UI elements visible
+
+#### Routes
+- `/dashboard` (header sync status)
+- `/api/sync/status`
+
+---
+
+### REQ-UX96-003: Mobile Admin Nav data-testid [auth]
+
+#### Test Steps
+- [ ] Set viewport to 375×812
+- [ ] Log in as **admin** user
+- [ ] Navigate to `/dashboard`
+- [ ] Verify element with `data-testid="bottom-nav-admin"` is **visible**
+- [ ] Log out; log in as a **non-admin** user
+- [ ] Navigate to `/dashboard`
+- [ ] Verify element with `data-testid="bottom-nav-admin"` is **NOT present/visible**
+
+#### Routes
+- `/dashboard` at 375px viewport

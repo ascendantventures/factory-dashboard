@@ -45,6 +45,7 @@ export function SyncStatus() {
       className="hidden sm:flex items-center gap-1.5 text-xs"
       style={{ color: syncing ? '#6366F1' : 'var(--text-muted)' }}
       aria-label="Sync status"
+      title={!lastSync ? "Sync happens automatically every 30 seconds or when you trigger a manual refresh." : undefined}
     >
       <RefreshCw
         className="w-3.5 h-3.5"

@@ -180,7 +180,7 @@ export function RepositorySelector({
             href="/dashboard/settings"
             style={{ fontSize: '12px', color: '#10B981', fontFamily: 'Inter, sans-serif' }}
           >
-            Create an issue on a new app first
+            Add a repository in Settings first
           </a>
         </div>
         {error && (
