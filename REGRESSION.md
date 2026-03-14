@@ -764,3 +764,24 @@ _Added: 2026-03-14, Corrected: 2026-03-14 (bugfix — fix was in wrong component
 ### Routes/Endpoints
 - /dashboard (New Issue button in header)
 - POST /api/issues (issue creation endpoint)
+
+## Settings Page Accessibility — Single <main> Landmark (Issue #107)
+_Added: 2026-03-14_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/settings — page loads without error
+- [ ] Inspect the DOM: exactly one `<main>` element exists on the page (the outer layout main)
+- [ ] The settings content area renders as `<section>`, not `<main>`
+- [ ] agent-browser `get text 'main'` returns exactly one element (no strict-mode violation)
+- [ ] All settings tabs are accessible: General, Users, Templates, Environment, API Keys
+- [ ] Click each settings tab — each tab renders content correctly
+- [ ] Visual layout is identical to before the fix — no spacing or styling changes
+
+### Routes/Endpoints
+- /dashboard/settings
+- /dashboard/settings?tab=general (or equivalent tab navigation)
+
+### Notes
+- Fix is in `src/app/dashboard/settings/SettingsClient.tsx` line ~852
+- Inner `<main className="flex-1 md:pl-8 md:pt-0">` changed to `<section>` — outer layout main unchanged
+- WCAG 2.1 SC 1.3.6 compliance: only one `<main>` landmark per page
