@@ -1,6 +1,7 @@
-import AppShell from '@/components/layout/AppShell';
+import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getUserRole } from '@/lib/roles';
+import AppShell from '@/components/layout/AppShell';
 
 export default async function DashboardLayout({
   children,
@@ -9,7 +10,10 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user ? await getUserRole(user.id) : 'viewer';
+  if (!user) redirect('/auth/login');
 
-  return <AppShell isAdmin={role === 'admin'}>{children}</AppShell>;
+  const role = await getUserRole(user.id);
+  const isAdmin = role === 'admin';
+
+  return <AppShell isAdmin={isAdmin}>{children}</AppShell>;
 }

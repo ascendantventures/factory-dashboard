@@ -15,36 +15,18 @@ interface MobileBottomNavProps {
   isAdmin: boolean;
 }
 
-const BASE_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true, testId: undefined },
-  { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined },
-  { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined },
-  { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined },
-];
-
-const ADMIN_ITEM = {
-  href: '/dashboard/admin/users',
-  label: 'Admin',
-  icon: Shield,
-  exact: false,
-  testId: 'bottom-nav-admin',
-};
-
-const SETTINGS_ITEM = {
-  href: '/dashboard/settings',
-  label: 'Settings',
-  icon: Settings,
-  exact: false,
-  testId: 'bottom-nav-settings',
-};
-
 export default function MobileBottomNav({ isAdmin }: MobileBottomNavProps) {
   const pathname = usePathname();
 
   const navItems = [
-    ...BASE_NAV_ITEMS,
-    ...(isAdmin ? [ADMIN_ITEM] : []),
-    SETTINGS_ITEM,
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true, testId: undefined },
+    { href: '/dashboard/apps', label: 'Apps', icon: Grid3X3, exact: false, testId: undefined },
+    { href: '/dashboard/activity', label: 'Activity', icon: Activity, exact: false, testId: undefined },
+    { href: '/dashboard/metrics', label: 'Metrics', icon: BarChart3, exact: false, testId: undefined },
+    ...(isAdmin
+      ? [{ href: '/dashboard/admin/users', label: 'Admin', icon: Shield, exact: false, testId: 'bottom-nav-admin' }]
+      : []),
+    { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false, testId: 'bottom-nav-settings' },
   ];
 
   function isActive(href: string, exact: boolean) {

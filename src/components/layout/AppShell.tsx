@@ -7,10 +7,10 @@ import MobileBottomNav from './MobileBottomNav';
 
 interface AppShellProps {
   children: React.ReactNode;
-  isAdmin?: boolean;
+  isAdmin: boolean;
 }
 
-export default function AppShell({ children, isAdmin = false }: AppShellProps) {
+export default function AppShell({ children, isAdmin }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {

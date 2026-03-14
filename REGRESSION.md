@@ -689,20 +689,28 @@ _Added: 2026-03-14_
 _Added: 2026-03-14_
 
 ### Test Steps [auth]
-- [ ] Log in as ajrrac@gmail.com (admin user), resize viewport to 375px — element with `data-testid="bottom-nav-admin"` SHALL be present in the DOM within 3 seconds of page load, WITHOUT any user interaction
-- [ ] Admin user at 375px: Admin entry href is `/dashboard/admin/users` and uses Shield icon
-- [ ] Admin user at 375px: Settings entry (`data-testid="bottom-nav-settings"`) is also visible (both Admin and Settings now show for admin users)
-- [ ] Log in as a non-admin (viewer/member) user, resize viewport to 375px — `data-testid="bottom-nav-admin"` is NOT present in DOM
-- [ ] Non-admin user at 375px: `data-testid="bottom-nav-settings"` IS present
-- [ ] Admin nav entry appears immediately on page load (server-rendered, no useEffect delay) — visible within 1 second
-- [ ] At desktop viewport (≥768px) — mobile bottom nav is hidden (md:hidden applies)
-- [ ] Navigate to /dashboard — Admin entry still present (verify no hydration mismatch)
 
-### Code Checks (AC-001.3)
-- [ ] `src/components/layout/MobileBottomNav.tsx` contains NO `useEffect` that calls `auth.getUser()` or any Supabase client method
-- [ ] `src/app/dashboard/layout.tsx` calls `getUserRole()` server-side and passes `isAdmin` prop to AppShell
+#### AC-001.1 — Admin user sees Admin nav entry on mobile
+- [ ] Log in as admin user (ajrrac@gmail.com), navigate to /dashboard, resize viewport to 375px
+- [ ] `data-testid="bottom-nav-admin"` is present in DOM within 3 seconds of page load (no interaction required)
+- [ ] Admin link has `href="/dashboard/admin/users"` and Shield icon
+
+#### AC-001.2 — Non-admin user does NOT see Admin nav entry
+- [ ] Log in as non-admin (viewer/operator) user, navigate to /dashboard, resize viewport to 375px
+- [ ] `data-testid="bottom-nav-admin"` is NOT present in DOM
+- [ ] Settings link (`href="/dashboard/settings"`) is visible instead
+
+#### AC-001.3 — Admin entry renders synchronously (no useEffect delay)
+- [ ] Log in as admin, navigate to /dashboard at 375px viewport
+- [ ] `data-testid="bottom-nav-admin"` is visible immediately (within 1 second) — does not require a delayed useEffect
+- [ ] Verify no `useEffect` calling `auth.getUser()` exists in MobileBottomNav.tsx (code review)
+
+#### AC-001.4 — DashboardLayout passes isAdmin prop
+- [ ] DashboardLayout (src/app/dashboard/layout.tsx) uses `getUserRole()` server-side and passes `isAdmin` to AppShell
+- [ ] AppShell (src/components/layout/AppShell.tsx) accepts and forwards `isAdmin` to MobileBottomNav
+- [ ] MobileBottomNav accepts `isAdmin: boolean` prop (no Supabase calls)
 
 ### Routes/Endpoints
-- /dashboard (mobile bottom nav visible at <768px)
-- /dashboard/admin/users (target of Admin nav link)
-- /dashboard/settings (Settings link always visible)
+- /dashboard (mobile bottom nav at ≤767px viewport)
+- /dashboard/admin/users (Admin nav link target)
+- /dashboard/settings (Settings link for non-admin)
