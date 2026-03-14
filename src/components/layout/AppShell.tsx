@@ -7,9 +7,10 @@ import MobileBottomNav from './MobileBottomNav';
 
 interface AppShellProps {
   children: React.ReactNode;
+  isAdmin?: boolean;
 }
 
-export default function AppShell({ children }: AppShellProps) {
+export default function AppShell({ children, isAdmin = false }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function AppShell({ children }: AppShellProps) {
       </div>
 
       {/* Bottom nav — visible on mobile only */}
-      <MobileBottomNav />
+      <MobileBottomNav isAdmin={isAdmin} />
     </div>
   );
 }
