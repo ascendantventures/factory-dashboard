@@ -42,6 +42,31 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-heading: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Phase 2 (#16): Analytics tokens */
+  --analytics-positive: #22C55E;
+  --analytics-neutral: #6366F1;
+  --analytics-warning: #F59E0B;
+  --analytics-error: #EF4444;
+
+  /* Phase 2 (#16): Timeline tokens */
+  --timeline-line: var(--border);
+  --timeline-dot-border: var(--surface);
+  --timeline-actor-harness-bg: rgba(99,102,241,0.15);
+  --timeline-actor-harness-text: #6366F1;
+  --timeline-actor-human-bg: rgba(34,197,94,0.15);
+  --timeline-actor-human-text: #22C55E;
+  --timeline-actor-agent-bg: rgba(168,85,247,0.15);
+  --timeline-actor-agent-text: #A855F7;
+
+  /* Station colors (Phase 2 canonical) */
+  --station-intake: #6B7280;
+  --station-spec: #3B82F6;
+  --station-design: #A855F7;
+  --station-build: #F59E0B;
+  --station-qa: #06B6D4;
+  --station-bugfix: #EF4444;
+  --station-done: #22C55E;
 }
 
 * {

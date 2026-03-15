@@ -972,3 +972,70 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Phase 2 — Vercel Webhook Ingestion (Issue #16)
+_Added: 2026-03-15_
+
+### Test Steps — Webhook signature verification
+- [ ] POST /api/webhooks/vercel with no x-vercel-signature header → returns HTTP 401
+- [ ] POST /api/webhooks/vercel with an invalid x-vercel-signature (e.g. "invalidsig") → returns HTTP 401
+- [ ] POST /api/webhooks/vercel with a valid HMAC-SHA1 signature → returns HTTP 200
+
+### Routes/Endpoints
+- POST /api/webhooks/vercel
+
+---
+
+## Phase 2 — Station Timeline UI (Issue #16)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/apps
+- [ ] Click any app card to open the App Detail drawer
+- [ ] Three tabs are visible: Overview, Analytics, Timeline (data-testid: drawer-tab-overview, drawer-tab-analytics, drawer-tab-timeline)
+- [ ] Click the Timeline tab → tab panel renders without errors
+- [ ] If no station history exists for the app's issues → [data-testid="timeline-empty"] is visible with text "No history recorded"
+- [ ] If station history rows exist → [data-testid="timeline-node"] elements are visible, each showing station name, relative timestamp, and actor badge (harness/human/agent)
+- [ ] Timeline nodes are color-coded by station (intake=gray, spec=blue, design=purple, build=amber, qa=cyan, done=green)
+- [ ] Hovering timestamp element shows absolute date/time (title attribute)
+
+### Routes/Endpoints
+- GET /api/apps/[repoId]/history
+
+---
+
+## Phase 2 — App Analytics Panel (Issue #16)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/apps
+- [ ] Click any app card to open the App Detail drawer
+- [ ] Click the Analytics tab (data-testid: drawer-tab-analytics)
+- [ ] One of two states must be true:
+  - a) VERCEL_ANALYTICS_TOKEN configured: [data-testid="analytics-pageviews"], [data-testid="analytics-visitors"], [data-testid="analytics-latency"], [data-testid="analytics-errorrate"] are all visible with numeric values
+  - b) VERCEL_ANALYTICS_TOKEN not configured: [data-testid="analytics-unconfigured"] is visible with text "Analytics not configured"
+- [ ] If metrics are shown: [data-testid="analytics-cache-notice"] is visible with "Updated X min ago" text
+- [ ] If metrics are shown: [data-testid="analytics-refresh"] button is present and clickable (triggers re-fetch)
+- [ ] Clicking the Refresh button spins the RefreshCw icon while loading
+- [ ] Clicking the Analytics tab a second time does NOT re-fetch (uses cached state)
+
+### Routes/Endpoints
+- GET /api/apps/[repoId]/analytics
+- GET /api/apps/[repoId]/analytics?refresh=true
+
+---
+
+## Phase 2 — No-Regression Deployment Polling (Issue #16)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/apps
+- [ ] Verify app cards show deployment state (READY / BUILDING / ERROR / —)
+- [ ] The existing POST /api/apps/refresh-deployments endpoint still responds with 200 (polling fallback intact)
+- [ ] No existing Overview tab content is missing — live URL, GitHub URL, status badge, deployment history, issue list all still present
+
+### Routes/Endpoints
+- POST /api/apps/refresh-deployments
+- GET /api/apps/[repoId]

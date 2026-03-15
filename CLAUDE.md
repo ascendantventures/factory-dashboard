@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/15 (Nav Phase 2 — Search + Notifications + Transitions)
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -118,13 +118,21 @@
 - `src/app/api/apps/route.ts` — GET /api/apps — returns all apps with computed status, issue counts, tech stack
 - `src/app/api/apps/[repoId]/route.ts` — GET /api/apps/[repoId] — returns app detail with issues, transitions, deployments
 - `src/app/api/apps/refresh-deployments/route.ts` — POST /api/apps/refresh-deployments — admin-only Vercel cache refresh
+- `src/app/api/apps/[repoId]/analytics/route.ts` — Phase 2: GET analytics for one app. Serves from dash_analytics_cache if < 1h old; otherwise fetches Vercel Analytics API and upserts cache. Returns unconfigured=true when VERCEL_ANALYTICS_TOKEN absent. Supports ?refresh=true to force re-fetch.
+- `src/app/api/apps/[repoId]/history/route.ts` — Phase 2: GET station transition history for all issues associated with a build repo. Joins dash_station_history with dash_issues. Groups by issue.
+- `src/app/api/webhooks/vercel/route.ts` — Phase 2: POST endpoint for Vercel deployment webhooks. HMAC-SHA1 verification using VERCEL_WEBHOOK_SECRET. Updates dash_deployment_cache on deployment.created/ready/error/canceled events. Returns 401 on bad/missing signature, 500 if secret not configured.
+- `src/lib/webhooks.ts` — Phase 2: verifyVercelWebhook() — HMAC-SHA1 with timing-safe compare.
+- `src/lib/vercel-analytics.ts` — Phase 2: fetchVercelAnalytics() — fetches pageviews, visitors, p75 latency (TTFB), error rate from Vercel Analytics Query API.
 - `src/components/apps/AppCard.tsx` — App card with framer-motion hover animation
 - `src/components/apps/AppStatusBadge.tsx` — Status pill: Active (green) | Idle (gray) | Error (red)
 - `src/components/apps/AppGrid.tsx` — Responsive grid 1/2/3 col wrapper
-- `src/components/apps/AppDetailDrawer.tsx` — Slide-in drawer for app detail (desktop), fetches /api/apps/[id]
+- `src/components/apps/AppDetailDrawer.tsx` — Slide-in drawer for app detail (desktop). Phase 2: added 3-tab system (Overview / Analytics / Timeline) with framer-motion tab transitions. Tab state resets on appId change.
 - `src/components/apps/AppIssueList.tsx` — Issues grouped by station in pipeline order
 - `src/components/apps/AppTechStack.tsx` — Tech stack tag pills
 - `src/components/apps/DeploymentHistory.tsx` — Last deploy row with relative time
+- `src/components/apps/AppAnalyticsPanel.tsx` — Phase 2: 2x2 metrics grid (pageviews, visitors, p75 latency, error rate) with cache timestamp + refresh button. Shows unconfigured state when VERCEL_ANALYTICS_TOKEN is absent.
+- `src/components/apps/StationTimeline.tsx` — Phase 2: Grouped vertical timeline of station transitions per issue. Fetches /api/apps/[repoId]/history. Empty state when no rows.
+- `src/components/apps/StationTimelineItem.tsx` — Phase 2: Single timeline node — station-colored dot, station name, relative timestamp, actor badge (harness/human/agent).
 
 ## Webhook & Integration Configuration (Issue #29)
 - **New routes:** `/dashboard/settings/webhooks`, `/dashboard/settings/webhooks/new`, `/dashboard/settings/webhooks/[id]`
@@ -169,10 +177,19 @@
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
+- **VERCEL_WEBHOOK_SECRET** — Must be configured in Vercel project settings AND match the secret from the Vercel Webhook setup. If missing, `/api/webhooks/vercel` returns HTTP 500 (not 401). Set up at: Vercel → project → Settings → Git → Webhooks → Add Webhook → URL: `<LIVE_URL>/api/webhooks/vercel`. Events: deployment.created, deployment.ready, deployment.error, deployment.canceled.
+- **VERCEL_ANALYTICS_TOKEN** — Separate token from VERCEL_TOKEN. Requires Analytics read scope. Create at vercel.com/account/tokens. If missing, Analytics tab shows "Analytics not configured" (graceful degradation, not an error).
+- **dash_station_history populated by harness** — The harness (factory/src/pipeline/reconciler.ts) calls recordStationTransition() on every station label flip, which writes to dash_station_history via the REST API. The Timeline tab will show "No history recorded" until at least one station transition is written. This is expected for new apps.
+- **Webhook deployment correlation** — /api/webhooks/vercel correlates by vercel_deployment_id. If the webhook payload doesn't include a deployment ID, the update is skipped with a log warning. The 30s polling fallback (POST /api/apps/refresh-deployments) still runs as a safety net.
+- **Phase 2 new DB tables** — dash_station_history and dash_analytics_cache added in migration 20260315010000_spec_schema.sql (renamed to avoid timestamp collision with 20260315000000_audit_phase2.sql). Also adds last_webhook_at and webhook_event columns to dash_deployment_cache.
+- **Issue #15 migration (20260315100000)** — Adds `search_vector` generated tsvector column + GIN index to `dash_issues` and `dash_build_repos`. Enables Realtime on `dash_webhook_events`. Also guards `dash_build_repos` creation (table was missing from remote despite migration being marked applied).
+- **dash_build_repos missing** — The table was not present in the remote Supabase instance despite migration `20260312000000` being marked applied. Migration `20260315100000` includes a `CREATE TABLE IF NOT EXISTS` guard for `dash_build_repos`. If tables appear missing again, run `supabase db push --linked --yes --include-all` after `supabase migration repair --status reverted <version>`.
+- **Search API FTS** — `/api/search` uses Supabase `.textSearch()` with `websearch` config. Falls back gracefully if `search_issues` RPC doesn't exist. Returns `{ results, query, total }`. Authenticates via session cookie (server client). Returns HTTP 401 for unauthenticated callers.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
-- **Notification bell** — static placeholder, no real notification data wired up.
-- **Global search** — static UI only, no real search backend connected yet.
+- **Global search (Issue #15)** — WIRED: `GlobalSearch.tsx` now fetches `/api/search` (Postgres FTS). Search API returns issues (type: "issue") and apps (type: "app") merged by FTS rank. Debounced 200ms, skeleton loading state, keyboard nav (ArrowUp/Down/Enter), data-testid="search-result" on each row.
+- **Notification bell (Issue #15)** — WIRED: `NotificationBell.tsx` now subscribes to `dash_webhook_events` via Supabase Realtime. Unread badge count from localStorage `notif_last_read`. Dropdown shows 20 most recent events with event-type icons and relative timestamps. data-testid="notification-panel" on panel.
+- **Page transitions (Issue #15)** — `PageTransition.tsx` added at `src/components/layout/PageTransition.tsx`. Wraps `{children}` in dashboard layout. Uses `AnimatePresence mode="wait"` keyed on `usePathname()`. Respects `prefers-reduced-motion`. `pageVariants` added to `lib/motion.ts`.
 - **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
