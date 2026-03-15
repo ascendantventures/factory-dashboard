@@ -1052,3 +1052,25 @@ The build agent merged two code stubs when implementing format badges, resulting
 **Fix:** Remove the first partial import block and first `DiscordIcon` const; keep the single clean `import { Trash2, Pencil, Activity, Slack }` and the function-style `DiscordIcon`.
 
 **Regression check:** After any edit to `WebhookCard.tsx`, run `npx tsc --noEmit --skipLibCheck` and confirm zero errors before pushing.
+
+### Issue #132 — BUILD agent committed code but did not open PR or deploy preview
+
+The BUILD agent for issue #111 pushed code to `feature/issue-111` but failed to:
+1. Open a PR from `feature/issue-111` → `main`
+2. Wait for / capture the Vercel preview URL
+3. Post the preview URL as a comment on the parent issue
+
+**Root cause:** Agent completed code implementation but stopped before the PR/deploy handoff steps. No PR = no Vercel preview trigger = routes unreachable on any deployed environment.
+
+**Fix applied (issue #132):**
+- PR #50 opened on `ascendantventures/factory-dashboard` (feature/issue-111 → main)
+- PR body updated to reference issue #132 as the deployment bug being tracked
+- Verified Vercel preview at `factory-dashboard-git-featur-342d93-abe-reyes-projects-ec1cbb96.vercel.app`
+- Confirmed `POST /api/webhooks/fire-event` returns 401 (not 404) on preview
+- Confirmed `GET /api/webhooks/fire-event` returns 405 on preview
+- Posted preview URL as comment on issue #111
+
+**Regression check:** After completing any BUILD task, verify:
+- `gh pr list --repo <build-repo> --head <feature-branch>` returns exactly 1 open PR
+- A Vercel preview URL is accessible and key routes return expected status codes (not 404)
+- Preview URL is posted as comment on the parent issue in harness-beta-test
