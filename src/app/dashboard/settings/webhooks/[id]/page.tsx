@@ -20,7 +20,7 @@ export default async function WebhookDetailPage({ params }: Props) {
 
   const { data: webhook } = await supabase
     .from('fd_webhooks')
-    .select('id, url, events, enabled, created_at')
+    .select('id, url, events, enabled, format_type, created_at')
     .eq('id', id)
     .single();
 
@@ -91,6 +91,7 @@ export default async function WebhookDetailPage({ params }: Props) {
           initialUrl={webhook.url}
           initialEvents={Array.isArray(webhook.events) ? webhook.events : []}
           initialEnabled={webhook.enabled}
+          initialFormatType={webhook.format_type as 'standard' | 'slack' | 'discord' ?? 'standard'}
         />
       </div>
 
@@ -142,7 +143,7 @@ export default async function WebhookDetailPage({ params }: Props) {
             Last 50 deliveries
           </span>
         </div>
-        <DeliveryLog deliveries={deliveries ?? []} />
+        <DeliveryLog deliveries={deliveries ?? []} webhookId={webhook.id} />
       </div>
 
       {/* Danger Zone */}

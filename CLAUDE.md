@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/110
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/111
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -73,6 +73,7 @@
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
 - `WEBHOOK_SECRET_ENCRYPTION_KEY` — AES-GCM 32-byte key for encrypting webhook signing secrets (Issue #29). Pad to 32 chars if shorter. Required for HMAC signing dispatch.
+- `FACTORY_WEBHOOK_SECRET` — Shared secret for machine-to-machine `POST /api/webhooks/fire-event` endpoint (Issue #111 Phase 2). Must match value in `/opt/openclaw-forge/forge-poller.env`. Generate with `openssl rand -hex 32`.
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -85,8 +86,8 @@
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
-- `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
-- `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
+- `fd_webhooks` — Registered webhook endpoints. Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, format_type ('standard'|'slack'|'discord', default 'standard'), created_at, updated_at. RLS: owner-only CRUD. CHECK constraint on format_type. (Issue #29 + Phase 2 Issue #111)
+- `fd_webhook_deliveries` — Rolling delivery log per webhook. Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted. (Issue #29)
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
 ## Key Files
@@ -689,3 +690,32 @@ All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles
 ### Supabase Realtime Setup
 Enable postgres_changes publication for `harness_events`:
 - Supabase Dashboard → Database → Replication → supabase_realtime → Add table → harness_events
+
+## Foundary Webhooks Phase 2 (Issue #111)
+### New API Routes
+- `POST /api/webhooks/fire-event` — Machine-to-machine; auth via `x-factory-webhook-secret` header (not Supabase). Returns `{ fired: N, skipped: N }`. Used by forge-poller.sh after pipeline stage transitions.
+- `POST /api/settings/webhooks/[id]/deliveries/[deliveryId]/retry` — Re-fires original delivery payload. Creates new `fd_webhook_deliveries` row; never mutates original. Auth: Supabase user, owner-scoped.
+
+### New Components
+- `src/components/webhooks/DeliveryRetryButton.tsx` — Client component; shows on failed delivery rows (`status_code null or ≥400`). POSTs to retry route, shows Sonner toast on success/error.
+
+### Modified Components
+- `WebhookForm.tsx` — Added `format_type` radio selector (Standard/Slack/Discord) between URL and Secret fields. `initialFormatType` prop for edit mode.
+- `WebhookCard.tsx` — Renders `format-badge` (data-testid) with Slack/Discord label for non-standard webhooks. `format_type` added to Webhook interface.
+- `DeliveryLog.tsx` — Added 5th column "Action" (grid: `2fr 80px 1fr 120px 80px`). Shows `DeliveryRetryButton` for failed rows. Added `data-failed` attribute. Now accepts `webhookId` prop.
+
+### Dispatcher Changes (webhook-dispatcher.ts)
+- `dispatchEvent()` now returns `DispatchResult { fired, skipped }` (was void)
+- `dispatchEvent()` selects `format_type` from `fd_webhooks`
+- `deliverWebhook()` exported (used by retry route)
+- `formatPayload(payload, formatType)` exported — builds Slack Block Kit / Discord Embeds / standard JSON
+- `FormatType` type exported
+
+### Forge Poller
+- `scripts/forge-poller-phase2.patch` — Patch for `/opt/openclaw-forge/forge-poller.sh`. Manual ops step. Adds `fire_webhook_event()` bash function that calls `POST /api/webhooks/fire-event`.
+- New forge-poller.env vars: `FACTORY_DASHBOARD_URL`, `FACTORY_WEBHOOK_SECRET`
+
+### Gotchas
+- Retry uses original payload from `fd_webhook_deliveries.payload` but current `format_type` and `secret_hash` from `fd_webhooks`
+- `dispatchEvent` return type changed — callers that ignore the return are fine; callers expecting void will need type update
+- `DeliveryLog` now requires `webhookId` prop — all usages must be updated

@@ -980,3 +980,61 @@ _Added: 2026-03-15_
 - [ ] Reduced motion: drawer opens with opacity fade only (no slide) when prefers-reduced-motion is set
 - [ ] DeliveryRow hover: subtle indigo tint highlight on row hover
 - [ ] RetryBadge: retrying rows show "Retrying" label with spinning RefreshCw icon
+
+---
+
+## Foundary Webhooks Phase 2 — Format Selection, Retry, Fire-Event (Issue #111)
+_Added: 2026-03-15_
+
+### REQ-FWH2-003: Payload Format Selection [auth]
+
+**Format selector on create form:**
+- [ ] Navigate to /dashboard/settings/webhooks/new
+- [ ] Format selector fieldset visible (data-testid="format-selector")
+- [ ] Three options visible: Standard, Slack, Discord
+- [ ] Standard option is selected by default (data-testid="format-option-standard")
+- [ ] Click "Slack" option (data-testid="format-option-slack") — Slack radio selected, border changes to indigo
+- [ ] Click "Discord" option (data-testid="format-option-discord") — Discord radio selected
+- [ ] Submit form with Slack selected: webhook created, card shows "SLACK" badge (data-testid="format-badge")
+- [ ] Submit form with Discord selected: webhook created, card shows "DISCORD" badge
+- [ ] Submit form with Standard: no badge shown on webhook card
+
+**Format badge on webhook list:**
+- [ ] Navigate to /dashboard/settings/webhooks
+- [ ] Webhooks with format_type='slack' show purple "SLACK" badge inline with URL
+- [ ] Webhooks with format_type='discord' show blue "DISCORD" badge
+- [ ] Webhooks with format_type='standard' show no badge
+
+**Format selector on edit form:**
+- [ ] Navigate to /dashboard/settings/webhooks/[id] for a Slack webhook
+- [ ] Format selector shows "Slack" pre-selected
+- [ ] Change to "Discord", save — badge changes to Discord
+
+### REQ-FWH2-002: Retry Failed Deliveries [auth]
+
+- [ ] Navigate to /dashboard/settings/webhooks/[id] — webhook detail page
+- [ ] Failed delivery rows (data-failed="true") show "Retry" button (data-testid="retry-button")
+- [ ] Successful delivery rows (data-failed="false") show em-dash "—" in Action column
+- [ ] Click "Retry" on a failed row — button shows spinner, becomes disabled
+- [ ] On retry success: Sonner toast "Delivery retried — [status_code]" appears
+- [ ] After retry: new delivery row appears at top of delivery log
+- [ ] Original failed delivery row remains unchanged
+
+### REQ-FWH2-001: Forge Poller Fire-Event API
+
+- [ ] POST /api/webhooks/fire-event without x-factory-webhook-secret header → HTTP 401
+- [ ] POST /api/webhooks/fire-event with wrong secret → HTTP 401
+- [ ] POST /api/webhooks/fire-event with valid secret but missing event field → HTTP 400 `{ "error": "event is required" }`
+- [ ] POST /api/webhooks/fire-event with valid secret but unknown event → HTTP 400 `{ "error": "invalid event" }`
+- [ ] POST /api/webhooks/fire-event with valid secret and known event → HTTP 200 `{ "fired": N, "skipped": N }`
+- [ ] When no webhooks subscribe to event → response is `{ "fired": 0, "skipped": 0 }` with status 200
+- [ ] Endpoint requires NO Supabase session — can be called without auth cookie
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks/new
+- /dashboard/settings/webhooks (list)
+- /dashboard/settings/webhooks/[id] (edit + delivery log)
+- POST /api/webhooks/fire-event (machine-to-machine, header auth)
+- POST /api/settings/webhooks/[id]/deliveries/[deliveryId]/retry
+- PATCH /api/settings/webhooks/[id] (now accepts format_type)
+- POST /api/settings/webhooks (now accepts format_type)
