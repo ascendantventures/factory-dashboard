@@ -25,20 +25,25 @@ create index if not exists idx_dash_notifications_user
 create index if not exists idx_dash_notifications_unread
   on dash_notifications(user_id, read) where read = false;
 
--- Enable Realtime for this table
-alter publication supabase_realtime add table dash_notifications;
+-- Enable Realtime for this table (idempotent)
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE dash_notifications;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- RLS
 alter table dash_notifications enable row level security;
 
-create policy "Users can view own notifications"
-  on dash_notifications for select
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can view own notifications"
+    ON dash_notifications FOR SELECT USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-create policy "Users can update own notifications"
-  on dash_notifications for update
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users can update own notifications"
+    ON dash_notifications FOR UPDATE USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-create policy "Service role can insert notifications"
-  on dash_notifications for insert
-  with check (true);
+DO $$ BEGIN
+  CREATE POLICY "Service role can insert notifications"
+    ON dash_notifications FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

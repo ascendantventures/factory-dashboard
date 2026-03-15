@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase-server';
-import * as fs from 'fs';
-import * as path from 'path';
 
 interface LockEntry {
   issue: number;
@@ -30,94 +28,8 @@ interface Counts {
   errors_today: number;
 }
 
-function readPidFile(): { pid: number | null; startedAt: number | null } {
-  try {
-    const pidFile = process.env.HARNESS_PID_FILE || '/tmp/harness.pid';
-    if (fs.existsSync(pidFile)) {
-      const content = fs.readFileSync(pidFile, 'utf8').trim();
-      const lines = content.split('\n');
-      const pid = parseInt(lines[0], 10);
-      const startedAt = lines[1] ? parseInt(lines[1], 10) : null;
-      if (!isNaN(pid)) {
-        // Check if process is actually running
-        try {
-          process.kill(pid, 0);
-          return { pid, startedAt };
-        } catch {
-          return { pid: null, startedAt: null };
-        }
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return { pid: null, startedAt: null };
-}
-
-function readLastTickFile(): string | null {
-  try {
-    const tickFile = process.env.HARNESS_LAST_TICK_FILE || '/tmp/harness-last-tick';
-    if (fs.existsSync(tickFile)) {
-      return fs.readFileSync(tickFile, 'utf8').trim();
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-function readLockFiles(): LockEntry[] {
-  try {
-    const lockPattern = process.env.HARNESS_LOCK_DIR || '/tmp';
-    const files = fs.readdirSync(lockPattern).filter((f) => f.match(/^harness-\d+\.lock$/));
-    return files.map((f) => {
-      const issueNum = parseInt(f.replace('harness-', '').replace('.lock', ''), 10);
-      const stat = fs.statSync(path.join(lockPattern, f));
-      let station = 'unknown';
-      try {
-        const content = fs.readFileSync(path.join(lockPattern, f), 'utf8').trim();
-        if (content) station = content;
-      } catch {
-        // ignore
-      }
-      return {
-        issue: issueNum,
-        station,
-        locked_at: stat.birthtime.toISOString(),
-      };
-    });
-  } catch {
-    return [];
-  }
-}
-
-function readBackoffFiles(): BackoffEntry[] {
-  try {
-    const backoffDir = process.env.HARNESS_BACKOFF_DIR || '/tmp';
-    const files = fs.readdirSync(backoffDir).filter((f) => f.match(/^backoff-\d+\.json$/));
-    return files.map((f) => {
-      try {
-        const content = fs.readFileSync(path.join(backoffDir, f), 'utf8');
-        const data = JSON.parse(content);
-        const issueNum = parseInt(f.replace('backoff-', '').replace('.json', ''), 10);
-        return {
-          issue: issueNum,
-          until: data.until || new Date(Date.now() + 1800000).toISOString(),
-          crash_count: data.crash_count || data.crashCount || 1,
-        };
-      } catch {
-        const issueNum = parseInt(f.replace('backoff-', '').replace('.json', ''), 10);
-        return {
-          issue: issueNum,
-          until: new Date(Date.now() + 1800000).toISOString(),
-          crash_count: 1,
-        };
-      }
-    });
-  } catch {
-    return [];
-  }
-}
+// Stale threshold: heartbeat older than 3 minutes = harness not running
+const HEARTBEAT_STALE_MS = 3 * 60 * 1000;
 
 export async function GET() {
   try {
@@ -127,25 +39,43 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Read loop status from filesystem
-    const { pid, startedAt } = readPidFile();
-    const running = pid !== null;
-    const lastTickAt = readLastTickFile();
+    const admin = createSupabaseAdminClient();
 
+    // Read harness status from Supabase heartbeat table (replaces /tmp filesystem reads)
+    const { data: heartbeat } = await admin
+      .from('harness_heartbeat')
+      .select('*')
+      .eq('id', 'main')
+      .single();
+
+    let running = false;
+    let pid: number | null = null;
     let uptimeSeconds: number | null = null;
-    if (running && startedAt) {
-      uptimeSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    let lastTickAt: string | null = null;
+    let locks: LockEntry[] = [];
+
+    if (heartbeat) {
+      const lastSeen = new Date(heartbeat.last_seen).getTime();
+      const isStale = Date.now() - lastSeen > HEARTBEAT_STALE_MS;
+      running = !isStale && heartbeat.status === 'running';
+      pid = heartbeat.pid ?? null;
+      lastTickAt = heartbeat.last_seen;
+
+      // Parse lock_snapshot for active agents
+      if (heartbeat.lock_snapshot && typeof heartbeat.lock_snapshot === 'object') {
+        const snapshot = heartbeat.lock_snapshot as Record<string, { ts: number; pid: number; station?: string }>;
+        locks = Object.entries(snapshot).map(([key, v]) => {
+          const issueMatch = key.match(/(\d+)/);
+          return {
+            issue: issueMatch ? parseInt(issueMatch[1], 10) : 0,
+            station: v.station ?? key.replace(/-build|-bugfix|-spec|-design|-qa|-uat/, '').replace(/\d+-/, '') ?? 'unknown',
+            locked_at: new Date(v.ts).toISOString(),
+          };
+        });
+      }
     }
 
-    const loopStatus: LoopStatus = {
-      running,
-      pid,
-      uptime_seconds: uptimeSeconds,
-      last_tick_at: lastTickAt,
-    };
-
-    // Read counts from audit log
-    const admin = createSupabaseAdminClient();
+    // Read counts from audit log (already Supabase-backed)
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -177,9 +107,12 @@ export async function GET() {
         .gte('created_at', todayStart),
     ]);
 
-    // Active agents: count lock files
-    const locks = readLockFiles();
-    const backoffs = readBackoffFiles();
+    const loopStatus: LoopStatus = {
+      running,
+      pid,
+      uptime_seconds: uptimeSeconds,
+      last_tick_at: lastTickAt,
+    };
 
     const counts: Counts = {
       processed_today: processedToday || 0,
@@ -193,7 +126,7 @@ export async function GET() {
       loop: loopStatus,
       counts,
       locks,
-      backoffs,
+      backoffs: [], // backoffs now tracked via audit_log; legacy field kept for UI compat
     });
   } catch (err) {
     console.error('[pipeline/status] error:', err);

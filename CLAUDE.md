@@ -21,6 +21,8 @@
 - framer-motion (animations)
 - yet-another-react-lightbox (CR #36 — image lightbox for attachment gallery)
 - uuid (CR #36 — UUIDs for storage paths)
+- resend (Issue #109 — email delivery for notifications)
+- date-fns-tz (Issue #109 — timezone-aware quiet hours)
 
 ## Architecture
 - **Auth:** Supabase Auth with email/password + magic link. Middleware protects /dashboard/* routes.
@@ -47,6 +49,7 @@
 - `/dashboard/analytics` → Cost Analytics & ROI Dashboard (Issue #25) — charts, ROI metrics, CSV export
 - `/dashboard/costs` → Cost tracking
 - `/dashboard/settings` → Settings (tabs: general, users, templates, environment, api-keys)
+- `/dashboard/settings/notifications` → Notification Preferences (Issue #109) — type toggles, quiet hours, delivery channels, timezone
 - `/dashboard/templates` → Templates registry (dedicated route, defaults to templates tab in SettingsClient)
 
 ## Design System (CR #14 — DESIGN.md spec)
@@ -73,10 +76,10 @@
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
 - `WEBHOOK_SECRET_ENCRYPTION_KEY` — AES-GCM 32-byte key for encrypting webhook signing secrets (Issue #29). Pad to 32 chars if shorter. Required for HMAC signing dispatch.
-- `FACTORY_SECRET` — Shared secret for `POST /api/notifications/create`. Must match the harness FACTORY_SECRET env var.
-- `RESEND_API_KEY` — Resend API key for email delivery. If absent, email delivery is silently skipped. Client must create Resend account.
-- `RESEND_FROM_EMAIL` — Sending email address (e.g. `notifications@yourdomain.com`). Client must verify domain in Resend.
-- `NEXT_PUBLIC_APP_URL` — Base URL for the app (e.g. `https://factory-dashboard.vercel.app`). Used in email/discord notification link construction.
+- `RESEND_API_KEY` — Resend API key for email delivery (Issue #109). Optional — if absent, email delivery is skipped silently.
+- `RESEND_FROM_EMAIL` — Sender address for notification emails, e.g. `notifications@yourdomain.com` (Issue #109).
+- `NEXT_PUBLIC_APP_URL` — App base URL, used to build notification links in emails/Discord.
+- `FACTORY_SECRET` — Shared secret for `POST /api/notifications/create` auth.
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -88,7 +91,7 @@
 - `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_notifications` — In-app notifications per user (Issue #101). Columns: id (uuid), user_id, type (enum), title, body, link, read (bool), created_at. Realtime enabled. RLS: users see own rows only.
-- `fd_notification_preferences` — Per-user notification settings (Phase 2, Issue #109). UNIQUE on user_id. Columns: all 7 type toggles, quiet_hours_enabled/start/end, email_enabled, discord_enabled, discord_webhook_url, user_timezone. Has auth trigger to auto-create row on user signup. Always upsert with `onConflict: 'user_id'` — never plain insert.
+- `fd_notification_preferences` — Per-user notification preferences (Issue #109). UNIQUE on user_id. Use upsert() with onConflict: 'user_id'. Columns: per-type toggles (spec_ready, build_complete, qa_passed, qa_failed, deploy_complete, agent_stalled, pipeline_error), quiet_hours_enabled/start/end, email_enabled, discord_enabled, discord_webhook_url, user_timezone. Auto-created by trigger on signup.
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
 - `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
@@ -119,6 +122,13 @@
 - `src/lib/supabase-server.ts` — Server-side Supabase clients
 - `src/lib/supabase.ts` — Browser-side Supabase client
 - `src/lib/github.ts` — GitHub API helpers
+- `src/lib/notification-types.ts` — VALID_NOTIFICATION_TYPES, NotificationPreferences interface, DEFAULT_PREFERENCES, isInQuietHours(), isTypeEnabled() (Issue #109)
+- `src/lib/notification-delivery.ts` — sendEmailNotification(), sendDiscordNotification(), isValidDiscordWebhookUrl(), deliverNotification() (Issue #109)
+- `src/app/api/notifications/create/route.ts` — POST /api/notifications/create — factory-secret auth, type validation, quiet hours check, insert + async delivery (Issue #109)
+- `src/app/api/notifications/preferences/route.ts` — GET/PATCH /api/notifications/preferences — uses fd_notification_preferences table (updated Issue #109)
+- `src/app/api/notifications/test-delivery/route.ts` — POST /api/notifications/test-delivery — auth required, sends test email or Discord message (Issue #109)
+- `src/components/notifications/NotificationPreferencesForm.tsx` — Full preferences UI with type toggles, quiet hours, delivery channels, timezone (Issue #109)
+- `src/app/dashboard/settings/notifications/page.tsx` — /dashboard/settings/notifications page (Issue #109)
 - `src/lib/enrichment.ts` — IssueEnrichment type, EnrichmentMap, formatTimeInStage/formatCost/getIssueType helpers
 - `src/components/kanban/IssueDetailPanel.tsx` — Slide-over panel with stage timeline, agent runs table, cost breakdown
 - `src/app/api/apps/route.ts` — GET /api/apps — returns all apps with computed status, issue counts, tech stack
@@ -177,7 +187,6 @@
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — fully implemented (Issue #101). `dash_notifications` table created with RLS. Bell opens `NotificationPanel` dropdown. Supabase Realtime + 30s polling fallback. API: GET/PATCH preferences, GET notifications, PATCH [id]/read, POST read-all.
-- **Notification Center Phase 2** (Issue #109) — Email delivery via Resend, Discord webhook delivery, delivery preferences UI at `/dashboard/settings/notifications`, timezone-aware quiet hours (date-fns-tz). Uses `fd_notification_preferences` table (separate from `dash_notifications`). New routes: POST `/api/notifications/create` (factory-secret auth), POST `/api/notifications/test-delivery` (session auth). Preferences API migrated from `dash_dashboard_config.notification_prefs` JSONB to `fd_notification_preferences` dedicated columns. `isInQuietHours()` in `src/lib/notification-types.ts` uses `toZonedTime` from date-fns-tz.
 - **Global search** — static UI only, no real search backend connected yet.
 - **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.

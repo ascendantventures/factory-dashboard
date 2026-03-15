@@ -56,7 +56,9 @@ export async function GET() {
     .order('display_name');
 
   if (reposError) {
-    return NextResponse.json({ error: reposError.message }, { status: 500 });
+    // Gracefully handle missing table or empty results instead of 500
+    console.error('dash_build_repos query error:', reposError.message);
+    return NextResponse.json({ apps: [] });
   }
 
   // Fetch all issues

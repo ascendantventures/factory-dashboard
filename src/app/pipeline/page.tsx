@@ -13,7 +13,7 @@ import AuditLogTable from './_components/AuditLogTable';
 import IssueActionMenu from './_components/IssueActionMenu';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 
-const POLL_INTERVAL = 5000;
+const POLL_INTERVAL = 30000;
 
 export default function PipelinePage() {
   const [status, setStatus] = useState<PipelineStatus | null>(null);
@@ -34,7 +34,7 @@ export default function PipelinePage() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/pipeline/status');
+      const res = await fetch('/api/harness-status');
       if (!res.ok) {
         if (res.status === 401) {
           setError('Not authenticated');
@@ -192,7 +192,7 @@ export default function PipelinePage() {
                 color: '#6B7489',
               }}
             >
-              Auto-refreshes every 5s — last update{' '}
+              Auto-refreshes every 30s — last update{' '}
               {lastRefresh.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -213,6 +213,7 @@ export default function PipelinePage() {
       <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', alignItems: 'stretch', flexWrap: 'wrap' }}>
         <PipelineStatusCard
           loop={status.loop}
+          lastSeen={(status as any).lastSeen ?? null}
           onStartLoop={() => {
             fetch('/api/pipeline/control', {
               method: 'POST',

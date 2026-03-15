@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as {
     user_ids: string[];
-    action: 'role_change' | 'deactivate' | 'reactivate';
+    action: 'role_change' | 'deactivate' | 'reactivate' | 'delete';
     role?: string;
   };
 
@@ -68,6 +68,18 @@ export async function POST(req: NextRequest) {
           action: 'reactivate',
           details: { bulk: true },
         });
+      } else if (body.action === 'delete') {
+        // Delete from auth.users (cascades to fd_user_roles via FK or will be cleaned up)
+        const { error: delError } = await admin.auth.admin.deleteUser(targetId);
+        if (delError) throw delError;
+        // Clean up fd_user_roles row if FK doesn't cascade
+        await admin.from('fd_user_roles').delete().eq('user_id', targetId);
+        await writeAuditLog({
+          actorId: user.id,
+          targetUserId: targetId,
+          action: 'delete',
+          details: { bulk: true },
+        });
       }
       updated++;
     } catch (err) {
@@ -76,4 +88,34 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ updated, errors });
+}
+
+// DELETE /api/admin/users/bulk — bulk delete via body { userIds: string[] }
+export async function DELETE(req: NextRequest) {
+  const body = await req.json().catch(() => ({})) as { userIds?: string[] };
+  // Reuse POST handler logic by delegating
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const role = await getUserRole(user.id);
+  if (!['admin'].includes(role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const targets = (body.userIds ?? []).filter((id) => id !== user.id);
+  const admin = createSupabaseAdminClient();
+  const failed: string[] = [];
+  let deleted = 0;
+
+  for (const targetId of targets) {
+    try {
+      const { error: delError } = await admin.auth.admin.deleteUser(targetId);
+      if (delError) throw delError;
+      await admin.from('fd_user_roles').delete().eq('user_id', targetId);
+      await writeAuditLog({ actorId: user.id, targetUserId: targetId, action: 'delete', details: { bulk: true } });
+      deleted++;
+    } catch (err) {
+      failed.push(targetId);
+    }
+  }
+
+  return NextResponse.json({ deleted, failed });
 }

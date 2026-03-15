@@ -22,11 +22,16 @@ function formatRelativeTime(isoString: string | null): string {
 
 interface Props {
   loop: LoopStatus;
+  lastSeen?: string | null;
   onStartLoop: () => void;
 }
 
-export default function PipelineStatusCard({ loop, onStartLoop }: Props) {
+export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Props) {
   const { running, pid, uptime_seconds, last_tick_at } = loop;
+
+  const heartbeatStale =
+    lastSeen != null &&
+    Date.now() - new Date(lastSeen).getTime() > 5 * 60 * 1000;
 
   return (
     <div
@@ -44,7 +49,7 @@ export default function PipelineStatusCard({ loop, onStartLoop }: Props) {
       {/* Status indicator */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <div
-          data-testid="pipeline-status-badge"
+          data-testid="harness-status-badge"
           style={{
             width: '12px',
             height: '12px',
@@ -85,6 +90,7 @@ export default function PipelineStatusCard({ loop, onStartLoop }: Props) {
             PID
           </div>
           <div
+            data-testid="harness-pid"
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: '13px',
@@ -143,6 +149,36 @@ export default function PipelineStatusCard({ loop, onStartLoop }: Props) {
             title={last_tick_at ?? undefined}
           >
             {formatRelativeTime(last_tick_at)}
+          </div>
+        </div>
+
+        <div style={{ gridColumn: '1 / -1' }}>
+          <div
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              color: '#6B7489',
+              marginBottom: '4px',
+            }}
+          >
+            Last Heartbeat
+          </div>
+          <div
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '13px',
+              color: lastSeen == null ? '#6B7489' : heartbeatStale ? '#EF4444' : '#F1F3F9',
+            }}
+            title={lastSeen ?? undefined}
+          >
+            {lastSeen == null ? (
+              <span style={{ color: '#6B7489' }}>Never connected</span>
+            ) : (
+              formatRelativeTime(lastSeen)
+            )}
           </div>
         </div>
       </div>

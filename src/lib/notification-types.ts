@@ -1,11 +1,6 @@
-/**
- * notification-types.ts
- * Shared notification type definitions and quiet hours logic.
- */
-
 import { toZonedTime } from 'date-fns-tz';
 
-export const NOTIFICATION_TYPES = [
+export const VALID_NOTIFICATION_TYPES = [
   'spec_ready',
   'build_complete',
   'qa_passed',
@@ -15,43 +10,68 @@ export const NOTIFICATION_TYPES = [
   'pipeline_error',
 ] as const;
 
-export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+export type NotificationType = typeof VALID_NOTIFICATION_TYPES[number];
 
-export function isValidNotificationType(type: string): type is NotificationType {
-  return NOTIFICATION_TYPES.includes(type as NotificationType);
-}
-
-export interface QuietHoursPrefs {
+export interface NotificationPreferences {
+  spec_ready: boolean;
+  build_complete: boolean;
+  qa_passed: boolean;
+  qa_failed: boolean;
+  deploy_complete: boolean;
+  agent_stalled: boolean;
+  pipeline_error: boolean;
   quiet_hours_enabled: boolean;
-  quiet_hours_start: string; // "HH:MM"
-  quiet_hours_end: string;   // "HH:MM"
-  user_timezone?: string | null;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+  email_enabled: boolean;
+  discord_enabled: boolean;
+  discord_webhook_url: string | null;
+  user_timezone: string;
 }
+
+export const DEFAULT_PREFERENCES: NotificationPreferences = {
+  spec_ready: true,
+  build_complete: true,
+  qa_passed: true,
+  qa_failed: true,
+  deploy_complete: true,
+  agent_stalled: false,
+  pipeline_error: true,
+  quiet_hours_enabled: false,
+  quiet_hours_start: '22:00',
+  quiet_hours_end: '08:00',
+  email_enabled: false,
+  discord_enabled: false,
+  discord_webhook_url: null,
+  user_timezone: 'UTC',
+};
 
 /**
- * Returns true if the current moment falls within the user's configured quiet hours,
- * evaluated in the user's local timezone (not UTC).
- *
- * Supports overnight ranges (e.g. 22:00–08:00 crosses midnight).
- * Falls back to UTC if user_timezone is null/undefined/'UTC'.
+ * Returns true if the current time falls within quiet hours,
+ * evaluated in the user's timezone (not UTC).
  */
-export function isInQuietHours(prefs: QuietHoursPrefs): boolean {
+export function isInQuietHours(prefs: NotificationPreferences): boolean {
   if (!prefs.quiet_hours_enabled) return false;
-
   const tz = prefs.user_timezone || 'UTC';
   const nowInTz = toZonedTime(new Date(), tz);
-
   const [startH, startM] = prefs.quiet_hours_start.split(':').map(Number);
   const [endH, endM] = prefs.quiet_hours_end.split(':').map(Number);
-
   const nowMins = nowInTz.getHours() * 60 + nowInTz.getMinutes();
   const startMins = startH * 60 + startM;
   const endMins = endH * 60 + endM;
-
   if (startMins < endMins) {
-    // Same-day range (e.g. 09:00–17:00)
     return nowMins >= startMins && nowMins < endMins;
   }
-  // Overnight range (e.g. 22:00–08:00)
+  // crosses midnight
   return nowMins >= startMins || nowMins < endMins;
+}
+
+/**
+ * Returns true if the given notification type is enabled in preferences.
+ */
+export function isTypeEnabled(
+  prefs: NotificationPreferences,
+  type: NotificationType
+): boolean {
+  return prefs[type] === true;
 }
