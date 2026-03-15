@@ -362,7 +362,7 @@ export function UserManagementClient({ currentUserId }: Props) {
       )}
 
       {pendingRoleChange && (
-        <RoleChangeConfirmDialog email={pendingRoleChange.email} oldRole={pendingRoleChange.fromRole} newRole={pendingRoleChange.toRole} loading={roleChangeLoading} onConfirm={confirmRoleChange} onCancel={() => setPendingRoleChange(null)} />
+        <RoleChangeConfirmDialog email={pendingRoleChange.email} fromRole={pendingRoleChange.fromRole} toRole={pendingRoleChange.toRole} loading={roleChangeLoading} onConfirm={confirmRoleChange} onCancel={() => setPendingRoleChange(null)} />
       )}
       {showBulkDelete && (
         <BulkDeleteConfirmDialog count={selectedIds.size} loading={bulkDeleteLoading} onConfirm={confirmBulkDelete} onCancel={() => setShowBulkDelete(false)} />
