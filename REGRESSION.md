@@ -794,3 +794,51 @@ _Added: 2026-03-14_
 - POST /api/notifications/read-all — marks all notifications read
 - GET /api/notifications/preferences — returns notification_prefs from dash_dashboard_config
 - PATCH /api/notifications/preferences — updates notification_prefs via upsert
+
+---
+
+## Notification Center Phase 2 — Delivery Channels & Timezone (Issue #109)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard/settings/notifications — page loads with heading "Notifications"
+- [ ] Page shows breadcrumb: Settings > Notifications
+- [ ] "Notification Types" section shows 7 type toggles (spec_ready, build_complete, qa_passed, qa_failed, deploy_complete, agent_stalled, pipeline_error)
+- [ ] Toggle a type off — "Saved" indicator appears, persists after page reload
+- [ ] "Quiet Hours" section shows enable toggle
+- [ ] Enable quiet hours → time inputs appear (From / To)
+- [ ] Disable quiet hours → time inputs hide
+- [ ] "Delivery Channels" section shows Email toggle, Discord toggle, webhook URL input
+- [ ] Email toggle (data-testid="email-enabled-toggle") is visible and toggleable
+- [ ] Discord toggle (data-testid="discord-enabled-toggle") is DISABLED when webhook URL is empty
+- [ ] Enter a valid Discord URL (https://discord.com/api/webhooks/...) → Discord toggle becomes enabled
+- [ ] Enter an invalid Discord URL and blur → inline error shows "Must start with https://discord.com/api/webhooks/"
+- [ ] Enable email → "Send test email" button appears
+- [ ] Click "Send test email" → button shows loading spinner, then "Sent" or error feedback
+- [ ] With valid webhook URL filled in, "Send test message" button appears
+- [ ] Click "Send test message" → button shows loading spinner, then "Sent" or error feedback
+- [ ] Timezone section shows (data-testid="timezone-select") with IANA timezone list
+- [ ] Timezone select defaults to UTC (or previously saved value)
+- [ ] Change timezone → "Saved" indicator appears
+- [ ] Reload page → timezone preference persisted
+
+### API Auth Checks (no auth required)
+- [ ] POST /api/notifications/create without x-factory-secret → 401
+- [ ] POST /api/notifications/create with wrong secret → 401
+- [ ] POST /api/notifications/create with invalid type → 400
+- [ ] POST /api/notifications/create with missing user_id → 400
+- [ ] POST /api/notifications/test-delivery without session → 401
+- [ ] GET /api/notifications/preferences without auth → 401
+- [ ] PATCH /api/notifications/preferences without auth → 401
+
+### Touch Target Requirements
+- [ ] Discord webhook input height ≥ 44px
+- [ ] Timezone select height ≥ 44px
+- [ ] Notification bell button 44×44px (regression check from Issue #101)
+
+### Routes/Endpoints
+- /dashboard/settings/notifications
+- POST /api/notifications/create (x-factory-secret auth)
+- POST /api/notifications/test-delivery (session auth)
+- GET /api/notifications/preferences (migrated to fd_notification_preferences)
+- PATCH /api/notifications/preferences (migrated to fd_notification_preferences)
