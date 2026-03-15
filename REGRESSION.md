@@ -1038,3 +1038,17 @@ _Added: 2026-03-15_
 - POST /api/settings/webhooks/[id]/deliveries/[deliveryId]/retry
 - PATCH /api/settings/webhooks/[id] (now accepts format_type)
 - POST /api/settings/webhooks (now accepts format_type)
+
+
+---
+
+## Known Issues & Gotchas
+
+### Issue #111 — Duplicate import/definition in WebhookCard.tsx (fixed)
+The build agent merged two code stubs when implementing format badges, resulting in:
+- `Slack` imported twice from `lucide-react` (TS2300 duplicate identifier)
+- `DiscordIcon` defined twice (once as const arrow fn, once as function declaration)
+
+**Fix:** Remove the first partial import block and first `DiscordIcon` const; keep the single clean `import { Trash2, Pencil, Activity, Slack }` and the function-style `DiscordIcon`.
+
+**Regression check:** After any edit to `WebhookCard.tsx`, run `npx tsc --noEmit --skipLibCheck` and confirm zero errors before pushing.
