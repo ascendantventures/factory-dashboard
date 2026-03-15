@@ -1052,3 +1052,20 @@ The build agent merged two code stubs when implementing format badges, resulting
 **Fix:** Remove the first partial import block and first `DiscordIcon` const; keep the single clean `import { Trash2, Pencil, Activity, Slack }` and the function-style `DiscordIcon`.
 
 **Regression check:** After any edit to `WebhookCard.tsx`, run `npx tsc --noEmit --skipLibCheck` and confirm zero errors before pushing.
+
+## [BUG] WebhookCard.tsx — Duplicate Slack/DiscordIcon Identifiers (Issue #137)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Run `npx tsc --noEmit --skipLibCheck` in the project root — must exit 0 with zero output
+- [ ] Run `grep -c "import.*Slack" src/components/webhooks/WebhookCard.tsx` — must return 1
+- [ ] Run `grep -c "DiscordIcon" src/components/webhooks/WebhookCard.tsx` — must return ≤ 3 (one definition + usages, no duplicate definitions)
+- [ ] Navigate to /dashboard/settings/webhooks — page renders without error
+- [ ] Verify Slack-format webhook cards show purple "SLACK" badge with Slack icon
+- [ ] Verify Discord-format webhook cards show blue "DISCORD" badge with Discord SVG icon
+- [ ] Verify standard-format webhook cards show no format badge
+- [ ] Toggle enabled/disabled on a webhook card — toggle state changes correctly
+- [ ] Click "Delete" on a webhook card — confirmation modal appears with Cancel and Delete Webhook buttons
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks (list page — WebhookCard rendering)
