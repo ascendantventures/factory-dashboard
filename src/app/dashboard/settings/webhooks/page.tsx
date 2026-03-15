@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { Plus, Webhook } from 'lucide-react';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import WebhookCard from '@/components/webhooks/WebhookCard';
+import HarnessWebhooksClient from './HarnessWebhooksClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function WebhooksSettingsPage() {
-  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string }> | null = null;
+  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string; format_type?: string }> | null = null;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -22,7 +23,7 @@ export default async function WebhooksSettingsPage() {
 
     const { data, error: webhooksError } = await supabase
       .from('fd_webhooks')
-      .select('id, url, events, enabled, created_at')
+      .select('id, url, events, enabled, created_at, format_type')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false });
 
@@ -168,6 +169,24 @@ export default async function WebhooksSettingsPage() {
             </div>
           </Link>
         </div>
+      </div>
+
+      {/* Phase 2: Harness Pipeline Webhooks (outbound delivery with delivery history) */}
+      <div style={{ marginBottom: '40px' }}>
+        <div
+          style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: '#6B7380',
+            marginBottom: '12px',
+          }}
+        >
+          Pipeline Event Webhooks
+        </div>
+        <HarnessWebhooksClient />
       </div>
 
       {/* Webhooks List */}

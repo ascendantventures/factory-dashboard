@@ -4,11 +4,18 @@ import type { PipelineEvent } from '@/lib/webhook-events';
 
 export type { PipelineEvent };
 
+export type FormatType = 'standard' | 'slack' | 'discord';
+
 export interface WebhookPayload {
   event: PipelineEvent | 'test';
   timestamp: string;
   issue?: { number: number; title: string; repo: string };
   details?: Record<string, unknown>;
+}
+
+export interface DispatchResult {
+  fired: number;
+  skipped: number;
 }
 
 // Encrypt / decrypt secret using AES-GCM via Web Crypto (Node 18+)
@@ -39,6 +46,53 @@ export async function decryptSecret(encrypted: string): Promise<string> {
   return new TextDecoder().decode(plaintext);
 }
 
+// Discord color map by event category
+function discordColorForEvent(event: string): number {
+  if ((event.startsWith('build.') || event.startsWith('spec.') || event.startsWith('qa.') || event.startsWith('agent.') || event.startsWith('pipeline.')) && !event.includes('failed') && !event.includes('error')) {
+    if (event === 'qa.passed' || event === 'deploy.completed') return 3092790;  // blue #2F80ED
+    return 5763719;  // green #57F287
+  }
+  if (event.includes('failed') || event.includes('error')) return 15548997; // red #ED4245
+  return 10070709; // grey #99AAB5
+}
+
+/**
+ * formatPayload — build the HTTP body string for a given format_type.
+ */
+export function formatPayload(payload: WebhookPayload, formatType: FormatType): string {
+  const { event, timestamp, issue } = payload;
+
+  if (formatType === 'slack') {
+    const issueText = issue
+      ? `*${event}* — #${issue.number} ${issue.title}\n_${issue.repo}_`
+      : `*${event}*`;
+    return JSON.stringify({
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: issueText } },
+        { type: 'context', elements: [{ type: 'mrkdwn', text: timestamp }] },
+      ],
+    });
+  }
+
+  if (formatType === 'discord') {
+    const fields: Array<{ name: string; value: string; inline: boolean }> = [];
+    if (issue?.repo) fields.push({ name: 'Repo', value: issue.repo, inline: true });
+    return JSON.stringify({
+      embeds: [
+        {
+          title: event,
+          description: issue ? `#${issue.number} — ${issue.title}` : undefined,
+          color: discordColorForEvent(event),
+          fields: fields.length > 0 ? fields : undefined,
+          timestamp,
+        },
+      ],
+    });
+  }
+
+  return JSON.stringify(payload);
+}
+
 async function computeHmac(secret: string, body: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -52,30 +106,32 @@ async function computeHmac(secret: string, body: string): Promise<string> {
 }
 
 /**
- * dispatchEvent — fire-and-forget; call from any server action or route handler.
- * Fires all enabled webhooks subscribed to `event`.
+ * dispatchEvent — fires all enabled webhooks subscribed to `event`.
+ * Returns counts of webhooks fired and skipped.
  */
 export async function dispatchEvent(
   event: PipelineEvent,
   details?: Record<string, unknown>,
   issueContext?: { number: number; title: string; repo: string }
-): Promise<void> {
+): Promise<DispatchResult> {
   const admin = createSupabaseAdminClient();
 
   // Find enabled webhooks subscribed to this event
   const { data: webhooks, error } = await admin
     .from('fd_webhooks')
-    .select('id, url, secret_hash, events, enabled')
+    .select('id, url, secret_hash, events, enabled, format_type')
     .eq('enabled', true);
 
-  if (error || !webhooks?.length) return;
+  if (error || !webhooks?.length) return { fired: 0, skipped: 0 };
 
   const subscribed = webhooks.filter((wh) => {
     const events = Array.isArray(wh.events) ? wh.events : [];
     return events.includes(event);
   });
 
-  if (!subscribed.length) return;
+  const skipped = webhooks.length - subscribed.length;
+
+  if (!subscribed.length) return { fired: 0, skipped };
 
   const payload: WebhookPayload = {
     event,
@@ -87,14 +143,17 @@ export async function dispatchEvent(
   await Promise.allSettled(
     subscribed.map((wh) => deliverWebhook(admin, wh, payload))
   );
+
+  return { fired: subscribed.length, skipped };
 }
 
-async function deliverWebhook(
+export async function deliverWebhook(
   admin: ReturnType<typeof createSupabaseAdminClient>,
-  wh: { id: string; url: string; secret_hash: string | null },
+  wh: { id: string; url: string; secret_hash: string | null; format_type?: string | null },
   payload: WebhookPayload
 ): Promise<void> {
-  const body = JSON.stringify(payload);
+  const formatType = (wh.format_type as FormatType) ?? 'standard';
+  const body = formatPayload(payload, formatType);
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'User-Agent': 'Factory-Dashboard/1.0',

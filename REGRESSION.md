@@ -814,38 +814,6 @@ _Added: 2026-03-14_
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
 
----
-
-## [Pipeline Heartbeat UX + Env Config Docs] (Issue #117)
-_Added: 2026-03-14_
-
-### Test Steps
-
-**REQ-UAT117-002: "Never connected" state**
-- [ ] Navigate to `/pipeline` when no heartbeat has ever been written (harness never started or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing from harness `.env`)
-- [ ] The "Last Heartbeat" field displays `Never connected` in muted grey (not `—` and not red)
-- [ ] Start the harness and confirm heartbeat begins writing; within 60 s the "Last Heartbeat" field updates to a relative timestamp (e.g. `5s ago`) in the default color
-- [ ] Stop the harness and wait 6+ minutes; confirm "Last Heartbeat" turns red with a stale relative time (e.g. `7m ago`)
-
-**REQ-UAT117-003: Activity feed empty state explanation**
-- [ ] Navigate to `/dashboard/activity` when the activity feed is empty (or simulate an empty state)
-- [ ] Confirm all three lines are present:
-  - Line 1: emoji `📡`
-  - Line 2: `No activity yet` (medium weight, grey)
-  - Line 3: `Waiting for pipeline events…` (muted grey)
-  - Line 4 (new): `Events appear when agents complete stages, builds finish, or issues are deployed.` (muted grey, max-width 240px)
-- [ ] Confirm the emoji and first two lines are unchanged from their previous appearance
-
-**REQ-UAT117-001: Env var documentation**
-- [ ] Confirm `.env.example` exists in repo root
-- [ ] Confirm it documents `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in a "Harness .env" section with instructions to retrieve values from Supabase Dashboard → Project Settings → API
-
-### Routes/Endpoints
-- `/pipeline` — PipelineStatusCard "Never connected" change
-- `/dashboard/activity` — ActivityFeed empty state explanation line
-
----
-
 ## [Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete] (Issue #108)
 _Added: 2026-03-14_
 
@@ -952,23 +920,157 @@ The users admin page (`/dashboard/admin/users`) was enhanced with search, filter
 - DELETE /api/admin/users/bulk (body: { userIds: string[] })
 - PATCH /api/admin/users/[id]/role (body: { role: string })
 
+
 ---
 
-## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
-_Added: 2026-03-14_
+## Phase 2: Event Log & Webhooks — Outbound Delivery, GitHub Ingestion, Retention, Real-Time (Issue #110)
+_Added: 2026-03-15_
 
-### Test Steps — PipelineStatusCard "Never connected" state [auth]
-- [ ] Navigate to /pipeline — page loads
-- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
-- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
-- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
-- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
+### Outbound webhook delivery history [auth]
 
-### Test Steps — ActivityFeed empty state explanation [auth]
-- [ ] Navigate to /dashboard or any page with the activity feed sidebar
-- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
-- [ ] All four elements are visible simultaneously in the empty state
+- [ ] Navigate to /dashboard/settings/webhooks — webhook cards render
+- [ ] Each webhook card has a "View deliveries" button (data-testid="view-deliveries-btn")
+- [ ] Click "View deliveries" — DeliveryHistoryDrawer slides in (data-testid="delivery-history-drawer")
+- [ ] Drawer header shows "Delivery History" and a close button (data-testid="delivery-drawer-close")
+- [ ] Webhook URL appears in URL bar below header (JetBrains Mono font)
+- [ ] If no deliveries exist: empty state shows (data-testid="delivery-empty-state") with "No deliveries yet" text
+- [ ] If deliveries exist: rows render with data-testid="delivery-row"
+- [ ] Each row shows: event type, attempt number, status badge (data-testid="delivery-status-badge"), HTTP code, timestamp
+- [ ] Status badges: success=green, failed=red, retrying=amber, pending=muted
+- [ ] Press Escape or click backdrop — drawer closes
+- [ ] Close button click — drawer closes
+
+### GitHub incoming webhook capture (unsigned = 401)
+
+- [ ] POST to /api/webhooks/github without x-hub-signature-256 header → HTTP 401
+- [ ] POST to /api/webhooks/github with invalid signature → HTTP 401
+- [ ] POST to /api/webhooks/github with valid HMAC signature → HTTP 200, event written to harness_events
+
+### Real-time event log [auth]
+
+- [ ] Navigate to /dashboard/event-log
+- [ ] RealtimePulse indicator visible (data-testid="realtime-pulse") in page header
+- [ ] Indicator shows "Live" (green dot) when Supabase Realtime connected, "Connecting..." during init, "Polling" on failure
+- [ ] Refresh button visible (data-testid="refresh-btn") next to RealtimePulse
+- [ ] Click Refresh button → table reloads (loading state briefly), new data appears
+- [ ] Event table renders (data-testid="event-table") with headers: Timestamp, Dir, Event Type, Source, Status, Actions
+- [ ] New harness_events inserted in DB appear at top of list without manual refresh (when Live)
+- [ ] Navigating away and back — no subscription memory leaks (channel removed on unmount)
+
+### Delivery retry worker
+
+- [ ] POST /api/harness/webhook-delivery/process without auth → HTTP 401
+- [ ] POST /api/harness/webhook-delivery/process with valid service-role Bearer → processes pending deliveries
+- [ ] Response includes: { processed: N, succeeded: N, failed: N }
+- [ ] Deliveries with next_retry_at <= NOW() and status retrying are picked up
+- [ ] Max 20 deliveries processed per call
 
 ### Routes/Endpoints
-- /pipeline (PipelineStatusCard)
-- /dashboard (ActivityFeed sidebar)
+- /dashboard/settings/webhooks
+- /dashboard/event-log
+- GET /api/harness/webhook-delivery/[webhookId]?limit=20&offset=0
+- POST /api/harness/webhook-delivery/process
+- POST /api/webhooks/github
+
+### CSS tokens and Pipeline Webhooks section [auth]
+
+- [ ] Navigate to /dashboard/settings/webhooks — "Pipeline Event Webhooks" section visible above existing webhooks
+- [ ] Delivery drawer animation: smooth slide from right (300ms ease-out-expo) on open
+- [ ] Delivery drawer backdrop: blurred dark overlay behind drawer
+- [ ] Reduced motion: drawer opens with opacity fade only (no slide) when prefers-reduced-motion is set
+- [ ] DeliveryRow hover: subtle indigo tint highlight on row hover
+- [ ] RetryBadge: retrying rows show "Retrying" label with spinning RefreshCw icon
+
+---
+
+## Foundary Webhooks Phase 2 — Format Selection, Retry, Fire-Event (Issue #111)
+_Added: 2026-03-15_
+
+### REQ-FWH2-003: Payload Format Selection [auth]
+
+**Format selector on create form:**
+- [ ] Navigate to /dashboard/settings/webhooks/new
+- [ ] Format selector fieldset visible (data-testid="format-selector")
+- [ ] Three options visible: Standard, Slack, Discord
+- [ ] Standard option is selected by default (data-testid="format-option-standard")
+- [ ] Click "Slack" option (data-testid="format-option-slack") — Slack radio selected, border changes to indigo
+- [ ] Click "Discord" option (data-testid="format-option-discord") — Discord radio selected
+- [ ] Submit form with Slack selected: webhook created, card shows "SLACK" badge (data-testid="format-badge")
+- [ ] Submit form with Discord selected: webhook created, card shows "DISCORD" badge
+- [ ] Submit form with Standard: no badge shown on webhook card
+
+**Format badge on webhook list:**
+- [ ] Navigate to /dashboard/settings/webhooks
+- [ ] Webhooks with format_type='slack' show purple "SLACK" badge inline with URL
+- [ ] Webhooks with format_type='discord' show blue "DISCORD" badge
+- [ ] Webhooks with format_type='standard' show no badge
+
+**Format selector on edit form:**
+- [ ] Navigate to /dashboard/settings/webhooks/[id] for a Slack webhook
+- [ ] Format selector shows "Slack" pre-selected
+- [ ] Change to "Discord", save — badge changes to Discord
+
+### REQ-FWH2-002: Retry Failed Deliveries [auth]
+
+- [ ] Navigate to /dashboard/settings/webhooks/[id] — webhook detail page
+- [ ] Failed delivery rows (data-failed="true") show "Retry" button (data-testid="retry-button")
+- [ ] Successful delivery rows (data-failed="false") show em-dash "—" in Action column
+- [ ] Click "Retry" on a failed row — button shows spinner, becomes disabled
+- [ ] On retry success: Sonner toast "Delivery retried — [status_code]" appears
+- [ ] After retry: new delivery row appears at top of delivery log
+- [ ] Original failed delivery row remains unchanged
+
+### REQ-FWH2-001: Forge Poller Fire-Event API
+
+- [ ] POST /api/webhooks/fire-event without x-factory-webhook-secret header → HTTP 401
+- [ ] POST /api/webhooks/fire-event with wrong secret → HTTP 401
+- [ ] POST /api/webhooks/fire-event with valid secret but missing event field → HTTP 400 `{ "error": "event is required" }`
+- [ ] POST /api/webhooks/fire-event with valid secret but unknown event → HTTP 400 `{ "error": "invalid event" }`
+- [ ] POST /api/webhooks/fire-event with valid secret and known event → HTTP 200 `{ "fired": N, "skipped": N }`
+- [ ] When no webhooks subscribe to event → response is `{ "fired": 0, "skipped": 0 }` with status 200
+- [ ] Endpoint requires NO Supabase session — can be called without auth cookie
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks/new
+- /dashboard/settings/webhooks (list)
+- /dashboard/settings/webhooks/[id] (edit + delivery log)
+- POST /api/webhooks/fire-event (machine-to-machine, header auth)
+- POST /api/settings/webhooks/[id]/deliveries/[deliveryId]/retry
+- PATCH /api/settings/webhooks/[id] (now accepts format_type)
+- POST /api/settings/webhooks (now accepts format_type)
+
+
+---
+
+## Known Issues & Gotchas
+
+### Issue #111 — Duplicate import/definition in WebhookCard.tsx (fixed)
+The build agent merged two code stubs when implementing format badges, resulting in:
+- `Slack` imported twice from `lucide-react` (TS2300 duplicate identifier)
+- `DiscordIcon` defined twice (once as const arrow fn, once as function declaration)
+
+**Fix:** Remove the first partial import block and first `DiscordIcon` const; keep the single clean `import { Trash2, Pencil, Activity, Slack }` and the function-style `DiscordIcon`.
+
+**Regression check:** After any edit to `WebhookCard.tsx`, run `npx tsc --noEmit --skipLibCheck` and confirm zero errors before pushing.
+
+### Issue #132 — BUILD agent committed code but did not open PR or deploy preview
+
+The BUILD agent for issue #111 pushed code to `feature/issue-111` but failed to:
+1. Open a PR from `feature/issue-111` → `main`
+2. Wait for / capture the Vercel preview URL
+3. Post the preview URL as a comment on the parent issue
+
+**Root cause:** Agent completed code implementation but stopped before the PR/deploy handoff steps. No PR = no Vercel preview trigger = routes unreachable on any deployed environment.
+
+**Fix applied (issue #132):**
+- PR #50 opened on `ascendantventures/factory-dashboard` (feature/issue-111 → main)
+- PR body updated to reference issue #132 as the deployment bug being tracked
+- Verified Vercel preview at `factory-dashboard-git-featur-342d93-abe-reyes-projects-ec1cbb96.vercel.app`
+- Confirmed `POST /api/webhooks/fire-event` returns 401 (not 404) on preview
+- Confirmed `GET /api/webhooks/fire-event` returns 405 on preview
+- Posted preview URL as comment on issue #111
+
+**Regression check:** After completing any BUILD task, verify:
+- `gh pr list --repo <build-repo> --head <feature-branch>` returns exactly 1 open PR
+- A Vercel preview URL is accessible and key routes return expected status codes (not 404)
+- Preview URL is posted as comment on the parent issue in harness-beta-test

@@ -27,18 +27,26 @@ function IssueTypeIcon({ labels }: { labels: string[] | null }) {
   return <Wrench {...iconProps} style={{ ...iconProps.style, color: '#A1A1AA' }} />;
 }
 
+const COMPLEXITY_ABBREV: Record<string, string> = {
+  simple: 'S',
+  medium: 'M',
+  complex: 'C',
+  completed: 'Done',
+  in_progress: 'Active',
+};
+
 function ComplexityBadge({ complexity }: { complexity: string }) {
   const c = complexity.toLowerCase();
   let bg = '#27272A', color = '#A1A1AA', border = '#3F3F46';
   if (c === 'simple') { bg = 'rgba(22,101,52,0.8)'; color = '#22C55E'; border = 'rgba(34,197,94,0.3)'; }
   else if (c === 'medium') { bg = 'rgba(133,77,14,0.8)'; color = '#EAB308'; border = 'rgba(234,179,8,0.3)'; }
   else if (c === 'complex') { bg = 'rgba(153,27,27,0.8)'; color = '#EF4444'; border = 'rgba(239,68,68,0.3)'; }
-  // For other values (xs, sm, md, lg, xl from old system), use neutral
-  const label = c === 'simple' ? 'Simple' : c === 'medium' ? 'Medium' : c === 'complex' ? 'Complex' : c.toUpperCase();
+  const abbrev = COMPLEXITY_ABBREV[c] ?? c.toUpperCase();
   return (
     <span
-      data-testid="complexity-badge"
+      data-testid="status-badge"
       data-complexity={c === 'simple' || c === 'medium' || c === 'complex' ? c : undefined}
+      title={complexity}
       style={{
         background: bg, color, border: `1px solid ${border}`,
         borderRadius: 4, padding: '3px 8px',
@@ -46,9 +54,10 @@ function ComplexityBadge({ complexity }: { complexity: string }) {
         letterSpacing: '0.05em', textTransform: 'uppercase',
         fontFamily: 'Inter, sans-serif',
         display: 'inline-flex', alignItems: 'center',
+        whiteSpace: 'nowrap',
       }}
     >
-      {label}
+      {abbrev}
     </span>
   );
 }
@@ -181,17 +190,18 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
         {/* Drag handle */}
         <div
           {...(isOverlay ? {} : { ...attributes, ...listeners })}
-          className="flex items-center justify-center px-2 rounded-l-xl transition-colors hover:bg-[#27272A]"
+          data-testid="drag-handle"
+          className="flex items-center justify-center px-2 rounded-l-xl transition-all hover:bg-[#27272A] group"
           style={{
-            color: '#71717A',
+            color: '#A1A1AA',
             cursor: isDragDisabled ? 'not-allowed' : 'grab',
-            opacity: isDragDisabled ? 0.4 : 1,
+            opacity: isDragDisabled ? 0.3 : 0.6,
             pointerEvents: isDragDisabled ? 'none' : 'auto',
             borderRight: '1px solid #27272A',
             minWidth: '28px',
           }}
         >
-          <GripVertical className="w-3.5 h-3.5" />
+          <GripVertical className="w-3.5 h-3.5 transition-opacity group-hover:opacity-100" />
         </div>
 
         {/* Card content */}
@@ -211,7 +221,7 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
               </span>
               <p
                 className="text-sm font-semibold leading-snug line-clamp-2"
-                data-testid="issue-title"
+                data-testid="card-title"
                 style={{ color: '#FAFAFA' }}
               >
                 {issue.title}
@@ -256,15 +266,17 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
               </span>
             )}
 
-            {/* Cost tracker */}
-            <span
-              data-testid="cost-tracker"
-              className="inline-flex items-center gap-1"
-              style={{ fontSize: 12, fontWeight: 600, color: '#A1A1AA', fontFamily: 'JetBrains Mono, monospace' }}
-            >
-              <DollarSign style={{ width: 12, height: 12, color: '#71717A' }} strokeWidth={2} />
-              {formatCost(totalCost).replace('$', '')}
-            </span>
+            {/* Cost tracker — only show when cost > 0 */}
+            {totalCost > 0 && (
+              <span
+                data-testid="card-cost"
+                className="inline-flex items-center gap-1"
+                style={{ fontSize: 12, fontWeight: 600, color: '#A1A1AA', fontFamily: 'JetBrains Mono, monospace' }}
+              >
+                <DollarSign style={{ width: 12, height: 12, color: '#71717A' }} strokeWidth={2} />
+                {formatCost(totalCost).replace('$', '')}
+              </span>
+            )}
           </div>
 
           {/* Issue number + external link row */}

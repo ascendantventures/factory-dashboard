@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('fd_webhooks')
-    .select('id, url, events, enabled, created_at, updated_at')
+    .select('id, url, events, enabled, format_type, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { url, secret, events } = body;
+  const { url, secret, events, format_type } = body;
 
   if (!url || typeof url !== 'string') {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
@@ -57,8 +57,9 @@ export async function POST(request: NextRequest) {
       events,
       enabled: true,
       created_by: user.id,
+      format_type: ['standard', 'slack', 'discord'].includes(format_type) ? format_type : 'standard',
     })
-    .select('id, url, events, enabled, created_at, updated_at')
+    .select('id, url, events, enabled, format_type, created_at, updated_at')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

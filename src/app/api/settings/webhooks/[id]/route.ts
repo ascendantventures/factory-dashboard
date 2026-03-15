@@ -52,12 +52,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     updates.secret_hash = await encryptSecret(body.secret.trim());
   }
 
+  if (body.format_type !== undefined && ['standard', 'slack', 'discord'].includes(body.format_type)) {
+    updates.format_type = body.format_type;
+  }
+
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from('fd_webhooks')
     .update(updates)
     .eq('id', id)
-    .select('id, url, events, enabled, created_at, updated_at')
+    .select('id, url, events, enabled, format_type, created_at, updated_at')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

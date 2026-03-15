@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/111
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -73,6 +73,7 @@
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side)
 - `GITHUB_TOKEN` — GitHub PAT for API access (issue sync + creation)
 - `WEBHOOK_SECRET_ENCRYPTION_KEY` — AES-GCM 32-byte key for encrypting webhook signing secrets (Issue #29). Pad to 32 chars if shorter. Required for HMAC signing dispatch.
+- `FACTORY_WEBHOOK_SECRET` — Shared secret for machine-to-machine `POST /api/webhooks/fire-event` endpoint (Issue #111 Phase 2). Must match value in `/opt/openclaw-forge/forge-poller.env`. Generate with `openssl rand -hex 32`.
 
 ## Database (Supabase — project byvjkyfnjtasbdanafgd)
 - `dash_issues` — Synced GitHub issues. **PK is bigint (issue number), NOT UUID.** Must provide `id` explicitly on insert.
@@ -85,8 +86,8 @@
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
-- `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
-- `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
+- `fd_webhooks` — Registered webhook endpoints. Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, format_type ('standard'|'slack'|'discord', default 'standard'), created_at, updated_at. RLS: owner-only CRUD. CHECK constraint on format_type. (Issue #29 + Phase 2 Issue #111)
+- `fd_webhook_deliveries` — Rolling delivery log per webhook. Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted. (Issue #29)
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
 
 ## Key Files
@@ -169,6 +170,8 @@
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
+- **harness_events vs fdash_event_log** — Two event tables exist. `fdash_event_log` is used by the webhook ingest handler (GitHub events). `harness_events` is written by the agentic harness itself (direction=incoming/outgoing/internal, status=success/failure/pending). The `/dashboard/event-log` page (issue #116) queries `harness_events` via `/api/event-log`. Schema differences are mapped in the API route: direction incoming→in, outgoing/internal→out; status success→delivered, failure→failed, pending→received.
+- **Event Log route fix (issue #116)** — Sidebar now links to `/dashboard/event-log` (not `/dashboard/admin/events`). Files: `src/components/layout/Sidebar.tsx`, `src/app/dashboard/event-log/page.tsx`, `src/app/api/event-log/route.ts`.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — static placeholder, no real notification data wired up.
@@ -178,6 +181,7 @@
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 - **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
+- **Event Log route fix (Issue #116)** — Sidebar "Event Log" href was updated in CR #114 to `/dashboard/event-log` but the page was never created. Fixed by creating `src/app/dashboard/event-log/page.tsx` (dark-mode, fetches from `/api/event-log`) and `src/app/api/event-log/route.ts` (queries `harness_events` table). The old page at `/dashboard/admin/events` is intentionally kept as a legacy route. Do NOT modify `/api/admin/events/route.ts` — it still queries `fdash_event_log` and may have other consumers.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
@@ -625,3 +629,93 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+---
+
+## Issue #110 — Phase 2: Event Log & Webhooks (Outbound Delivery, GitHub Ingestion, Retention, Real-Time)
+
+### New Tables (Migration 20260315000000_harness_phase2_webhooks.sql)
+- `harness_webhook_deliveries` — Delivery attempt log for outbound webhook POSTs. PK: `id` (uuid). FK: `webhook_id → harness_webhooks.webhook_id ON DELETE CASCADE`, `event_id → harness_events.id ON DELETE SET NULL`. Status: `pending|success|failed|retrying`. RLS: service_role full access, authenticated read own (via webhook ownership).
+- `harness_events.metadata` — Added `metadata jsonb` column to existing harness_events table for structured context (e.g., GitHub webhook fields).
+
+### Phase 1 Tables (Migration 20260314160000_spec_schema_issue106.sql — cherry-picked from feature/issue-106)
+- `harness_events` — Pipeline event log. PK: `id` (uuid). Fields: direction, event_type, status, issue_number, submission_id, payload, error_message, duration_ms, metadata.
+- `harness_webhooks` — Outbound webhook endpoints. **PK is `webhook_id` (not `id`)**. Fields: name, url, secret, enabled, events (text[]), created_by.
+
+### ⚠️ Schema Gotchas
+- `harness_webhooks.webhook_id` is the PK — NOT `id`
+- `harness_webhooks.enabled` (not `is_enabled`)
+- `harness_webhooks.created_by` (not `owner_id`)
+- Always use `createSupabaseAdminClient()` for factory loop operations (bypasses RLS)
+
+### New API Routes (Phase 2)
+- `POST /api/harness/webhook-delivery/process` — Delivery worker: flushes pending/retrying deliveries in batches of 20. Called by factory loop on each tick via `deliverWebhooksAsync`. Auth: `x-factory-secret` header.
+- `GET /api/harness/webhook-delivery/[webhookId]` — Delivery history for a webhook. Auth: authenticated user (owner check). Params: limit, offset.
+- `POST /api/webhooks/github` — GitHub incoming webhook. Validates `x-hub-signature-256` HMAC, writes to `harness_events` (direction=incoming, event_type=github_webhook). Also writes legacy `dash_webhook_events` row. Returns 401 on bad signature, 503 if `GITHUB_WEBHOOK_SECRET` not set.
+
+### New Lib Files
+- `src/lib/harness-webhooks.ts` — `writeEventAsync()` and `deliverWebhooksAsync()` fire-and-forget functions. Used by any code that needs to record harness events or queue outbound webhook deliveries.
+
+### New UI Components (Phase 2)
+- `src/components/webhooks/DeliveryHistoryDrawer.tsx` — Slide-in drawer showing delivery attempts for a webhook. Test IDs: `delivery-history-drawer`, `delivery-drawer-close`, `delivery-row`, `delivery-status-badge`, `delivery-empty-state`.
+- `src/components/event-log/RealtimePulse.tsx` — Live/Connecting/Polling status dot. Test ID: `realtime-pulse`.
+- `src/hooks/useRealtimeEvents.ts` — Supabase Realtime subscription on `harness_events` INSERT. Calls onNewEvent callback for each new row.
+
+### Updated Components (Phase 2)
+- `src/app/dashboard/settings/webhooks/page.tsx` — Now renders `HarnessWebhooksClient` in a "Pipeline Event Webhooks" section above the existing fd_webhooks list.
+- `src/app/dashboard/settings/webhooks/HarnessWebhooksClient.tsx` — Full CRUD for harness_webhooks + DeliveryHistoryDrawer integration. Test ID: `view-deliveries-btn`.
+- `src/components/webhooks/WebhookCard.tsx` — Added `onViewDeliveries` prop + `data-testid="view-deliveries-btn"` on the deliveries button.
+- `src/app/dashboard/event-log/page.tsx` — Added RealtimePulse + useRealtimeEvents. New events prepend to table with `event-row-new` CSS animation. Refresh button still functional.
+- `src/app/globals.css` — Phase 2 CSS tokens in `:root`: `--delivery-*-bg`, `--pulse-live`, `--pulse-polling`, `--ease-out-expo`. Animations: `delivery-drawer-in/out`, `event-row-enter`, `realtime-pulse-ring`, `retry-spin`, `pulse-blink`.
+
+### Supabase Edge Function
+- `supabase/functions/harness-purge-events/index.ts` — Daily purge function. Calls `harness_purge_old_events(event_ttl_days, delivery_ttl_days)` SQL function. Schedule: daily at 02:00 UTC (set in Supabase Dashboard).
+
+### Environment Variables Added (Phase 2)
+- `GITHUB_WEBHOOK_SECRET` — HMAC secret for GitHub webhook signature verification. Must match the secret configured in GitHub webhook settings.
+- `EVENT_RETENTION_DAYS` — Optional. Defaults to 90. Controls harness_events purge TTL.
+
+### Factory Loop Integration
+- `factory/src/notify/supabase.ts` — `deliverWebhooksAsync()` already implemented. Calls `POST /api/harness/webhook-delivery/process` on each tick. `FACTORY_APP_URL` and `FACTORY_SECRET` env vars required.
+- `factory/src/loop.ts` — Already imports and calls `deliverWebhooksAsync` on each tick.
+
+### GitHub Webhook Setup
+1. Set `GITHUB_WEBHOOK_SECRET` env var in Vercel project settings
+2. In GitHub repo/org settings → Webhooks → Add webhook
+3. Payload URL: `https://factory-dashboard-tau.vercel.app/api/webhooks/github`
+4. Content type: `application/json`
+5. Secret: same value as `GITHUB_WEBHOOK_SECRET`
+6. Events: Choose "Send me everything" or select specific events
+
+### Supabase Realtime Setup
+Enable postgres_changes publication for `harness_events`:
+- Supabase Dashboard → Database → Replication → supabase_realtime → Add table → harness_events
+
+## Foundary Webhooks Phase 2 (Issue #111)
+### New API Routes
+- `POST /api/webhooks/fire-event` — Machine-to-machine; auth via `x-factory-webhook-secret` header (not Supabase). Returns `{ fired: N, skipped: N }`. Used by forge-poller.sh after pipeline stage transitions.
+- `POST /api/settings/webhooks/[id]/deliveries/[deliveryId]/retry` — Re-fires original delivery payload. Creates new `fd_webhook_deliveries` row; never mutates original. Auth: Supabase user, owner-scoped.
+
+### New Components
+- `src/components/webhooks/DeliveryRetryButton.tsx` — Client component; shows on failed delivery rows (`status_code null or ≥400`). POSTs to retry route, shows Sonner toast on success/error.
+
+### Modified Components
+- `WebhookForm.tsx` — Added `format_type` radio selector (Standard/Slack/Discord) between URL and Secret fields. `initialFormatType` prop for edit mode.
+- `WebhookCard.tsx` — Renders `format-badge` (data-testid) with Slack/Discord label for non-standard webhooks. `format_type` added to Webhook interface.
+- `DeliveryLog.tsx` — Added 5th column "Action" (grid: `2fr 80px 1fr 120px 80px`). Shows `DeliveryRetryButton` for failed rows. Added `data-failed` attribute. Now accepts `webhookId` prop.
+
+### Dispatcher Changes (webhook-dispatcher.ts)
+- `dispatchEvent()` now returns `DispatchResult { fired, skipped }` (was void)
+- `dispatchEvent()` selects `format_type` from `fd_webhooks`
+- `deliverWebhook()` exported (used by retry route)
+- `formatPayload(payload, formatType)` exported — builds Slack Block Kit / Discord Embeds / standard JSON
+- `FormatType` type exported
+
+### Forge Poller
+- `scripts/forge-poller-phase2.patch` — Patch for `/opt/openclaw-forge/forge-poller.sh`. Manual ops step. Adds `fire_webhook_event()` bash function that calls `POST /api/webhooks/fire-event`.
+- New forge-poller.env vars: `FACTORY_DASHBOARD_URL`, `FACTORY_WEBHOOK_SECRET`
+
+### Gotchas
+- Retry uses original payload from `fd_webhook_deliveries.payload` but current `format_type` and `secret_hash` from `fd_webhooks`
+- `dispatchEvent` return type changed — callers that ignore the return are fine; callers expecting void will need type update
+- `DeliveryLog` now requires `webhookId` prop — all usages must be updated

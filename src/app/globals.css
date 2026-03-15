@@ -23,6 +23,32 @@
   --stage-qa: #06B6D4;
   --stage-bugfix: #EF4444;
   --stage-done: #22C55E;
+
+  /* Notification Panel — Issue #101 */
+  --surface-elevated: #323238;
+  --border-subtle: #2D2D33;
+  --notif-spec-ready: #3B82F6;
+  --notif-build-complete: #F59E0B;
+  --notif-qa-passed: #22C55E;
+  --notif-qa-failed: #EF4444;
+  --notif-deploy-complete: #22C55E;
+  --notif-agent-stalled: #F59E0B;
+  --notif-pipeline-error: #EF4444;
+
+  /* Phase 2 (#110): Delivery status backgrounds */
+  --delivery-success-bg: rgba(34, 197, 94, 0.12);
+  --delivery-failed-bg: rgba(239, 68, 68, 0.12);
+  --delivery-retrying-bg: rgba(245, 158, 11, 0.12);
+  --delivery-pending-bg: rgba(139, 139, 149, 0.08);
+
+  /* Phase 2 (#110): Realtime pulse */
+  --pulse-live: #22C55E;
+  --pulse-live-bg: rgba(34, 197, 94, 0.15);
+  --pulse-polling: #8B8B95;
+  --pulse-polling-bg: rgba(139, 139, 149, 0.1);
+
+  /* Phase 2 (#110): Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -174,3 +200,80 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #52525B; }
+
+/* Kanban horizontal scroll container with styled scrollbar affordance (REQ-003) */
+.kanban-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #52525B #18181B;
+}
+.kanban-scroll-container::-webkit-scrollbar { height: 8px; }
+.kanban-scroll-container::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
+.kanban-scroll-container::-webkit-scrollbar-thumb { background: #52525B; border-radius: 4px; }
+.kanban-scroll-container::-webkit-scrollbar-thumb:hover { background: #71717A; }
+
+/* ─── Phase 2 (#110): Delivery Drawer animations ──────────────────────────── */
+@keyframes delivery-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes delivery-drawer-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes delivery-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Phase 2 (#110): Event row enter (realtime new event) ─────────────────── */
+@keyframes event-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    background-color: rgba(99, 102, 241, 0.15);
+  }
+  50% {
+    background-color: rgba(99, 102, 241, 0.08);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+/* ─── Phase 2 (#110): Realtime pulse ring ────────────────────────────────── */
+@keyframes realtime-pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ─── Phase 2 (#110): Retry spinner ──────────────────────────────────────── */
+@keyframes retry-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Phase 2 (#110): Pulse blink (connecting state) ─────────────────────── */
+@keyframes pulse-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ─── Phase 2 (#110): Reduced motion overrides ────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .delivery-drawer-animate,
+  .event-row-new,
+  .retry-icon-spin,
+  .pulse-ring-live {
+    animation: none !important;
+    transition: opacity 150ms ease !important;
+  }
+}
+
+/* ─── Phase 2 (#110): Realtime pulse label — hide on mobile ──────────────── */
+@media (max-width: 639px) {
+  .realtime-pulse-label { display: none; }
+}

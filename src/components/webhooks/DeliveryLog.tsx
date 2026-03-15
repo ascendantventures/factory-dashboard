@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import DeliveryRetryButton from './DeliveryRetryButton';
 
 interface Delivery {
   id: string;
@@ -13,6 +15,7 @@ interface Delivery {
 
 interface DeliveryLogProps {
   deliveries: Delivery[];
+  webhookId: string;
 }
 
 function getRowStyle(statusCode: number | null): React.CSSProperties {
@@ -38,7 +41,8 @@ function getStatusBadgeStyle(statusCode: number | null) {
   return { bg: 'rgba(239, 68, 68, 0.15)', color: '#EF4444' };
 }
 
-export default function DeliveryLog({ deliveries }: DeliveryLogProps) {
+export default function DeliveryLog({ deliveries: initialDeliveries, webhookId }: DeliveryLogProps) {
+  const [deliveries, setDeliveries] = useState(initialDeliveries);
   if (deliveries.length === 0) {
     return (
       <div
@@ -72,13 +76,13 @@ export default function DeliveryLog({ deliveries }: DeliveryLogProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 80px 1fr 120px',
+          gridTemplateColumns: '2fr 80px 1fr 120px 80px',
           background: '#1E2329',
           borderBottom: '1px solid #2E353D',
           padding: '0',
         }}
       >
-        {['Event', 'Status', 'Response', 'Sent'].map((col) => (
+        {['Event', 'Status', 'Response', 'Sent', 'Action'].map((col) => (
           <div
             key={col}
             style={{
@@ -104,9 +108,10 @@ export default function DeliveryLog({ deliveries }: DeliveryLogProps) {
           <div
             key={delivery.id}
             data-testid="delivery-row"
+            data-failed={delivery.status_code === null || delivery.status_code >= 400 ? 'true' : 'false'}
             style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 80px 1fr 120px',
+              gridTemplateColumns: '2fr 80px 1fr 120px 80px',
               ...rowStyle,
               borderBottom: idx < deliveries.length - 1 ? '1px solid #232930' : 'none',
               transition: 'background 150ms ease',
@@ -181,6 +186,30 @@ export default function DeliveryLog({ deliveries }: DeliveryLogProps) {
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#6B7380' }}>
                 {formatDistanceToNow(new Date(delivery.sent_at), { addSuffix: true })}
               </span>
+            </div>
+            {/* Action */}
+            <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center' }}>
+              {(delivery.status_code === null || delivery.status_code >= 400) ? (
+                <DeliveryRetryButton
+                  webhookId={webhookId}
+                  deliveryId={delivery.id}
+                  onSuccess={(newDeliveryId, statusCode) => {
+                    setDeliveries((prev) => [
+                      {
+                        id: newDeliveryId,
+                        event: delivery.event,
+                        payload: delivery.payload,
+                        status_code: statusCode,
+                        response_body: null,
+                        sent_at: new Date().toISOString(),
+                      },
+                      ...prev,
+                    ]);
+                  }}
+                />
+              ) : (
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '13px', color: '#6B7380' }}>—</span>
+              )}
             </div>
           </div>
         );

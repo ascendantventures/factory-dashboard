@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
 
   if (!secret) {
-    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+    return NextResponse.json({ error: 'GitHub webhook not configured' }, { status: 503 });
   }
 
   const signature = request.headers.get('x-hub-signature-256') ?? '';
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text();
 
-  // Verify HMAC signature
+  // Verify HMAC signature using timingSafeEqual
   if (!signature || !(await verifySignature(body, signature, secret))) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
@@ -44,57 +44,58 @@ export async function POST(request: NextRequest) {
 
   const admin = createSupabaseAdminClient();
 
-  // Extract repo and issue_number
-  const repo = (payload.repository as Record<string, unknown> | null)?.full_name as string ?? '';
+  // Extract fields
+  const repoFullName = (payload.repository as Record<string, unknown> | null)?.full_name as string ?? '';
   const issueNumber = (payload.issue as Record<string, unknown> | null)?.number as number | null ?? null;
+  const senderLogin = (payload.sender as Record<string, unknown> | null)?.login as string ?? '';
 
-  // Idempotency check: skip if already processed this delivery
-  if (deliveryId) {
-    const { data: existing } = await admin
-      .from('dash_webhook_events')
-      .select('id')
-      .eq('github_delivery_id', deliveryId)
-      .single();
+  // Write to harness_events (Phase 2 — primary event store for incoming GitHub events)
+  void admin
+    .from('harness_events')
+    .insert({
+      direction: 'incoming',
+      event_type: 'github_webhook',
+      status: 'success',
+      issue_number: issueNumber,
+      payload,
+      metadata: {
+        github_event: eventType,
+        delivery_id: deliveryId,
+        repo_full_name: repoFullName,
+        sender_login: senderLogin,
+      },
+    })
+    .then(({ error }) => {
+      if (error) console.error('[github webhook] harness_events insert error:', error);
+    });
 
-    if (existing) {
-      return NextResponse.json({ ok: true, duplicate: true });
-    }
-  }
-
-  // Log the event
-  const { data: loggedEvent, error: logError } = await admin
+  // Legacy: also log to dash_webhook_events for backward compatibility
+  void admin
     .from('dash_webhook_events')
     .insert({
       github_delivery_id: deliveryId || `no-delivery-${Date.now()}`,
       event_type: eventType,
-      repo,
+      repo: repoFullName,
       issue_number: issueNumber,
       payload,
     })
-    .select()
-    .single();
+    .then(({ error }) => {
+      if (error) console.warn('[github webhook] dash_webhook_events insert skipped:', error?.message);
+    });
 
-  if (logError) {
-    console.error('Failed to log webhook event:', logError);
-    return NextResponse.json({ error: 'Failed to log event' }, { status: 500 });
-  }
-
-  let processError: string | null = null;
-
+  // Process station transitions from GitHub label events
   try {
-    // Process issues labeled/unlabeled events
     if (eventType === 'issues' && (payload.action === 'labeled' || payload.action === 'unlabeled')) {
       const label = (payload.label as Record<string, unknown> | null)?.name as string ?? '';
 
       if (label.startsWith('station:')) {
         const newStation = label.replace('station:', '') as Station;
 
-        if (STATIONS.includes(newStation) && repo && issueNumber !== null) {
-          // Find issue in our DB
+        if (STATIONS.includes(newStation) && repoFullName && issueNumber !== null) {
           const { data: existingIssue } = await admin
             .from('dash_issues')
             .select('id, station')
-            .eq('repo', repo)
+            .eq('repo', repoFullName)
             .eq('issue_number', issueNumber)
             .single();
 
@@ -107,10 +108,9 @@ export async function POST(request: NextRequest) {
               .update({ station: targetStation, updated_at: new Date().toISOString() })
               .eq('id', existingIssue.id);
 
-            // Record transition
             await admin.from('dash_stage_transitions').insert({
               issue_id: existingIssue.id,
-              repo,
+              repo: repoFullName,
               issue_number: issueNumber,
               from_station: oldStation,
               to_station: targetStation,
@@ -121,35 +121,8 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (err) {
-    processError = String(err);
-    console.error('Webhook processing error:', err);
+    console.error('[github webhook] label processing error (non-fatal):', err);
   }
 
-  // Update processed_at
-  await admin
-    .from('dash_webhook_events')
-    .update({
-      processed_at: new Date().toISOString(),
-      error: processError,
-    })
-    .eq('id', loggedEvent.id);
-
-  // Fire-and-forget: log to fdash_event_log (non-blocking)
-  void admin
-    .from('fdash_event_log')
-    .upsert(
-      {
-        direction: 'in',
-        event_type: eventType || 'unknown',
-        source: 'github',
-        payload: payload as Record<string, unknown>,
-        status: 'received',
-      },
-      { onConflict: 'id' }
-    )
-    .then(({ error }) => {
-      if (error) console.error('fdash_event_log insert error:', error);
-    });
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ received: true });
 }

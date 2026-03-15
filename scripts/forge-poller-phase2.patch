@@ -1,0 +1,54 @@
+--- a/forge-poller.sh
++++ b/forge-poller.sh
+@@ -1,4 +1,52 @@
+ #!/usr/bin/env bash
++# ============================================================
++# Phase 2 Patch: Foundary Webhook Event Firing
++# Apply to: /opt/openclaw-forge/forge-poller.sh
++# Required env vars in /opt/openclaw-forge/forge-poller.env:
++#   FACTORY_DASHBOARD_URL=https://factory.yourdomain.com
++#   FACTORY_WEBHOOK_SECRET=<same value as Vercel FACTORY_WEBHOOK_SECRET>
++# ============================================================
++
++# Add this function near the top of forge-poller.sh, after the log() function:
++fire_webhook_event() {
++  local event="$1"
++  local issue_number="${2:-0}"
++  local issue_title="${3:-}"
++  local issue_repo="${4:-}"
++  local details_json="${5:-{}}"
++
++  local dashboard_url="${FACTORY_DASHBOARD_URL:-}"
++  local webhook_secret="${FACTORY_WEBHOOK_SECRET:-}"
++
++  if [[ -z "$dashboard_url" || -z "$webhook_secret" ]]; then
++    log "WARN: FACTORY_DASHBOARD_URL or FACTORY_WEBHOOK_SECRET not set — skipping webhook fire"
++    return 0
++  fi
++
++  curl -s -X POST "${dashboard_url}/api/webhooks/fire-event" \
++    -H "Content-Type: application/json" \
++    -H "x-factory-webhook-secret: ${webhook_secret}" \
++    -d "$(jq -n \
++      --arg e "$event" \
++      --argjson n "$issue_number" \
++      --arg t "$issue_title" \
++      --arg r "$issue_repo" \
++      --argjson d "$details_json" \
++      '{event: $e, issue: {number: $n, title: $t, repo: $r}, details: $d}')" \
++    --max-time 5 || true
++}
++
++# ============================================================
++# Call fire_webhook_event at the end of these poller functions:
++#
++# post_dispatch_spec_done()     -> fire_webhook_event "spec.completed"  "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# post_dispatch_spec_approved() -> fire_webhook_event "spec.approved"   "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# post_dispatch_build_done()    -> fire_webhook_event "build.completed" "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO" "{\"live_url\":\"$LIVE_URL\"}"
++# post_dispatch_build_failed()  -> fire_webhook_event "build.failed"    "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# post_dispatch_qa_passed()     -> fire_webhook_event "qa.passed"       "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# post_dispatch_qa_failed()     -> fire_webhook_event "qa.failed"       "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# post_dispatch_deploy_done()   -> fire_webhook_event "deploy.completed" "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO" "{\"live_url\":\"$LIVE_URL\"}"
++# on_agent_spawn()              -> fire_webhook_event "agent.spawned"   "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# on_agent_complete()           -> fire_webhook_event "agent.completed" "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_REPO"
++# ============================================================
