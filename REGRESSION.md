@@ -814,38 +814,6 @@ _Added: 2026-03-14_
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
 
----
-
-## [Pipeline Heartbeat UX + Env Config Docs] (Issue #117)
-_Added: 2026-03-14_
-
-### Test Steps
-
-**REQ-UAT117-002: "Never connected" state**
-- [ ] Navigate to `/pipeline` when no heartbeat has ever been written (harness never started or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing from harness `.env`)
-- [ ] The "Last Heartbeat" field displays `Never connected` in muted grey (not `—` and not red)
-- [ ] Start the harness and confirm heartbeat begins writing; within 60 s the "Last Heartbeat" field updates to a relative timestamp (e.g. `5s ago`) in the default color
-- [ ] Stop the harness and wait 6+ minutes; confirm "Last Heartbeat" turns red with a stale relative time (e.g. `7m ago`)
-
-**REQ-UAT117-003: Activity feed empty state explanation**
-- [ ] Navigate to `/dashboard/activity` when the activity feed is empty (or simulate an empty state)
-- [ ] Confirm all three lines are present:
-  - Line 1: emoji `📡`
-  - Line 2: `No activity yet` (medium weight, grey)
-  - Line 3: `Waiting for pipeline events…` (muted grey)
-  - Line 4 (new): `Events appear when agents complete stages, builds finish, or issues are deployed.` (muted grey, max-width 240px)
-- [ ] Confirm the emoji and first two lines are unchanged from their previous appearance
-
-**REQ-UAT117-001: Env var documentation**
-- [ ] Confirm `.env.example` exists in repo root
-- [ ] Confirm it documents `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in a "Harness .env" section with instructions to retrieve values from Supabase Dashboard → Project Settings → API
-
-### Routes/Endpoints
-- `/pipeline` — PipelineStatusCard "Never connected" change
-- `/dashboard/activity` — ActivityFeed empty state explanation line
-
----
-
 ## [Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete] (Issue #108)
 _Added: 2026-03-14_
 
@@ -952,23 +920,3 @@ The users admin page (`/dashboard/admin/users`) was enhanced with search, filter
 - DELETE /api/admin/users/bulk (body: { userIds: string[] })
 - PATCH /api/admin/users/[id]/role (body: { role: string })
 
----
-
-## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
-_Added: 2026-03-14_
-
-### Test Steps — PipelineStatusCard "Never connected" state [auth]
-- [ ] Navigate to /pipeline — page loads
-- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
-- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
-- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
-- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
-
-### Test Steps — ActivityFeed empty state explanation [auth]
-- [ ] Navigate to /dashboard or any page with the activity feed sidebar
-- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
-- [ ] All four elements are visible simultaneously in the empty state
-
-### Routes/Endpoints
-- /pipeline (PipelineStatusCard)
-- /dashboard (ActivityFeed sidebar)
