@@ -877,3 +877,18 @@ _Added: 2026-03-14_
 - `POST /api/webhooks/github` — receives GitHub webhook events
 - `POST /api/admin/backfill-activity` — seeds historical data from GitHub API
 
+
+## Activity Page — Direct Query Fix (Issue #104 Phase 2)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+
+- [ ] Navigate to `/dashboard/activity` — page renders without 500/database error
+- [ ] The page shows the `ActivityFeed` component (with loading skeleton, then events or empty state)
+- [ ] No "column does not exist" error (previous page queried `created_at` instead of `transitioned_at`)
+- [ ] `data-testid="activity-item"` elements are accessible from the `/dashboard/activity` route (not just sidebar)
+- [ ] `data-testid="activity-loading"` is visible while events load
+- [ ] `data-testid="activity-empty"` shows if no events exist (after backfill, should NOT show)
+
+### Routes/Endpoints
+- `/dashboard/activity` — activity feed page (now uses ActivityFeed component)

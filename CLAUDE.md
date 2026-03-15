@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/116
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/104
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -171,6 +171,9 @@
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **harness_events vs fdash_event_log** — Two event tables exist. `fdash_event_log` is used by the webhook ingest handler (GitHub events). `harness_events` is written by the agentic harness itself (direction=incoming/outgoing/internal, status=success/failure/pending). The `/dashboard/event-log` page (issue #116) queries `harness_events` via `/api/event-log`. Schema differences are mapped in the API route: direction incoming→in, outgoing/internal→out; status success→delivered, failure→failed, pending→received.
 - **Event Log route fix (issue #116)** — Sidebar now links to `/dashboard/event-log` (not `/dashboard/admin/events`). Files: `src/components/layout/Sidebar.tsx`, `src/app/dashboard/event-log/page.tsx`, `src/app/api/event-log/route.ts`.
+- **Activity page direct query bug (Issue #104)** — `src/app/dashboard/activity/page.tsx` previously queried `dash_stage_transitions` directly with `.order('created_at', ...)` but the column is `transitioned_at`. Fixed by replacing the server component direct query with `<ActivityFeed />` which uses `useActivityFeed` hook → `/api/activity`. The `ActivityFeed` component correctly handles loading/empty/error states and data-testid attributes.
+- **dash_webhook_events table (Issue #104)** — Migration at `20260311200723_phase2_webhook_events.sql` creates this table. If missing from production Supabase, run: `supabase db push --linked` after linking to the correct project ref. Webhook handler depends on this table to log events before processing.
+- **Activity backfill (Issue #104)** — After deploying, run `POST /api/admin/backfill-activity` with `x-admin-secret` header + body `{"repo":"ascendantventures/harness-beta-test","limit":500}` to seed historical data. GitHub webhook must also be registered on `harness-beta-test` pointing to `https://factory-dashboard-tau.vercel.app/api/webhooks/github` with `Issues` events and the `GITHUB_WEBHOOK_SECRET` env var set.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — static placeholder, no real notification data wired up.
