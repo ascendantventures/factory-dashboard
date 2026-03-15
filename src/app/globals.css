@@ -16,6 +16,19 @@
   --warning: #F59E0B;
   --error: #EF4444;
 
+  /* Notification panel surfaces */
+  --surface-elevated: #323238;
+  --border-subtle: #2D2D33;
+
+  /* Notification type colors */
+  --notif-spec-ready: #3B82F6;
+  --notif-build-complete: #F59E0B;
+  --notif-qa-passed: #22C55E;
+  --notif-qa-failed: #EF4444;
+  --notif-deploy-complete: #22C55E;
+  --notif-agent-stalled: #F59E0B;
+  --notif-pipeline-error: #EF4444;
+
   --stage-intake: #6B7280;
   --stage-spec: #3B82F6;
   --stage-design: #A855F7;
@@ -77,6 +90,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ── Notification Badge Bounce — Issue #101 ── */
+@keyframes badge-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.2); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
 }
 
 /* ── Custom animations for Enhanced Kanban Cards ── */
@@ -174,3 +195,15 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #52525B; }
+
+/* ── Notification Bell animations ── */
+@keyframes badge-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.2); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.animate-badge-bounce {
+  animation: badge-bounce 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}

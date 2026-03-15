@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/101
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -83,6 +83,7 @@
 - `dash_agent_runs` — Agent execution logs (cost, duration, model). **Columns:** `run_status` (not `status`), `estimated_cost_usd` (not `cost_usd`), `log_summary` (not `logs`).
 - `dash_issue_cost_summary` — VIEW: pre-aggregated cost + active_runs per issue (added CR #13)
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
+- `dash_notifications` — In-app notifications per user (Issue #101). Columns: id (uuid), user_id, type (enum), title, body, link, read (bool), created_at. Realtime enabled. RLS: users see own rows only.
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
 - `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
@@ -155,8 +156,7 @@
 - **Station order:** intake → spec → design → build → qa → done
 - **Issue action menu:** also exported from `_components/IssueActionMenu.tsx` for use in Kanban + issue detail
 - **Audit log polling:** page queries `pipeline_audit_log` via Supabase browser client on same 5s cycle
-- **data-testid attributes:** `pipeline-status-card`, `harness-status-badge`, `harness-pid`, `pipeline-metrics-bar`, `active-agents-count`, `processed-today`, `processed-week`, `processed-all-time`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
-- **Harness heartbeat (CR #105):** Dashboard reads from `harness_heartbeat` Supabase table (singleton row id='main'). `GET /api/harness-status` replaces old local-file-based `/api/pipeline/status`. Staleness threshold: 5 min. Poll interval: 30s.
+- **data-testid attributes:** `pipeline-status-card`, `pipeline-status-badge`, `pipeline-metrics-bar`, `locks-list`, `station-config-panel`, `config-row-{station}`, `audit-log-table`, `issue-action-menu-trigger`, `issue-action-menu`
 - **CLAUDE models:** haiku-4-5, sonnet-4-6, opus-4-6 — hardcoded in StationConfigPanel
 
 ## Known Issues & Gotchas
@@ -171,13 +171,12 @@
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
-- **Notification bell** — static placeholder, no real notification data wired up.
+- **Notification bell** — fully implemented (Issue #101). `dash_notifications` table created with RLS. Bell opens `NotificationPanel` dropdown. Supabase Realtime + 30s polling fallback. API: GET/PATCH preferences, GET notifications, PATCH [id]/read, POST read-all.
 - **Global search** — static UI only, no real search backend connected yet.
 - **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
-- **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
@@ -553,75 +552,3 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/89_
 - **Fix:** Removed the legacy `<nav>` block from `PenFileViewer.tsx`. Added accessible breadcrumb to `page.tsx` with `aria-label="breadcrumb"`, `useAppDisplayName` for UUID resolution, and `Issue #N` format.
 - **New file:** `src/hooks/useAppDisplayName.ts` — fetches `/api/apps/[repoId]` and returns `display_name` (falls back to `repo_full_name`).
 - **No DB migrations required** — UI-only fix.
-
-## CR #108 — Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete
-_Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
-
-### Changes Made
-
-**New file: `src/lib/users.ts`**
-- `TEST_ACCOUNT_PATTERNS` — regex array matching: `qa_`, `qa-`, `_test`, `+test`, `testuser+`, `test_*`, `test-*`
-- `USERS_PAGE_SIZE = 20`
-- `isTestAccount(email: string): boolean`
-
-**Updated: `src/app/api/admin/users/route.ts`**
-- Added `filter` query param (`all` | `real` | `test`) — filters by `isTestAccount()`
-- Added `isTestAccount` field to each user in response
-- Added `counts: { all, real, test }` to response (for tab badges)
-- Added `totalPages` to response
-
-**Updated: `src/app/api/admin/users/bulk/route.ts`**
-- Added `delete` action — calls `supabase.auth.admin.deleteUser()` + cleans `fd_user_roles`
-- Added `DELETE` HTTP method handler for `{ userIds: string[] }` body
-
-**New file: `src/app/api/admin/users/[id]/role/route.ts`**
-- `PATCH /api/admin/users/[id]/role` — dedicated role-change endpoint with audit log
-
-**New file: `src/app/dashboard/admin/users/_components/UserFilterTabs.tsx`**
-- Tabs: All / Real / Test Accounts with count badges
-- `data-testid`: `filter-tab-all`, `filter-tab-real`, `filter-tab-test`
-
-**New file: `src/app/dashboard/admin/users/_components/TestAccountBadge.tsx`**
-- Amber "TEST" badge with FlaskConical icon
-- `data-testid`: `test-account-badge`
-
-**New file: `src/app/dashboard/admin/users/_components/RoleChangeConfirmDialog.tsx`**
-- Modal: "Change {email} from {oldRole} → {newRole}?"
-- `data-testid`: `role-confirm-dialog`, `confirm-cancel`, `confirm-submit`
-
-**New file: `src/app/dashboard/admin/users/_components/BulkDeleteConfirmDialog.tsx`**
-- Modal with AlertTriangle icon + warning for >5 users
-- `data-testid`: `bulk-delete-dialog`
-
-**Overhauled: `src/app/dashboard/admin/users/_components/UserManagementClient.tsx`**
-- Dark mode design (matching DESIGN.md: #18181B surface, #6366F1 primary, #FAFAFA text)
-- Inline `RoleSelector` dropdown per row — triggers `RoleChangeConfirmDialog` on change
-- `TestAccountBadge` shown inline with email for matching users
-- `BulkActionBar` (sticky bottom) with "Delete N Selected" → `BulkDeleteConfirmDialog`
-- Single-user delete via Trash2 icon in actions column
-- Pagination: Prev/Next with page count display
-- All required `data-testid` attributes added
-
-### data-testid Reference (Issue #108 additions)
-| Element | data-testid |
-|---------|-------------|
-| Search input | `user-search` |
-| Filter tab: All | `filter-tab-all` |
-| Filter tab: Real | `filter-tab-real` |
-| Filter tab: Test | `filter-tab-test` |
-| User table | `user-table` |
-| User row | `user-row` |
-| User email | `user-email` |
-| Test account badge | `test-account-badge` |
-| Role dropdown | `role-dropdown` |
-| Role confirm dialog | `role-confirm-dialog` |
-| Confirm cancel button | `confirm-cancel` |
-| Confirm submit button | `confirm-submit` |
-| Select all checkbox | `select-all-checkbox` |
-| Bulk action bar | `bulk-action-bar` |
-| Bulk delete button | `bulk-delete-btn` |
-| Bulk delete dialog | `bulk-delete-dialog` |
-| Pagination | `pagination` |
-
-### No DB migrations required
-All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
