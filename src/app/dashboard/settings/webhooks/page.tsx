@@ -7,7 +7,7 @@ import HarnessWebhooksClient from './HarnessWebhooksClient';
 export const dynamic = 'force-dynamic';
 
 export default async function WebhooksSettingsPage() {
-  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string }> | null = null;
+  let webhooks: Array<{ id: string; url: string; events: string[]; enabled: boolean; created_at: string; format_type?: string | null }> | null = null;
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -23,7 +23,7 @@ export default async function WebhooksSettingsPage() {
 
     const { data, error: webhooksError } = await supabase
       .from('fd_webhooks')
-      .select('id, url, events, enabled, created_at')
+      .select('id, url, events, enabled, created_at, format_type')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false });
 
