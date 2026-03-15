@@ -18,6 +18,7 @@ import {
   FileText,
   User,
   FileStack,
+  Bell,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
   { href: '/dashboard/settings/profile', label: 'Profile', icon: User, exact: true },
+  { href: '/dashboard/settings/notifications', label: 'Notifications', icon: Bell, exact: true },
 ];
 
 const STORAGE_KEY = 'sidebar-collapsed';

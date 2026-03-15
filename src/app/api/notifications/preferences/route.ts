@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-
-const DEFAULT_PREFS = {
-  stage_changes: true,
-  failures: true,
-  spec_ready: true,
-  build_complete: true,
-  qa_passed: true,
-  qa_failed: true,
-  deploy_complete: true,
-  agent_stalled: false,
-  pipeline_error: true,
-};
+import { DEFAULT_PREFERENCES, type NotificationPreferences } from '@/lib/notification-types';
 
 export async function GET(_request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -22,8 +11,8 @@ export async function GET(_request: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from('dash_dashboard_config')
-    .select('notification_prefs')
+    .from('fd_notification_preferences')
+    .select('*')
     .eq('user_id', user.id)
     .single();
 
@@ -31,7 +20,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const prefs = { ...DEFAULT_PREFS, ...(data?.notification_prefs ?? {}) };
+  const prefs: NotificationPreferences = { ...DEFAULT_PREFERENCES, ...(data ?? {}) };
   return NextResponse.json(prefs);
 }
 
@@ -43,20 +32,32 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body: Partial<NotificationPreferences>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
-  // Get existing prefs first
+  // Get existing prefs
   const { data: existing } = await supabase
-    .from('dash_dashboard_config')
-    .select('notification_prefs')
+    .from('fd_notification_preferences')
+    .select('*')
     .eq('user_id', user.id)
     .single();
 
-  const merged = { ...DEFAULT_PREFS, ...(existing?.notification_prefs ?? {}), ...body };
+  const merged: NotificationPreferences = {
+    ...DEFAULT_PREFERENCES,
+    ...(existing ?? {}),
+    ...body,
+  };
 
   const { error } = await supabase
-    .from('dash_dashboard_config')
-    .upsert({ user_id: user.id, notification_prefs: merged }, { onConflict: 'user_id' });
+    .from('fd_notification_preferences')
+    .upsert(
+      { ...merged, user_id: user.id, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
