@@ -73,7 +73,7 @@ export async function GET(
 
   let query = supabase
     .from('dash_issues')
-    .select('id, issue_number, repo, title, station, updated_at, github_issue_url')
+    .select('id, issue_number, repo, title, station, updated_at')
     .ilike('body', `%build_repo: ${decoded}%`)
     .order('updated_at', { ascending: false })
     .limit(limit);
@@ -101,14 +101,22 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { type?: string; title?: string; description?: string };
+  let requestBody: {
+    type?: string;
+    title?: string;
+    description?: string;
+    // Legacy fields from NewIssueModal / QuickCreateModal
+    body?: string;
+    complexityHint?: string;
+    issueType?: string;
+  };
   try {
-    body = await request.json();
+    requestBody = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { type, title, description } = body;
+  const { type, title, description, body: legacyBody, complexityHint, issueType } = requestBody;
 
   if (!title?.trim()) {
     return NextResponse.json({ error: 'Title is required', field: 'title' }, { status: 400 });
@@ -128,18 +136,27 @@ export async function POST(
   // Phase 2: fetch CLAUDE.md server-side (best-effort, fail silently)
   const claudeContent = await fetchClaudeMd(owner, repo, token);
 
-  // Build issue body
-  const typeLabel = type ? `**Type:** ${type}\n` : '';
-  const userContent = [typeLabel, description?.trim() ?? ''].filter(Boolean).join('\n');
-  const rawBody = [`build_repo: ${decoded}`, '', userContent].join('\n');
+  // Build issue body — support legacy (body) and new (description + type) formats
+  let rawBody: string;
+  if (legacyBody) {
+    // Legacy format: body already includes build_repo: line from the modal
+    rawBody = legacyBody.trim();
+  } else {
+    // New format: description + type — route constructs body with build_repo:
+    const typeLabel = type ? `**Type:** ${type}\n` : '';
+    const userContent = [typeLabel, description?.trim() ?? ''].filter(Boolean).join('\n');
+    rawBody = [`build_repo: ${decoded}`, '', userContent].join('\n');
+  }
 
-  // Inject CLAUDE.md context if found
+  // Inject CLAUDE.md context if found (prepend as collapsible block per AC-002.1)
   const issueBody = claudeContent ? injectClaudeMd(rawBody, claudeContent) : rawBody;
 
   // Create GitHub issue
   const kit = new Octokit({ auth: token });
   const labels = ['station:intake'];
-  if (type) {
+  if (complexityHint) labels.push(`complexity:${complexityHint}`);
+  if (issueType) labels.push(`type:${issueType}`);
+  if (type && !issueType) {
     // Map display type to label slug
     const typeSlug = type.toLowerCase().replace(/\s+/g, '-');
     labels.push(`type:${typeSlug}`);
@@ -171,5 +188,8 @@ export async function POST(
   return NextResponse.json({
     issueNumber: githubIssue.number,
     issueUrl: githubIssue.html_url,
+    // Legacy fields for backward compat with existing NewIssueModal / QuickCreateModal
+    url: githubIssue.html_url,
+    number: githubIssue.number,
   });
 }
