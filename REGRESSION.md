@@ -972,3 +972,35 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Global Search (⌘K) [auth]
+_Bug Fix: Issue #100 — Wire up search functionality_
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Press ⌘K (or Ctrl+K) on /dashboard — search modal opens with overlay
+- [ ] Modal input is auto-focused on open
+- [ ] Empty input shows hint: "Start typing to search issues and pages..." — NOT "No results found"
+- [ ] Type 'bu' (2 chars) — loading spinner with "Searching..." appears briefly, then results
+- [ ] Type 'bug' — results appear grouped under "Issues" and/or "Pages" sections
+- [ ] Results show title, subtitle, and station badge on each row
+- [ ] First result row is highlighted (data-selected="true")
+- [ ] Press ArrowDown — highlight moves to second result
+- [ ] Press ArrowUp — highlight moves back to first result
+- [ ] Press Enter on a highlighted result — navigates to that page, modal closes
+- [ ] Click a result row — navigates to that page, modal closes
+- [ ] Type 'zzzznonexistent9999' — empty state shows "No results found" (NOT on initial open)
+- [ ] Press Escape — modal closes, query is cleared
+- [ ] Click the overlay background — modal closes
+- [ ] Click search icon button in header — modal opens
+- [ ] On mobile (< 768px): footer keyboard hints are hidden
+- [ ] GET /api/search?q=bug — returns 200 with results array for authenticated users
+- [ ] GET /api/search?q=b — returns 200 with empty results (q < 2 chars)
+- [ ] GET /api/search without auth — returns 401
+
+### Routes/Endpoints
+- GET /api/search?q={query}
+- Component: src/components/ui/GlobalSearch.tsx
+

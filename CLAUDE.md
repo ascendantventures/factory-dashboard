@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/100
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -106,6 +106,8 @@
 - `src/components/NewIssueModal.tsx` — Create issue form. Target Repository now uses `RepositorySelector` (no longer takes `trackedRepos` prop).
 - `src/components/TargetAppDropdown.tsx` — Optional "Target App" dropdown for change requests (fetches /api/build-repos)
 - `src/components/ui/RepositorySelector.tsx` — Shared required repo selector (Issue #85). Fetches /api/build-repos, shows display names, inline validation error, data-testid="repo-selector".
+- `src/app/api/search/route.ts` — GET /api/search?q= — global search endpoint (queries dash_issues + static pages manifest, max 12 results, auth required)
+- `src/components/ui/GlobalSearch.tsx` — ⌘K search modal (issue #100: wired up debounced fetch, grouped results, keyboard nav, loading/hint/empty states)
 - `src/app/api/sync/route.ts` — GitHub → Supabase sync endpoint
 - `src/app/api/sync/status/route.ts` — Sync status endpoint (used by SyncStatus component)
 - `src/app/api/issues/route.ts` — Create GitHub issue with station:intake label
