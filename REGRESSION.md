@@ -972,3 +972,169 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Users Page — Role Audit + QA Purge Panels (Issue #112 + Bug Fix #131)
+_Added: 2026-03-15_
+
+### Context
+Phase 2 admin panels at `/dashboard/admin/users`: RoleAuditPanel (collapsible role change audit log) and QaPurgePanel (QA test account purge with dry-run preview). Bug fix #131 ensures all 17 spec data-testid attributes are present and correctly named.
+
+### Test Steps — RoleAuditPanel [auth]
+
+**Panel render and toggle:**
+- [ ] Navigate to `/dashboard/admin/users`
+- [ ] Verify `[data-testid="role-audit-panel"]` is present on the page
+- [ ] Verify `[data-testid="role-audit-header"]` is present (the collapsible toggle button)
+- [ ] Verify `[data-testid="role-audit-panel-toggle"]` does NOT exist in DOM
+- [ ] Click `[data-testid="role-audit-header"]` — panel expands, `[data-testid="role-audit-list"]` becomes visible
+
+**Populated state (with audit entries):**
+- [ ] If audit rows exist: `[data-testid="role-audit-table"]` is visible on the `<table>` element (NOT on a wrapper div)
+- [ ] Each row has `[data-testid="role-audit-row"]`
+- [ ] Verify `[data-testid="audit-row"]` does NOT exist in DOM (old name, must be gone)
+- [ ] Each row has `[data-testid="audit-timestamp"]` on the timestamp cell
+- [ ] Each row has `[data-testid="audit-actor"]` on the changed-by cell
+
+**Empty state:**
+- [ ] When no audit entries exist: `[data-testid="audit-empty-state"]` is visible with "No role changes recorded yet" text
+
+**Pagination:**
+- [ ] When >25 audit entries exist: `[data-testid="audit-pagination"]` is visible
+- [ ] Pagination shows "Page N of M · X total"
+- [ ] Prev/Next buttons navigate pages correctly
+
+### Test Steps — QaPurgePanel [auth]
+
+**Panel render and toggle:**
+- [ ] Verify `[data-testid="qa-purge-panel"]` is present
+- [ ] Verify `[data-testid="qa-purge-header"]` is present (the collapsible toggle button)
+- [ ] Verify `[data-testid="qa-purge-panel-toggle"]` does NOT exist in DOM
+- [ ] Click `[data-testid="qa-purge-header"]` — panel body expands
+
+**Dry-run preview:**
+- [ ] `[data-testid="purge-run-button"]` is visible (Preview / dry-run button)
+- [ ] Verify `[data-testid="purge-preview-btn"]` does NOT exist in DOM (old name)
+- [ ] Click `[data-testid="purge-run-button"]` — triggers dry run
+- [ ] After dry run: `[data-testid="purge-preview-result"]` becomes visible
+- [ ] Verify `[data-testid="purge-preview-list"]` does NOT exist in DOM (old name)
+- [ ] `[data-testid="purge-preview-dismiss"]` is visible inside the preview result area
+- [ ] Click `[data-testid="purge-preview-dismiss"]` — preview result disappears from DOM
+
+**Purge flow:**
+- [ ] `[data-testid="purge-confirm-dialog"]` appears after clicking "Purge Now" button
+- [ ] Dismiss dialog — it closes
+- [ ] After a completed purge: `[data-testid="purge-result-alert"]` shows success/error
+- [ ] `[data-testid="purge-history-table"]` shows last purge runs (if any exist)
+
+### Routes/Endpoints
+- `/dashboard/admin/users`
+- `GET /api/admin/role-audit?page=N&per_page=25` — paginated audit log
+- `POST /api/admin/qa-purge` (body: `{ dry_run: true|false }`) — dry run or actual purge
+- `GET /api/admin/qa-purge/history` — last 10 purge runs
+
+---
+
+## Avatar Upload (Issue #45) [auth]
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/settings/profile`
+- [ ] "Profile Photo" section is visible with a circular avatar preview and a dropzone
+- [ ] When no avatar exists: colored circle with user initials is shown in `[data-testid="avatar-preview"]`
+- [ ] Drag a valid JPEG (<2 MB) onto the dropzone OR click to select — avatar uploads and appears immediately in preview circle
+- [ ] After successful upload, `[data-testid="avatar-preview"] img` is visible with `src` containing `fd-avatars`
+- [ ] "Remove photo" button appears below the preview when avatar exists
+- [ ] Selecting a file >2 MB shows `[data-testid="avatar-error"]` with text "under 2 MB"; no upload occurs
+- [ ] Selecting a PDF or non-image file shows `[data-testid="avatar-error"]` with text "JPEG, PNG, or WebP"; no upload occurs
+- [ ] Clicking "Remove photo" shows a confirmation dialog
+- [ ] Clicking "Remove photo" in the dialog removes the avatar; initials fallback `[data-testid="avatar-initials"]` appears
+
+### Routes/Endpoints
+- `/dashboard/settings/profile` — profile page with new Photo section
+- `POST /api/auth/profile/avatar` — upload avatar
+- `DELETE /api/auth/profile/avatar` — remove avatar
+
+---
+
+## Session Management (Issue #45) [auth]
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/settings/profile`
+- [ ] "Active Sessions" section is visible below the Profile Photo section
+- [ ] At least one session card `[data-testid="session-card"]` is shown
+- [ ] The current session card has `data-current="true"` and shows `[data-testid="current-badge"]` with text "This device"
+- [ ] The current session card does NOT have a `[data-testid="revoke-session-btn"]` button
+- [ ] Non-current session cards (if any) show a "Revoke" button `[data-testid="revoke-session-btn"]`
+- [ ] Clicking "Revoke" on a non-current session removes that card from the list
+- [ ] "Revoke all other sessions" button `[data-testid="revoke-all-sessions-btn"]` is visible when >1 session exists
+- [ ] When only 1 (current) session exists, "Revoke all other sessions" button is hidden
+- [ ] Clicking "Revoke all other sessions" shows a confirmation dialog with cancel + confirm buttons
+- [ ] Clicking "Revoke all sessions" in the dialog removes all non-current sessions; only current session remains
+- [ ] After revoking all, session list shows exactly 1 card with `data-current="true"`
+
+### Routes/Endpoints
+- `/dashboard/settings/profile` — profile page with new Sessions section
+- `GET /api/auth/sessions` — list active sessions
+- `DELETE /api/auth/sessions` — revoke all other sessions
+- `DELETE /api/auth/sessions/[sessionId]` — revoke single session
+
+## Audit Log Real-time Feed (Issue #34)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/admin/audit`
+- [ ] Confirm `[data-testid="live-indicator"]` is visible in the page header next to the Audit Log title
+- [ ] Confirm `[data-status="connected"]` attribute is present on the live indicator (green dot, "Live" label)
+- [ ] Confirm `[data-testid="audit-table"]` wraps the audit entries table
+- [ ] Trigger a new audit entry (e.g. change a user role, or call `POST /api/admin/pipeline/force-tick`) — the new row should appear at the top of the table within 2 seconds without refreshing
+- [ ] Confirm newly prepended row has a brief indigo highlight animation that fades to transparent
+- [ ] Apply a category filter (e.g. "auth") — confirm entries that don't match are not prepended via Realtime
+- [ ] Navigate away from the page and back — confirm no memory leak (Realtime channel is properly unsubscribed on unmount)
+- [ ] If Realtime connection drops (disconnect network briefly), indicator should show "Paused" (gray dot, `data-status="paused"`) and the page should NOT crash
+
+### Routes/Endpoints
+- `/dashboard/admin/audit` — main audit log page
+- `[data-testid="live-indicator"]` — connection status indicator
+- `[data-testid="audit-table"]` — table wrapper for row assertions
+
+---
+
+## Audit Log Retention Settings (Issue #34)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/settings`
+- [ ] Click `[data-testid="settings-tab-audit"]` (History icon, "Audit" label — last tab in list)
+- [ ] Confirm `RetentionSettings` card is visible with title "Audit Log Retention"
+- [ ] Confirm `[data-testid="retention-days-input"]` shows current retention value (default: 90)
+- [ ] Change value to 180 and click `[data-testid="retention-save-btn"]` ("Save Changes")
+- [ ] Confirm success toast appears (`[data-testid="retention-success-toast"]` or Sonner toast with "Retention settings saved")
+- [ ] Confirm `[data-testid="retention-days-input"]` now shows 180
+- [ ] Confirm "Last updated" metadata updates with current timestamp
+- [ ] Change value to 3 (below minimum) and click Save — confirm `[data-testid="retention-error"]` appears with "minimum" or "7" in the text
+- [ ] As non-admin user: `GET /api/admin/audit/retention` should return 403
+- [ ] As non-admin user: `PATCH /api/admin/audit/retention` should return 403
+
+### Routes/Endpoints
+- `/dashboard/settings` → Audit tab
+- `GET /api/admin/audit/retention` — returns `{ retention_days, updated_at, updated_by_email }`
+- `PATCH /api/admin/audit/retention` — body `{ retention_days: 180 }`, returns updated config
+
+---
+
+## Audit Log Auto-purge Cron (Issue #34)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] `POST /api/admin/audit/purge` with no `x-cron-secret` header returns 401
+- [ ] `POST /api/admin/audit/purge` with `x-cron-secret: invalid` returns 401
+- [ ] `POST /api/admin/audit/purge` with `x-cron-secret: <CRON_SECRET>` returns 200 with `{ "deleted": N }` where N is a number
+- [ ] After successful purge call, confirm a new audit entry with `action = 'purge_audit_log'` and `category = 'settings'` appears in the audit log table
+- [ ] Confirm `vercel.json` exists in repo root with a cron entry for `/api/admin/audit/purge` at `0 0 * * *`
+
+### Routes/Endpoints
+- `POST /api/admin/audit/purge` — requires `x-cron-secret` header matching `CRON_SECRET` env var
+

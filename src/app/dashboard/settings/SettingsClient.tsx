@@ -6,9 +6,10 @@ import Link from 'next/link';
 import {
   Plus, Trash2, Loader2, Save, Shield, Users, Settings, Layers, Server, Key,
   Pencil, X, Github, Database, Triangle, Bot, RotateCw,
-  CheckCircle, Activity, Webhook, ChevronRight,
+  CheckCircle, Activity, Webhook, ChevronRight, History,
 } from 'lucide-react';
 import { DashDashboardConfig, DashTemplate } from '@/types';
+import { RetentionSettings } from './RetentionSettings';
 
 interface User {
   id: string;
@@ -24,7 +25,7 @@ interface SettingsClientProps {
   defaultTab?: Tab;
 }
 
-type Tab = 'general' | 'users' | 'templates' | 'environment' | 'api-keys';
+type Tab = 'general' | 'users' | 'templates' | 'environment' | 'api-keys' | 'audit';
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 
@@ -791,6 +792,7 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
     { id: 'templates', label: 'Templates', icon: <Layers className="w-4 h-4" /> },
     { id: 'environment', label: 'Environment', icon: <Server className="w-4 h-4" /> },
     { id: 'api-keys', label: 'API Keys', icon: <Key className="w-4 h-4" />, adminOnly: true },
+    { id: 'audit', label: 'Audit', icon: <History className="w-4 h-4" />, adminOnly: true },
   ];
   const tabs = allTabs.filter((t) => !t.adminOnly || isAdmin);
 
@@ -811,6 +813,7 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
                 <button
                   key={t.id}
                   data-tab={t.id}
+                  data-testid={t.id === 'audit' ? 'settings-tab-audit' : undefined}
                   onClick={() => setActiveTab(t.id)}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-colors"
                   style={{
@@ -983,6 +986,7 @@ export function SettingsClient({ userId, initialConfig, isAdmin, allUsers, defau
           {activeTab === 'templates' && <TemplateRegistryPanel isAdmin={isAdmin} />}
           {activeTab === 'environment' && <EnvStatusPanel />}
           {activeTab === 'api-keys' && isAdmin && <ApiKeyPanel />}
+          {activeTab === 'audit' && isAdmin && <RetentionSettings />}
         </section>
       </div>
     </div>
