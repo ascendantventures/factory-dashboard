@@ -1059,3 +1059,36 @@ _Added: 2026-03-15_
 - `/dashboard/admin/users` — page with QA purge panel
 - `POST /api/admin/qa-purge` — purge/dry-run endpoint
 - `GET /api/admin/qa-purge/history` — last 10 purge runs
+
+---
+
+## Bug Learnings — Issue #112 QA Cycle
+
+### Vercel Deployment Stuck in "Building" State
+**Observed:** QA was blocked because the preview URL was still showing "Deployment is building" after the initial BUILD COMPLETE comment. All 35+ Vercel status checks on PR #45 remained PENDING indefinitely.
+
+**Root cause:** The initial `vercel --yes` deployment from the build agent appeared to complete but the deployment never finished propagating. The preview URL was captured before build completion was confirmed.
+
+**Fix applied:** Re-triggered deployment via `vercel --yes` from the feature branch with confirmed build output before posting the live URL.
+
+**Regression guard:** Before posting BUGFIX COMPLETE, always verify the preview URL returns HTTP 200 (not a Vercel "building" or "error" page) before including it in the comment.
+
+### REGRESSION.md Sections Accidentally Dropped
+**Observed:** PR diff removed Issue #117 test sections (Pipeline Heartbeat "Never connected" + ActivityFeed explanation).
+
+**Root cause:** Branch was rebased/merged without preserving REGRESSION.md additions from `feature/issue-117`.
+
+**Fix applied:** Restored both #117 test sections in commit `d3527f9`.
+
+**Regression guard:** After any rebase or merge, run `grep -n "117\|116\|115" REGRESSION.md` to confirm prior-issue sections are intact.
+
+### data-testid Mismatches Between Spec and Implementation
+**Observed (Issue #112, QA cycle 2):** 8 of 17 `data-testid` attributes in `RoleAuditPanel` and `QaPurgePanel` did not match the spec, causing QA selector tests to fail.
+
+**Root cause:** Component header buttons were given interaction-scoped names (`role-audit-panel-toggle`, `qa-purge-panel-toggle`) instead of the spec-defined semantic names (`role-audit-header`, `qa-purge-header`). Several elements (table, empty-state, pagination, preview dismiss) were missing `data-testid` entirely. The `PurgePreviewList` component lacked a dismiss button altogether.
+
+**Fixes applied:**
+- `RoleAuditPanel`: `role-audit-panel-toggle` → `role-audit-header`; added `role-audit-table` on `<table>`; `audit-row` → `role-audit-row`; added `audit-empty-state` on empty-state div; added `audit-pagination` on pagination container.
+- `QaPurgePanel`: `qa-purge-panel-toggle` → `qa-purge-header`; `purge-preview-list` → `purge-preview-result`; added `purge-preview-dismiss` dismiss button to `PurgePreviewList`.
+
+**Regression guard:** Before marking BUILD COMPLETE, cross-reference every `data-testid` in `RoleAuditPanel.tsx` and `QaPurgePanel.tsx` against the spec table. Missing or renamed testids will fail QA selectors.

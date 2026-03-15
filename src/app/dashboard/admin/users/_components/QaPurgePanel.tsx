@@ -63,9 +63,9 @@ function formatDateTime(iso: string): string {
 
 // ─── PurgePreviewList ────────────────────────────────────────────────────────
 
-function PurgePreviewList({ preview }: { preview: PurgePreviewData }) {
+function PurgePreviewList({ preview, onDismiss }: { preview: PurgePreviewData; onDismiss: () => void }) {
   return (
-    <div data-testid="purge-preview-list" style={{ marginTop: '16px' }}>
+    <div data-testid="purge-preview-result" style={{ marginTop: '16px' }}>
       <div style={{
         padding: '10px 14px',
         background: 'rgba(245,158,11,0.08)',
@@ -77,10 +77,23 @@ function PurgePreviewList({ preview }: { preview: PurgePreviewData }) {
         borderBottom: 'none',
       }}>
         <Eye size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
-        <span style={{ fontSize: '12px', fontWeight: 600, color: '#FCD34D', fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: '#FCD34D', fontFamily: "'Inter', system-ui, sans-serif", flex: 1 }}>
           Preview — {preview.emails.length} account{preview.emails.length !== 1 ? 's' : ''} would be deleted
           {preview.skipped > 0 && ` · ${preview.skipped} skipped (older than 30 days)`}
         </span>
+        <button
+          data-testid="purge-preview-dismiss"
+          onClick={onDismiss}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '20px', height: '20px', border: 'none', background: 'transparent',
+            cursor: 'pointer', borderRadius: '4px', color: '#71717A', flexShrink: 0,
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#FAFAFA'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#71717A'; }}
+        >
+          <X size={12} />
+        </button>
       </div>
       <div style={{
         background: '#18181B',
@@ -547,7 +560,7 @@ export function QaPurgePanel() {
       >
         {/* Header */}
         <button
-          data-testid="qa-purge-panel-toggle"
+          data-testid="qa-purge-header"
           onClick={toggleOpen}
           style={{
             width: '100%',
@@ -701,7 +714,7 @@ export function QaPurgePanel() {
             )}
 
             {/* Preview list */}
-            {previewData && <PurgePreviewList preview={previewData} />}
+            {previewData && <PurgePreviewList preview={previewData} onDismiss={() => setPreviewData(null)} />}
 
             {/* Result alert */}
             {purgeResult && (

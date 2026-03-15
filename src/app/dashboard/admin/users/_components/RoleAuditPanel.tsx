@@ -141,7 +141,7 @@ export function RoleAuditPanel() {
     >
       {/* Header */}
       <button
-        data-testid="role-audit-panel-toggle"
+        data-testid="role-audit-header"
         onClick={toggleOpen}
         style={{
           width: '100%',
@@ -220,7 +220,7 @@ export function RoleAuditPanel() {
               {error}
             </div>
           ) : rows.length === 0 ? (
-            <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+            <div data-testid="audit-empty-state" style={{ padding: '64px 24px', textAlign: 'center' }}>
               <ClipboardList size={40} style={{ color: '#3F3F46', marginBottom: '12px' }} />
               <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '16px', fontWeight: 600, color: '#A1A1AA', margin: '0 0 6px' }}>
                 No role changes recorded yet
@@ -231,7 +231,7 @@ export function RoleAuditPanel() {
             </div>
           ) : (
             <>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table data-testid="role-audit-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#27272A', borderBottom: '1px solid #3F3F46', height: '40px' }}>
                     {['Changed At', 'User', 'Changed By', 'Role Change'].map(h => (
@@ -255,7 +255,7 @@ export function RoleAuditPanel() {
                   {rows.map((row, idx) => (
                     <tr
                       key={row.id}
-                      data-testid="audit-row"
+                      data-testid="role-audit-row"
                       style={{
                         borderBottom: idx < rows.length - 1 ? '1px solid #2D2D33' : 'none',
                         background: idx % 2 === 0 ? '#18181B' : '#1F1F23',
@@ -288,7 +288,7 @@ export function RoleAuditPanel() {
               </table>
 
               {totalPages > 1 && (
-                <div style={{ padding: '12px 16px', borderTop: '1px solid #3F3F46', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div data-testid="audit-pagination" style={{ padding: '12px 16px', borderTop: '1px solid #3F3F46', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12px', color: '#71717A', fontFamily: "'Inter', system-ui, sans-serif" }}>
                     Page {page} of {totalPages} &middot; {total} total
                   </span>
