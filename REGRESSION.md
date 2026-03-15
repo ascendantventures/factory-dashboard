@@ -9,6 +9,23 @@ Tests marked `[auth]` require login first.
 
 ---
 
+## Bugfix Log — Issue #16 (2026-03-15)
+
+### Root Cause
+The BUILD agent completed all Phase 2 implementation on `feature/issue-16` (commit `dc0c946`) but did not open a pull request and did not deploy a Vercel preview. As a result, all three new API routes (`/api/webhooks/vercel`, `/api/apps/[repoId]/analytics`, `/api/apps/[repoId]/history`) returned 404 on production because the feature branch code was never merged or deployed.
+
+### Fix Applied
+- Opened PR from `feature/issue-16` → `main` in `ascendantventures/factory-dashboard`
+- Deployed Vercel preview from the feature branch
+- No code changes were required — the implementation was correct and TypeScript-clean
+
+### Regression Notes
+- **Always verify a PR exists** for feature branches before closing a BUILD station. A branch with zero open PRs = deployment blocker.
+- **Route smoke test should target the preview URL**, not production, when QA runs against feature branches.
+- Phase 2 routes require auth (`Authorization: Bearer <token>`) — 401 is the correct unauthenticated response; 404 means the route does not exist at all.
+
+---
+
 ## Authentication
 _Core: Issue #2_
 
