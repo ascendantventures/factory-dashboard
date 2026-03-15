@@ -170,7 +170,7 @@ export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Prop
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: '13px',
-              color: heartbeatStale ? '#EF4444' : '#F1F3F9',
+              color: lastSeen == null ? '#6B7489' : heartbeatStale ? '#EF4444' : '#F1F3F9',
             }}
             title={lastSeen ?? undefined}
           >
