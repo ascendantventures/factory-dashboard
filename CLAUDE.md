@@ -628,3 +628,61 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+---
+
+## Issue #110 — Phase 2: Event Log & Webhooks (Outbound Delivery, GitHub Ingestion, Retention, Real-Time)
+
+### New Tables (Migration 20260315000000_harness_phase2_webhooks.sql)
+- `harness_webhook_deliveries` — Delivery attempt log for outbound webhook POSTs. PK: `id` (uuid). FK: `webhook_id → harness_webhooks.webhook_id ON DELETE CASCADE`, `event_id → harness_events.id ON DELETE SET NULL`. Status: `pending|success|failed|retrying`. RLS: service_role full access, authenticated read own (via webhook ownership).
+- `harness_events.metadata` — Added `metadata jsonb` column to existing harness_events table for structured context (e.g., GitHub webhook fields).
+
+### Phase 1 Tables (Migration 20260314160000_spec_schema_issue106.sql — cherry-picked from feature/issue-106)
+- `harness_events` — Pipeline event log. PK: `id` (uuid). Fields: direction, event_type, status, issue_number, submission_id, payload, error_message, duration_ms, metadata.
+- `harness_webhooks` — Outbound webhook endpoints. **PK is `webhook_id` (not `id`)**. Fields: name, url, secret, enabled, events (text[]), created_by.
+
+### ⚠️ Schema Gotchas
+- `harness_webhooks.webhook_id` is the PK — NOT `id`
+- `harness_webhooks.enabled` (not `is_enabled`)
+- `harness_webhooks.created_by` (not `owner_id`)
+- Always use `createSupabaseAdminClient()` for factory loop operations (bypasses RLS)
+
+### New API Routes (Phase 2)
+- `POST /api/harness/webhook-delivery/process` — Delivery worker: flushes pending/retrying deliveries in batches of 20. Called by factory loop on each tick via `deliverWebhooksAsync`. Auth: `x-factory-secret` header.
+- `GET /api/harness/webhook-delivery/[webhookId]` — Delivery history for a webhook. Auth: authenticated user (owner check). Params: limit, offset.
+- `POST /api/webhooks/github` — GitHub incoming webhook. Validates `x-hub-signature-256` HMAC, writes to `harness_events` (direction=incoming, event_type=github_webhook). Also writes legacy `dash_webhook_events` row. Returns 401 on bad signature, 503 if `GITHUB_WEBHOOK_SECRET` not set.
+
+### New Lib Files
+- `src/lib/harness-webhooks.ts` — `writeEventAsync()` and `deliverWebhooksAsync()` fire-and-forget functions. Used by any code that needs to record harness events or queue outbound webhook deliveries.
+
+### New UI Components (Phase 2)
+- `src/components/webhooks/DeliveryHistoryDrawer.tsx` — Slide-in drawer showing delivery attempts for a webhook. Test IDs: `delivery-history-drawer`, `delivery-drawer-close`, `delivery-row`, `delivery-status-badge`, `delivery-empty-state`.
+- `src/components/event-log/RealtimePulse.tsx` — Live/Connecting/Polling status dot. Test ID: `realtime-pulse`.
+- `src/hooks/useRealtimeEvents.ts` — Supabase Realtime subscription on `harness_events` INSERT. Calls onNewEvent callback for each new row.
+
+### Updated Components (Phase 2)
+- `src/app/dashboard/settings/webhooks/HarnessWebhooksClient.tsx` — Added "Deliveries" button on each webhook card (opens DeliveryHistoryDrawer). Test ID: `view-deliveries-btn`.
+- `src/app/dashboard/event-log/page.tsx` — Added RealtimePulse + useRealtimeEvents. New events prepend to table with `event-row-new` CSS animation. Refresh button still functional.
+
+### Supabase Edge Function
+- `supabase/functions/harness-purge-events/index.ts` — Daily purge function. Calls `harness_purge_old_events(event_ttl_days, delivery_ttl_days)` SQL function. Schedule: daily at 02:00 UTC (set in Supabase Dashboard).
+
+### Environment Variables Added (Phase 2)
+- `GITHUB_WEBHOOK_SECRET` — HMAC secret for GitHub webhook signature verification. Must match the secret configured in GitHub webhook settings.
+- `EVENT_RETENTION_DAYS` — Optional. Defaults to 90. Controls harness_events purge TTL.
+
+### Factory Loop Integration
+- `factory/src/notify/supabase.ts` — `deliverWebhooksAsync()` already implemented. Calls `POST /api/harness/webhook-delivery/process` on each tick. `FACTORY_APP_URL` and `FACTORY_SECRET` env vars required.
+- `factory/src/loop.ts` — Already imports and calls `deliverWebhooksAsync` on each tick.
+
+### GitHub Webhook Setup
+1. Set `GITHUB_WEBHOOK_SECRET` env var in Vercel project settings
+2. In GitHub repo/org settings → Webhooks → Add webhook
+3. Payload URL: `https://factory-dashboard-tau.vercel.app/api/webhooks/github`
+4. Content type: `application/json`
+5. Secret: same value as `GITHUB_WEBHOOK_SECRET`
+6. Events: Choose "Send me everything" or select specific events
+
+### Supabase Realtime Setup
+Enable postgres_changes publication for `harness_events`:
+- Supabase Dashboard → Database → Replication → supabase_realtime → Add table → harness_events
