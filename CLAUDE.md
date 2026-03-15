@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/130
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -173,6 +173,8 @@
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — static placeholder, no real notification data wired up.
 - **Global search** — static UI only, no real search backend connected yet.
+- **Deployment readiness probe (`src/lib/deployment-readiness.ts`)** — Added in #130. Polls a Vercel preview URL until it serves the real app (not the "Deployment is building" placeholder). Use `waitForDeployment(url, opts)` as a QA pre-flight gate before running visual tests. Default: 10 retries × 15s = 150s total wait. All Playwright tests in `tests/e2e/deployment-readiness.spec.ts` skip automatically when `PREVIEW_URL` env var is not set.
+- **Vercel preview stuck PENDING (#130)** — The `build-work` Vercel project (different from `factory-dashboard`) had a stuck build queue. Re-trigger by pushing an empty commit or using `POST /api/deployments/{repoId}/redeploy`. The existing redeploy endpoint in `src/app/api/deployments/[repoId]/redeploy/route.ts` handles this.
 - **MobileBottomNav role resolution (Issue #92)** — MobileBottomNav no longer fetches role client-side. Role is resolved server-side in DashboardLayout via `getUserRole(user.id)` and passed down as `isAdmin` prop through AppShell. If Admin entry is missing on mobile, check: (1) `fd_user_roles` row has `is_active = true` for the user, (2) DashboardLayout is server component (no `'use client'` directive), (3) AppShell receives `isAdmin` prop.
 - **`github_issue_url` column does not exist in `dash_issues`** — the list route (`apps/route.ts`) was fixed (CR #62), but the detail route (`apps/[repoId]/route.ts`) also selected this column and mapped it — both occurrences removed in bugfix #68. Do not add `github_issue_url` to any Supabase query on `dash_issues`.
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).

@@ -972,3 +972,30 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Deployment Readiness Gate (Issue #130)
+_Added: 2026-03-15_
+
+### Test Steps — Deployment Readiness Utility
+- [ ] Import `waitForDeployment` from `src/lib/deployment-readiness` — no TypeScript errors
+- [ ] Call `waitForDeployment('https://live-url.vercel.app')` with a real live Vercel URL — returns `{ ready: true, finalStatus: 200, timedOut: false }`
+- [ ] Call `waitForDeployment('https://building-url.vercel.app', { maxRetries: 1, intervalMs: 100 })` against a URL that returns "Deployment is building" in body — returns `{ ready: false, timedOut: false, attempts: 1 }`
+- [ ] Call with `maxRetries: 2, intervalMs: 100, timeoutMs: 50` (extremely short timeout) against a URL that never responds — returns `{ ready: false, timedOut: true }`
+- [ ] `buildTimeoutComment(3, 45)` returns: "Preview deployment is still building after 3 retries over ~45s.\nRe-trigger the Vercel build for the PR and re-queue QA once the preview URL serves the real application."
+
+### Test Steps — Playwright E2E Suite [requires PREVIEW_URL env var]
+- [ ] Run `PREVIEW_URL=<live-url> npx playwright test deployment-readiness` — all 3 tests pass
+- [ ] Run without `PREVIEW_URL` set — all 3 tests are skipped (not failed)
+- [ ] Test "preview URL serves the real app" confirms HTTP 200 and no "deployment is building" text in body
+- [ ] Test "agent-browser does not crash" confirms `page.on('crash')` never fires
+- [ ] Test "waitForDeployment returns ready:true" confirms utility returns `ready: true` for live URL
+
+### REGRESSION.md #117 Audit (Issue #130 secondary finding)
+- [ ] Confirm REGRESSION.md contains both #117 sections: "Pipeline Heartbeat UX + Env Config Docs (Issue #117)" and "Pipeline Heartbeat UX — Never Connected + Activity Feed Explanation (Issue #117)"
+- [ ] Both sections are intact in the `feature/issue-112` branch (not removed, only repositioned)
+
+### Routes/Endpoints
+- `src/lib/deployment-readiness.ts` — utility module (no HTTP routes)
+- `tests/e2e/deployment-readiness.spec.ts` — Playwright E2E tests
