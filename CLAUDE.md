@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/45
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -87,7 +87,12 @@
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
 - `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
 - `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
+- `audit_log_entries` — Full audit trail (Issue #28). Columns: id, user_id, actor_email, action, category, target_type, target_id, details (JSONB), ip_address, created_at. Realtime publication enabled (Issue #34).
+- `fd_audit_retention_config` — Single-row config for audit log retention (Issue #34). Columns: id, retention_days (int, min 7, default 90), updated_at, updated_by. RLS: admin read; service_role write.
+- `fd_audit_alert_rules` — Alert rules schema (Issue #34, Phase 2 deferred). Columns: id, alert_action, threshold_count, window_minutes, notify_emails (text[]), is_active, created_at, updated_at. Default seed: failed_login, is_active=false.
+- `purge_old_audit_entries()` — SECURITY DEFINER Postgres function. Deletes `audit_log_entries` older than `fd_audit_retention_config.retention_days`. Returns deleted row count.
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
+- **Vercel Cron:** `vercel.json` configures daily purge at `0 0 * * *` (midnight UTC) via `POST /api/admin/audit/purge` with `x-cron-secret` header.
 
 ## Key Files
 - `src/app/dashboard/page.tsx` — Main Kanban board page (server component, fetches initial data)
@@ -178,6 +183,10 @@
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 - **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
+- **Audit log Realtime (Issue #34)** — `AuditLogTable.tsx` subscribes to `audit-realtime` channel on `audit_log_entries` INSERT events. New entries are prepended to state with `isNew=true` which triggers framer-motion highlight animation. Filters are respected via `filtersRef` (ref-based to avoid stale closure). Channel is torn down on unmount via `supabase.removeChannel()`. Do NOT import `lib/audit.ts` from client components — it's server-only.
+- **Retention purge cron (Issue #34)** — `POST /api/admin/audit/purge` is protected by `x-cron-secret` header matching `CRON_SECRET` env var. Calls `purge_old_audit_entries()` Postgres function. Logs result to `audit_log_entries` with `actor_email='system@cron'`. Vercel Cron configured in `vercel.json` at `0 0 * * *`.
+- **CRON_SECRET env var** — Must be added to Vercel project env vars (Production + Preview + Development). Generate with `openssl rand -base64 32`. Without it, the purge route always returns 401.
+- **data-testid contract (Issue #131)** — All 17 testids in `RoleAuditPanel.tsx` and `QaPurgePanel.tsx` must exactly match the spec table in issue #131. The authoritative list: `role-audit-panel`, `role-audit-header`, `role-audit-list`, `role-audit-table`, `role-audit-row`, `audit-timestamp`, `audit-actor`, `audit-empty-state`, `audit-pagination`, `qa-purge-panel`, `qa-purge-header`, `purge-run-button`, `purge-preview-result`, `purge-preview-dismiss`, `purge-confirm-dialog`, `purge-result-alert`, `purge-history-table`. The preview trigger button is `purge-run-button` (NOT `purge-preview-btn`). Do not rename any of these testids without updating REGRESSION.md and the spec.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
@@ -625,3 +634,77 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+## Phase 2: Avatar Upload + Session Management (Issue #45)
+
+### New Features (built on top of Phase 1 User Management)
+
+#### Avatar Upload
+- Users can upload JPEG/PNG/WebP avatars up to 2 MB
+- Stored in `fd-avatars` Supabase Storage bucket (private)
+- Path convention: `{user_id}/avatar.{ext}` — allows user-scoped RLS
+- `avatar_url` stored in `fd_user_profiles.avatar_url`
+- Signed URL (1-year TTL) returned from POST endpoint
+
+#### Session Management
+- Lists all active sessions via Supabase Admin API `listUserSessions`
+- Users can revoke individual sessions or all other sessions
+- Current session identified and marked with "This device" badge
+- Audit log written to `fd_audit_log` on `sessions_revoked_all`
+
+### New Tables / Schema Changes
+- `fd_user_profiles` — new table (migration 20260315120000); `avatar_url TEXT` column
+  - **Trigger warning:** Has auth trigger — always use `upsert()` not `insert()`
+  - `user_id` FK to `auth.users`, unique constraint
+- `fd-avatars` storage bucket — private, 2 MB max, JPEG/PNG/WebP only
+- **Migration file:** `supabase/migrations/20260315120000_phase2_avatar_sessions.sql`
+- **IMPORTANT:** Migration was NOT pushed to DB (no Supabase access token available). Must be applied manually via Supabase dashboard SQL editor or `supabase db push` with proper credentials.
+
+### New API Routes
+- `POST /api/auth/profile/avatar` — upload avatar (multipart/form-data, field: `file`)
+- `DELETE /api/auth/profile/avatar` — delete avatar
+- `GET /api/auth/sessions` — list active sessions for current user
+- `DELETE /api/auth/sessions` — revoke all other sessions
+- `DELETE /api/auth/sessions/[sessionId]` — revoke specific session
+
+### New Components
+```
+src/app/dashboard/settings/profile/_components/
+├── AvatarUpload.tsx         — upload container + remove button + confirm dialog
+├── AvatarPreview.tsx        — 96px circle; shows image or initials fallback
+├── FileDropzone.tsx         — drag-and-drop file input with validation
+├── SessionList.tsx          — fetches GET /api/auth/sessions, renders cards
+├── SessionCard.tsx          — device info, IP, date, "This device" badge, revoke button
+└── RevokeConfirmDialog.tsx  — modal: "Revoke all other sessions?"
+src/lib/session-utils.ts     — parseUserAgent(), formatSessionDate(), SessionInfo type
+```
+
+### Page Changes
+- `/dashboard/settings/profile` — added two new sections between existing ProfileForm and ChangePasswordForm:
+  1. "Profile Photo" card with AvatarUpload
+  2. "Active Sessions" section with SessionList
+
+### data-testid Attributes (Phase 2)
+| Component | Attribute |
+|---|---|
+| Avatar container | `avatar-preview` |
+| Avatar image | `avatar-preview` img |
+| Initials fallback | `avatar-initials` |
+| Dropzone area | `avatar-dropzone` |
+| Error message | `avatar-error` |
+| Remove photo button | `remove-avatar-btn` |
+| Confirm remove | `confirm-remove-avatar` |
+| Sessions section | `active-sessions` |
+| Session card | `session-card` (+ `data-current="true|false"`) |
+| This device badge | `current-badge` |
+| Revoke session button | `revoke-session-btn` |
+| Revoke all button | `revoke-all-sessions-btn` |
+| Confirm revoke all | `confirm-revoke-all` |
+
+### Gotchas for Future Change Requests
+- `fd_user_profiles` table must exist before avatar upload works — run migration first
+- `SUPABASE_SERVICE_ROLE_KEY` is required for storage operations (server-side only)
+- `listUserSessions` may not return `user_agent`/`ip` on all Supabase plan tiers; code gracefully falls back to "Unknown device"
+- Avatar signed URLs expire after 1 year; re-uploading regenerates a new URL
+- `fd_avatars_select_admin` policy allows admins to view any user's avatar
+- Session management uses `admin.auth.admin.signOut(userId, 'others')` which revokes all other sessions but preserves the current one
