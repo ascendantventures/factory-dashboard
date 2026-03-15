@@ -9,11 +9,14 @@ import {
   ChevronRight,
   RotateCcw,
   Radio,
+  RefreshCw,
 } from 'lucide-react';
 import { EventDirectionBadge } from '@/components/event-log/EventDirectionBadge';
 import { EventStatusBadge } from '@/components/event-log/EventStatusBadge';
 import { PayloadViewer } from '@/components/event-log/PayloadViewer';
 import { toast } from 'sonner';
+import { useRealtimeEvents, type HarnessEventRow } from '@/hooks/useRealtimeEvents';
+import RealtimePulse from '@/components/event-log/RealtimePulse';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface EventLogEntry {
@@ -541,6 +544,28 @@ function EventLogPageInner() {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, per_page: 50, total: 0 });
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Realtime subscription for live event updates
+  const { status: realtimeStatus } = useRealtimeEvents({
+    onNewEvent: (newEvent: HarnessEventRow) => {
+      // Map HarnessEventRow to EventLogEntry and prepend to list (page 1 only)
+      if (page === 1) {
+        const entry: EventLogEntry = {
+          id: newEvent.id,
+          direction: newEvent.direction === 'incoming' ? 'in' : 'out',
+          event_type: newEvent.event_type,
+          source: (newEvent.metadata as Record<string, unknown> | null)?.source as string ?? 'harness',
+          payload: newEvent.payload,
+          status: newEvent.status === 'success' ? 'delivered' : newEvent.status === 'failure' ? 'failed' : 'received',
+          retry_count: 0,
+          last_retried_at: null,
+          created_at: newEvent.created_at,
+        };
+        setEvents((prev) => [entry, ...prev]);
+      }
+    },
+  });
 
   const filters: FilterValues = {
     direction: searchParams.get('direction') ?? '',
@@ -586,6 +611,10 @@ function EventLogPageInner() {
     });
   }
 
+  function handleRefresh() {
+    setRefreshKey((k) => k + 1);
+  }
+
   // Fetch events
   useEffect(() => {
     let cancelled = false;
@@ -619,7 +648,7 @@ function EventLogPageInner() {
     fetchEvents();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString()]);
+  }, [searchParams.toString(), refreshKey]);
 
   function handleRetrySuccess(id: string) {
     setEvents((prev) =>
@@ -656,6 +685,42 @@ function EventLogPageInner() {
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               View harness events and webhook deliveries
             </p>
+          </div>
+          {/* Header actions: realtime pulse + refresh */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <RealtimePulse status={realtimeStatus} />
+            <button
+              data-testid="refresh-btn"
+              onClick={handleRefresh}
+              disabled={loading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                background: 'var(--surface-alt)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+                transition: 'background 150ms ease',
+              }}
+              onMouseOver={(e) => {
+                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-elevated)';
+              }}
+              onMouseOut={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-alt)';
+              }}
+            >
+              <RefreshCw
+                size={13}
+                style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }}
+              />
+              Refresh
+            </button>
           </div>
         </div>
 
@@ -718,7 +783,7 @@ function EventLogPageInner() {
           )}
 
           {(loading || events.length > 0) && (
-            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <table data-testid="event-table" className="w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr
                   style={{

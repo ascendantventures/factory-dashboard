@@ -920,3 +920,54 @@ The users admin page (`/dashboard/admin/users`) was enhanced with search, filter
 - DELETE /api/admin/users/bulk (body: { userIds: string[] })
 - PATCH /api/admin/users/[id]/role (body: { role: string })
 
+
+---
+
+## Phase 2: Event Log & Webhooks — Outbound Delivery, GitHub Ingestion, Retention, Real-Time (Issue #110)
+_Added: 2026-03-15_
+
+### Outbound webhook delivery history [auth]
+
+- [ ] Navigate to /dashboard/settings/webhooks — webhook cards render
+- [ ] Each webhook card has a "View deliveries" button (data-testid="view-deliveries-btn")
+- [ ] Click "View deliveries" — DeliveryHistoryDrawer slides in (data-testid="delivery-history-drawer")
+- [ ] Drawer header shows "Delivery History" and a close button (data-testid="delivery-drawer-close")
+- [ ] Webhook URL appears in URL bar below header (JetBrains Mono font)
+- [ ] If no deliveries exist: empty state shows (data-testid="delivery-empty-state") with "No deliveries yet" text
+- [ ] If deliveries exist: rows render with data-testid="delivery-row"
+- [ ] Each row shows: event type, attempt number, status badge (data-testid="delivery-status-badge"), HTTP code, timestamp
+- [ ] Status badges: success=green, failed=red, retrying=amber, pending=muted
+- [ ] Press Escape or click backdrop — drawer closes
+- [ ] Close button click — drawer closes
+
+### GitHub incoming webhook capture (unsigned = 401)
+
+- [ ] POST to /api/webhooks/github without x-hub-signature-256 header → HTTP 401
+- [ ] POST to /api/webhooks/github with invalid signature → HTTP 401
+- [ ] POST to /api/webhooks/github with valid HMAC signature → HTTP 200, event written to harness_events
+
+### Real-time event log [auth]
+
+- [ ] Navigate to /dashboard/event-log
+- [ ] RealtimePulse indicator visible (data-testid="realtime-pulse") in page header
+- [ ] Indicator shows "Live" (green dot) when Supabase Realtime connected, "Connecting..." during init, "Polling" on failure
+- [ ] Refresh button visible (data-testid="refresh-btn") next to RealtimePulse
+- [ ] Click Refresh button → table reloads (loading state briefly), new data appears
+- [ ] Event table renders (data-testid="event-table") with headers: Timestamp, Dir, Event Type, Source, Status, Actions
+- [ ] New harness_events inserted in DB appear at top of list without manual refresh (when Live)
+- [ ] Navigating away and back — no subscription memory leaks (channel removed on unmount)
+
+### Delivery retry worker
+
+- [ ] POST /api/harness/webhook-delivery/process without auth → HTTP 401
+- [ ] POST /api/harness/webhook-delivery/process with valid service-role Bearer → processes pending deliveries
+- [ ] Response includes: { processed: N, succeeded: N, failed: N }
+- [ ] Deliveries with next_retry_at <= NOW() and status retrying are picked up
+- [ ] Max 20 deliveries processed per call
+
+### Routes/Endpoints
+- /dashboard/settings/webhooks
+- /dashboard/event-log
+- GET /api/harness/webhook-delivery/[webhookId]?limit=20&offset=0
+- POST /api/harness/webhook-delivery/process
+- POST /api/webhooks/github
