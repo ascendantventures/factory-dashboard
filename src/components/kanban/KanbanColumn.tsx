@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Station, STATION_COLORS, STATION_LABELS } from '@/lib/constants';
 import { DashIssue } from '@/types';
 import { IssueCard } from './IssueCard';
@@ -18,9 +19,11 @@ interface KanbanColumnProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onSelectIssue?: (issue: DashIssue) => void;
+  /** Optional drag handle rendered in the column header (Phase 2) */
+  dragHandle?: React.ReactNode;
 }
 
-export function KanbanColumn({ station, issues, draggingIssueIds, enrichmentMap, isCollapsed = false, onToggleCollapse, onSelectIssue }: KanbanColumnProps) {
+export function KanbanColumn({ station, issues, draggingIssueIds, enrichmentMap, isCollapsed = false, onToggleCollapse, onSelectIssue, dragHandle }: KanbanColumnProps) {
   const color = STATION_COLORS[station];
   const label = STATION_LABELS[station];
 
@@ -84,9 +87,11 @@ export function KanbanColumn({ station, issues, draggingIssueIds, enrichmentMap,
             style={{ borderColor: '#27272A' }}
           >
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-0 min-w-0">
+                {/* Drag handle (injected by DraggableKanbanColumn) */}
+                {dragHandle}
                 <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
-                <span className="text-sm font-semibold truncate" style={{ fontFamily: 'Inter, sans-serif', color: '#FAFAFA', textTransform: 'capitalize' }}>
+                <span className="text-sm font-semibold truncate ml-2" style={{ fontFamily: 'Inter, sans-serif', color: '#FAFAFA', textTransform: 'capitalize' }}>
                   {label}
                 </span>
               </div>

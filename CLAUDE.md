@@ -85,6 +85,7 @@
 - `dash_issue_stage_entry` — VIEW: current station entry timestamp per issue (added CR #13)
 - `dash_build_repos` — Cache of build repos for Target App dropdown (1hr TTL, keyed on github_repo)
 - `dash_deployment_cache` — Caches latest Vercel deployment per build repo (added CR #11). Keyed on repo_full_name. Columns: repo_full_name, vercel_deployment_id, deploy_url, deploy_state, deployed_at, raw_payload. Upsert on conflict repo_full_name.
+- `kanban_user_prefs` — Per-user Kanban column preferences (Issue #10). Columns: id, user_id (FK auth.users), column_order (JSONB array of station keys), hidden_columns (JSONB array of station keys). Has `updated_at` trigger — always use `upsert()`. RLS: authenticated users own rows only.
 - `fd_webhooks` — Registered webhook endpoints (Issue #29). Columns: id, url, secret_hash (AES-GCM encrypted, never raw), events (JSONB array), enabled, created_by, created_at, updated_at. RLS: owner-only CRUD.
 - `fd_webhook_deliveries` — Rolling delivery log per webhook (Issue #29). Columns: id, webhook_id, event, payload, status_code, response_body, sent_at. RLS: owner can read; service role inserts only. Cascade-deletes when webhook deleted.
 - **RLS:** Enabled on most tables. Service role client bypasses RLS for sync operations.
@@ -272,6 +273,9 @@
 - The Kanban board auto-syncs every 60s — new features should work with this cycle
 - Sidebar collapse state persists in localStorage('sidebar-collapsed')
 - Add `data-testid="skeleton"` to new skeleton components, `data-testid="empty-state"` to empty states
+- **Kanban prefs (Phase 2, Issue #10):** Column order + visibility are now server-persisted in `kanban_user_prefs` via `KanbanPrefsProvider` context (`src/lib/kanban-prefs-context.tsx`). Use `useKanbanPrefs()` hook inside the board. Always use `upsert()` not `insert()` on `kanban_user_prefs` — it has an `updated_at` trigger.
+- **Column drag (Issue #10):** Columns are now sortable via `@dnd-kit/sortable`. Column drag uses `data: { type: 'column' }` to differentiate from issue card drag in the shared `DndContext`. Check `active.data.current.type === 'column'` in `handleDragEnd`.
+- **Single DndContext (Issue #10):** KanbanBoard uses ONE DndContext for both column reorder (horizontal) and issue card drag (vertical). Column `useSortable` IDs are station keys; issue card IDs are numeric issue IDs. They don't conflict.
 
 ## Template & Environment Management (CR #20)
 - **New DB tables:**

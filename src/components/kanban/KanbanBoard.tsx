@@ -4,11 +4,14 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { STATIONS, Station, STATION_COLORS, STATION_LABELS } from '@/lib/constants';
 import { DashIssue } from '@/types';
 import { KanbanColumn } from './KanbanColumn';
+import { DraggableKanbanColumn } from './DraggableKanbanColumn';
+import { ColumnVisibilityMenu } from './ColumnVisibilityMenu';
+import { SavingIndicator } from './SavingIndicator';
 import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
 import { IssueDetailPanel } from './IssueDetailPanel';
 import { SpecReviewPanel } from '@/components/spec-review/SpecReviewPanel';
-import { RefreshCw, Loader2, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
+import { RefreshCw, Loader2, LayoutGrid, Layers3, Radio } from 'lucide-react';
 import { ActivitySidebar } from '@/components/activity/ActivitySidebar';
 import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -21,18 +24,14 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { viewModeVariants } from '@/lib/motion';
+import { KanbanPrefsProvider, useKanbanPrefs } from '@/lib/kanban-prefs-context';
 
 type ViewMode = 'full' | 'simplified';
 
-interface KanbanPrefs {
-  hiddenColumns: Station[];
-  viewMode: ViewMode;
-}
-
-const DEFAULT_PREFS: KanbanPrefs = { hiddenColumns: [], viewMode: 'full' };
 const PREFS_KEY = 'kanban_column_prefs';
 const ACTIVITY_SIDEBAR_KEY = 'activity_sidebar_open';
 
@@ -51,24 +50,26 @@ function saveActivitySidebarOpen(open: boolean) {
   } catch {}
 }
 
-function loadPrefs(): KanbanPrefs {
-  if (typeof window === 'undefined') return DEFAULT_PREFS;
+function loadViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'full';
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return DEFAULT_PREFS;
-    return JSON.parse(raw) as KanbanPrefs;
+    if (!raw) return 'full';
+    const parsed = JSON.parse(raw) as { viewMode?: ViewMode };
+    return parsed.viewMode === 'simplified' ? 'simplified' : 'full';
   } catch {
-    return DEFAULT_PREFS;
+    return 'full';
   }
 }
 
-function savePrefs(prefs: KanbanPrefs) {
+function saveViewMode(mode: ViewMode) {
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    const raw = localStorage.getItem(PREFS_KEY);
+    const existing = raw ? (JSON.parse(raw) as object) : {};
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...existing, viewMode: mode }));
   } catch {}
 }
 
-// Simplified view: 3 rollup columns
 const SIMPLIFIED_COLUMNS = [
   { id: 'intaked' as const, label: 'Intaked', sources: ['intake'] as Station[], color: '#F59E0B' },
   { id: 'in-progress' as const, label: 'In Progress', sources: ['spec', 'design', 'build', 'qa', 'bugfix'] as Station[], color: '#6366F1' },
@@ -80,48 +81,38 @@ interface KanbanBoardProps {
   trackedRepos: string[];
 }
 
-export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
+export function KanbanBoard(props: KanbanBoardProps) {
+  return (
+    <KanbanPrefsProvider>
+      <KanbanBoardInner {...props} />
+    </KanbanPrefsProvider>
+  );
+}
+
+function KanbanBoardInner({ initialIssues }: KanbanBoardProps) {
+  const { columnOrder, hiddenColumns, syncState, setOrder, toggleHidden } = useKanbanPrefs();
+
   const [issues, setIssues] = useState<DashIssue[]>(initialIssues);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [activeIssue, setActiveIssue] = useState<DashIssue | null>(null);
+  const [activeColumnId, setActiveColumnId] = useState<Station | null>(null);
   const [draggingIssueIds, setDraggingIssueIds] = useState<Set<number>>(new Set());
-  const [prefs, setPrefs] = useState<KanbanPrefs>(DEFAULT_PREFS);
   const [enrichmentMap, setEnrichmentMap] = useState<EnrichmentMap>(new Map());
   const [selectedIssue, setSelectedIssue] = useState<DashIssue | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [viewMode, setViewModeState] = useState<ViewMode>('full');
   const supabaseRef = useRef<SupabaseClient | null>(null);
 
-  // Load prefs from localStorage on mount
   useEffect(() => {
-    setPrefs(loadPrefs());
+    setViewModeState(loadViewMode());
     setActivityOpen(loadActivitySidebarOpen());
   }, []);
 
-  const updatePrefs = useCallback((updater: (p: KanbanPrefs) => KanbanPrefs) => {
-    setPrefs((prev) => {
-      const next = updater(prev);
-      savePrefs(next);
-      return next;
-    });
-  }, []);
-
-  const toggleColumn = useCallback((station: Station) => {
-    updatePrefs((p) => ({
-      ...p,
-      hiddenColumns: p.hiddenColumns.includes(station)
-        ? p.hiddenColumns.filter((s) => s !== station)
-        : [...p.hiddenColumns, station],
-    }));
-  }, [updatePrefs]);
-
-  const resetLayout = useCallback(() => {
-    updatePrefs(() => DEFAULT_PREFS);
-  }, [updatePrefs]);
-
   const setViewMode = useCallback((mode: ViewMode) => {
-    updatePrefs((p) => ({ ...p, viewMode: mode }));
-  }, [updatePrefs]);
+    setViewModeState(mode);
+    saveViewMode(mode);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -153,7 +144,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
           entered_at: stageMap.get(row.issue_id) ?? null,
         });
       }
-      // Also add stage data for issues not in cost table
       for (const row of stageData) {
         if (!map.has(row.issue_id)) {
           map.set(row.issue_id, { total_cost_usd: 0, active_runs: 0, entered_at: row.entered_at });
@@ -175,7 +165,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     } catch {}
   }, []);
 
-  // Auto-sync interval (every 60 seconds)
   const AUTO_SYNC_INTERVAL_MS = 60_000;
 
   useEffect(() => {
@@ -185,7 +174,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     let channelCleanup: (() => void) | null = null;
     let agentRunsChannelCleanup: (() => void) | null = null;
 
-    // Supabase Realtime for instant DB change propagation
     getSupabase().then((supabase) => {
       if (!mounted) return;
       const channel = supabase
@@ -204,7 +192,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         .subscribe();
       channelCleanup = () => supabase.removeChannel(channel);
 
-      // Subscribe to agent_runs for real-time cost/status updates
       const agentRunsChannel = supabase
         .channel('dash_agent_runs_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'dash_agent_runs' }, () => {
@@ -214,7 +201,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
       agentRunsChannelCleanup = () => supabase.removeChannel(agentRunsChannel);
     });
 
-    // Auto-sync from GitHub every 60s (syncs labels/state changes into DB)
     const autoSyncInterval = setInterval(async () => {
       if (!mounted) return;
       try {
@@ -228,9 +214,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
           fetchLastSync();
           fetchEnrichment();
         }
-      } catch {
-        // Silent fail on auto-sync
-      }
+      } catch {}
     }, AUTO_SYNC_INTERVAL_MS);
 
     return () => {
@@ -264,15 +248,34 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    const issue = issues.find((i) => i.id === event.active.id);
-    if (issue) setActiveIssue(issue);
+    const { active } = event;
+    const dragData = active.data.current as { type?: string; station?: Station } | undefined;
+    if (dragData?.type === 'column') {
+      setActiveColumnId(dragData.station ?? null);
+    } else {
+      const issue = issues.find((i) => i.id === active.id);
+      if (issue) setActiveIssue(issue);
+    }
   }
 
   async function handleDragEnd(event: DragEndEvent) {
-    setActiveIssue(null);
     const { active, over } = event;
-    if (!over) return;
+    const dragData = active.data.current as { type?: string; station?: Station } | undefined;
 
+    // ── Column reorder ────────────────────────────────────────────────────────
+    if (dragData?.type === 'column') {
+      setActiveColumnId(null);
+      if (!over || active.id === over.id) return;
+      const oldIndex = columnOrder.indexOf(active.id as Station);
+      const newIndex = columnOrder.indexOf(over.id as Station);
+      if (oldIndex === -1 || newIndex === -1) return;
+      setOrder(arrayMove(columnOrder, oldIndex, newIndex));
+      return;
+    }
+
+    // ── Issue card move ───────────────────────────────────────────────────────
+    setActiveIssue(null);
+    if (!over) return;
     const draggedIssue = issues.find((i) => i.id === active.id);
     if (!draggedIssue) return;
 
@@ -317,8 +320,6 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
     }
   }
 
-  const hasHiddenColumns = prefs.hiddenColumns.length > 0;
-
   function toggleActivity() {
     setActivityOpen((prev) => {
       const next = !prev;
@@ -345,8 +346,10 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
           )}
         </div>
 
-        {/* View mode + actions */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Saving indicator */}
+          <SavingIndicator syncState={syncState} />
+
           {/* View mode segmented control */}
           <div
             className="flex items-center rounded-lg p-0.5"
@@ -357,8 +360,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
               onClick={() => setViewMode('full')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
               style={{
-                background: prefs.viewMode === 'full' ? '#27272A' : 'transparent',
-                color: prefs.viewMode === 'full' ? '#FAFAFA' : '#71717A',
+                background: viewMode === 'full' ? '#27272A' : 'transparent',
+                color: viewMode === 'full' ? '#FAFAFA' : '#71717A',
               }}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -369,8 +372,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
               onClick={() => setViewMode('simplified')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
               style={{
-                background: prefs.viewMode === 'simplified' ? '#27272A' : 'transparent',
-                color: prefs.viewMode === 'simplified' ? '#FAFAFA' : '#71717A',
+                background: viewMode === 'simplified' ? '#27272A' : 'transparent',
+                color: viewMode === 'simplified' ? '#FAFAFA' : '#71717A',
               }}
             >
               <Layers3 className="w-3.5 h-3.5" />
@@ -378,18 +381,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
             </button>
           </div>
 
-          {/* Reset layout */}
-          {(hasHiddenColumns || prefs.viewMode !== 'full') && (
-            <button
-              data-testid="reset-layout-btn"
-              onClick={resetLayout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ color: '#A1A1AA', border: '1px solid #27272A', background: 'transparent' }}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </button>
-          )}
+          {/* Column visibility + reset menu */}
+          <ColumnVisibilityMenu />
 
           {/* Sync */}
           <button
@@ -423,9 +416,13 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Board */}
         <div className="hidden sm:block flex-1 overflow-x-auto p-4" style={{ overflowY: 'hidden' }}>
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
             <AnimatePresence mode="wait">
-              {prefs.viewMode === 'full' ? (
+              {viewMode === 'full' ? (
                 <motion.div
                   key="full-view"
                   data-testid="kanban-grid"
@@ -436,18 +433,20 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
                   animate="animate"
                   exit="exit"
                 >
-                  {STATIONS.map((station) => (
-                    <KanbanColumn
-                      key={station}
-                      station={station}
-                      issues={getIssuesForStation(station)}
-                      draggingIssueIds={draggingIssueIds}
-                      enrichmentMap={enrichmentMap}
-                      isCollapsed={prefs.hiddenColumns.includes(station)}
-                      onToggleCollapse={() => toggleColumn(station)}
-                      onSelectIssue={setSelectedIssue}
-                    />
-                  ))}
+                  <SortableContext items={columnOrder} strategy={horizontalListSortingStrategy}>
+                    {columnOrder.map((station) => (
+                      <DraggableKanbanColumn
+                        key={station}
+                        station={station}
+                        issues={getIssuesForStation(station)}
+                        draggingIssueIds={draggingIssueIds}
+                        enrichmentMap={enrichmentMap}
+                        isHidden={hiddenColumns.includes(station)}
+                        onToggleHidden={() => toggleHidden(station)}
+                        onSelectIssue={setSelectedIssue}
+                      />
+                    ))}
+                  </SortableContext>
                 </motion.div>
               ) : (
                 <motion.div
@@ -486,6 +485,12 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
                 <div data-testid="drag-overlay" style={{ width: '280px' }}>
                   <IssueCard issue={activeIssue} isOverlay isDragDisabled={false} />
                 </div>
+              ) : activeColumnId ? (
+                <ColumnDragOverlay
+                  station={activeColumnId}
+                  issues={getIssuesForStation(activeColumnId)}
+                  enrichmentMap={enrichmentMap}
+                />
               ) : null}
             </DragOverlay>
           </DndContext>
@@ -516,7 +521,45 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   );
 }
 
-// Simplified Column
+// ── Column Drag Overlay ───────────────────────────────────────────────────────
+
+function ColumnDragOverlay({
+  station,
+  issues,
+  enrichmentMap,
+}: {
+  station: Station;
+  issues: DashIssue[];
+  enrichmentMap: EnrichmentMap;
+}) {
+  return (
+    <div
+      style={{
+        background: 'rgba(24,24,27,0.9)',
+        border: '2px solid #6366F1',
+        borderRadius: '12px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(99,102,241,0.2)',
+        transform: 'rotate(2deg) scale(1.02)',
+        opacity: 0.95,
+        pointerEvents: 'none',
+        width: '240px',
+        overflow: 'hidden',
+      }}
+    >
+      <KanbanColumn
+        station={station}
+        issues={issues.slice(0, 3)}
+        draggingIssueIds={new Set()}
+        enrichmentMap={enrichmentMap}
+        isCollapsed={false}
+        onSelectIssue={() => {}}
+      />
+    </div>
+  );
+}
+
+// ── Simplified Column ─────────────────────────────────────────────────────────
+
 function SimplifiedColumn({
   id,
   label,
@@ -584,7 +627,8 @@ function EmptyColumnState({ label }: { label: string }) {
   );
 }
 
-// Mobile view
+// ── Mobile View ───────────────────────────────────────────────────────────────
+
 function MobileView({ issues }: { issues: DashIssue[] }) {
   const [activeStation, setActiveStation] = useState<Station>(STATIONS[0]);
   const filteredIssues = issues.filter((i) => i.station === activeStation);

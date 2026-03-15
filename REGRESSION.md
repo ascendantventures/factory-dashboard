@@ -972,3 +972,48 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Kanban Column Preferences — Server Persistence & Drag-to-Reorder (Issue #10)
+_Added: 2026-03-15_
+
+### Test Steps — Column visibility persistence [auth]
+- [ ] Navigate to /dashboard — Kanban board loads with all 7 columns visible (intake, spec, design, build, qa, bugfix, done)
+- [ ] Click the "Columns" button in the toolbar (aria-label="Columns menu") — popover opens
+- [ ] Uncheck the "Done" column checkbox (data-column="done") — "done" column disappears from board immediately
+- [ ] Wait 1 second for debounced server write — toolbar shows "Saved" indicator (green, data-state="saved")
+- [ ] Reload the page — "done" column is still hidden (server preference persists)
+- [ ] Re-open Columns menu, re-check "Done" — column reappears; preference saved
+
+### Test Steps — Cannot hide last visible column [auth]
+- [ ] Open Columns menu, hide all columns except one (e.g., leave only "Intake" checked)
+- [ ] The last remaining checked column's checkbox is disabled (opacity: 0.4) and cannot be unchecked
+- [ ] The board always shows at least one column
+
+### Test Steps — Drag-to-reorder columns [auth]
+- [ ] On desktop, each column header shows a GripVertical drag handle (aria-label="Drag to reorder")
+- [ ] Drag the "Intake" column grip to the second position — column moves immediately (optimistic)
+- [ ] Wait 1 second — "Saved" indicator confirms server write
+- [ ] Reload — new column order persists
+
+### Test Steps — Reset layout [auth]
+- [ ] Open Columns menu — "Reset layout" link (data-action="reset-layout") is visible at bottom
+- [ ] Hide a column and/or drag-reorder columns
+- [ ] Click "Reset layout" — all columns become visible, in default order (intake, spec, design, build, qa, bugfix, done) immediately
+- [ ] Wait 1 second — preference saved to server
+- [ ] Reload — board shows all columns in default order
+
+### Test Steps — Saving indicator [auth]
+- [ ] Toggle a column or reorder columns — toolbar shows "Saving..." (amber, data-state="saving") during debounce+write
+- [ ] On success: indicator changes to "Saved" (green, data-state="saved"), then fades after 2 seconds
+- [ ] When offline or API error: indicator shows "Failed to save" (red, data-state="error")
+
+### Test Steps — Cross-device sync [auth]
+- [ ] Log in on device A — hide the "Done" column and reload to confirm persistence
+- [ ] Log in on device B with the same account — navigate to /dashboard — "Done" column is hidden
+
+### Routes/Endpoints
+- /dashboard (Kanban board)
+- GET /api/kanban/prefs — returns { column_order: string[], hidden_columns: string[] }
+- PUT /api/kanban/prefs — body: { column_order: string[], hidden_columns: string[] }
