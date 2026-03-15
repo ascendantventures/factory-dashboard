@@ -8,7 +8,7 @@
   --border: #3F3F46;
   --text-primary: #FAFAFA;
   --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
+  --text-muted: #8B8B95;  /* WCAG AA fix: was #71717A (fails 4.5:1 on dark bg) */
   --primary: #6366F1;
   --primary-hover: #4F46E5;
   --primary-muted: rgba(99,102,241,0.15);
@@ -23,6 +23,13 @@
   --stage-qa: #06B6D4;
   --stage-bugfix: #EF4444;
   --stage-done: #22C55E;
+
+  /* Mobile layout tokens — Issue #103 */
+  --mobile-header-height: 56px;
+  --mobile-bottom-nav-height: 64px;
+  --mobile-fab-size: 56px;
+  --mobile-drawer-width: 280px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Notification Panel — Issue #101 */
   --surface-elevated: #323238;
@@ -194,4 +201,33 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll-container::-webkit-scrollbar { height: 8px; }
 .kanban-scroll-container::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
 .kanban-scroll-container::-webkit-scrollbar-thumb { background: #52525B; border-radius: 4px; }
-.kanban-scroll-container::-webkit-scrollbar-thumb:hover { background: #71717A; }
+.kanban-scroll-container::-webkit-scrollbar-thumb:hover { background: #8B8B95; }
+
+/* ── Mobile station tab bar — hide scrollbar (Issue #103 REQ-MOB-001) ── */
+.mobile-tab-bar {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+.mobile-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Mobile sidebar drawer animations (Issue #103 REQ-MOB-007) ── */
+@keyframes drawer-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+@keyframes nav-indicator-in {
+  from { transform: translateX(-50%) scaleX(0); opacity: 0; }
+  to   { transform: translateX(-50%) scaleX(1); opacity: 1; }
+}
+
+/* ── Mobile FAB (Issue #103 REQ-MOB-003) ── */
+.mobile-fab:active {
+  transform: scale(0.95);
+}

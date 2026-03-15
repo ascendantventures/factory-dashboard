@@ -8,7 +8,7 @@ import { IssueCard } from './IssueCard';
 import { AnimatedCounter } from './AnimatedCounter';
 import { IssueDetailPanel } from './IssueDetailPanel';
 import { SpecReviewPanel } from '@/components/spec-review/SpecReviewPanel';
-import { RefreshCw, Loader2, LayoutGrid, Layers3, RotateCcw, Radio } from 'lucide-react';
+import { RefreshCw, Loader2, LayoutGrid, Layers3, RotateCcw, Radio, Inbox, FileText, Palette, Hammer, TestTube2, Bug, CheckCircle2, Plus } from 'lucide-react';
 import { ActivitySidebar } from '@/components/activity/ActivitySidebar';
 import { EnrichmentMap, IssueEnrichment } from '@/lib/enrichment';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -369,7 +369,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
             Kanban Board
           </h1>
           {lastSync && (
-            <p className="text-xs mt-0.5" style={{ color: '#71717A', fontFamily: 'Inter, sans-serif' }}>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
               Last sync: {new Date(lastSync).toLocaleString()}
             </p>
           )}
@@ -435,11 +435,19 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
           {/* Activity toggle */}
           <button
             data-testid="activity-toggle-btn"
-            onClick={toggleActivity}
+            aria-label="Toggle live activity feed"
+            onClick={() => {
+              const willOpen = !activityOpen;
+              toggleActivity();
+              // Show toast on mobile (no hover = touch device)
+              if (window.matchMedia('(hover: none)').matches) {
+                toast.info(willOpen ? 'Activity feed shown' : 'Activity feed hidden');
+              }
+            }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={{
               background: activityOpen ? 'rgba(99,102,241,0.15)' : 'transparent',
-              color: activityOpen ? '#A5B4FC' : '#71717A',
+              color: activityOpen ? '#A5B4FC' : 'var(--text-muted)',
               border: `1px solid ${activityOpen ? '#6366F1' : '#27272A'}`,
             }}
           >
@@ -527,7 +535,10 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
 
         {/* Mobile view */}
         <div className="block sm:hidden flex-1 overflow-hidden">
-          <MobileView issues={issues} />
+          <MobileView issues={issues} onCreateIssue={() => {
+            // Trigger the Quick Create modal — same as FAB
+            (document.querySelector('[data-testid="quick-create-trigger"]') as HTMLButtonElement | null)?.click();
+          }} />
         </div>
 
         {/* Activity Sidebar */}
@@ -618,60 +629,215 @@ function EmptyColumnState({ label }: { label: string }) {
   );
 }
 
+// Station icon mapping for empty states
+const STATION_ICONS: Record<Station, React.ElementType> = {
+  intake: Inbox,
+  spec: FileText,
+  design: Palette,
+  build: Hammer,
+  qa: TestTube2,
+  bugfix: Bug,
+  done: CheckCircle2,
+};
+
+const STATION_EMPTY_SECONDARY: Record<Station, string> = {
+  intake: 'New submissions will appear here',
+  spec: 'Issues move here after intake',
+  design: 'Specs approved for design',
+  build: 'Designs ready for implementation',
+  qa: 'Builds pending quality check',
+  bugfix: 'All bugs resolved!',
+  done: 'Completed work appears here',
+};
+
+// Mobile empty state component
+function MobileEmptyState({
+  station,
+  onCreateIssue,
+}: {
+  station: Station;
+  onCreateIssue?: () => void;
+}) {
+  const StationIcon = STATION_ICONS[station];
+  const label = STATION_LABELS[station];
+  const secondary = STATION_EMPTY_SECONDARY[station];
+  const showCta = station === 'intake' && !!onCreateIssue;
+
+  return (
+    <div
+      data-testid="empty-state"
+      className="flex flex-col items-center justify-center rounded-xl"
+      style={{
+        minHeight: '200px',
+        padding: '32px 24px',
+        border: '1px dashed var(--border)',
+        background: 'transparent',
+      }}
+    >
+      <StationIcon
+        style={{
+          width: 48,
+          height: 48,
+          color: 'var(--text-muted)',
+          marginBottom: 16,
+          opacity: 0.6,
+        }}
+        strokeWidth={1.5}
+      />
+      <p
+        style={{
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--text-secondary)',
+          textAlign: 'center',
+          marginBottom: 4,
+        }}
+      >
+        No issues in {label.toLowerCase()}
+      </p>
+      <p
+        style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 12,
+          fontWeight: 400,
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          marginBottom: showCta ? 16 : 0,
+        }}
+      >
+        {secondary}
+      </p>
+      {showCta && (
+        <button
+          onClick={onCreateIssue}
+          className="flex items-center gap-1.5 transition-colors"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '10px 16px',
+            borderRadius: 8,
+            background: 'var(--primary)',
+            color: '#fff',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 13,
+            fontWeight: 600,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary-hover)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--primary)'; }}
+        >
+          <Plus style={{ width: 16, height: 16 }} strokeWidth={2} />
+          New Issue
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Mobile view
-function MobileView({ issues }: { issues: DashIssue[] }) {
+function MobileView({ issues, onCreateIssue }: { issues: DashIssue[]; onCreateIssue?: () => void }) {
   const [activeStation, setActiveStation] = useState<Station>(STATIONS[0]);
+  const [showFade, setShowFade] = useState(true);
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
   const filteredIssues = issues.filter((i) => i.station === activeStation);
+
+  // Update fade visibility based on scroll position
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    const check = () => {
+      setShowFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+    };
+    check();
+    el.addEventListener('scroll', check);
+    window.addEventListener('resize', check);
+    return () => {
+      el.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, []);
+
+  function handleTabClick(station: Station) {
+    setActiveStation(station);
+    // Scroll clicked tab into view
+    const btn = tabBarRef.current?.querySelector(`[data-testid="tab-${station}"]`) as HTMLElement | null;
+    btn?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        className="flex gap-2 px-4 py-3 overflow-x-auto border-b flex-shrink-0"
-        style={{ borderColor: '#27272A' }}
-        data-testid="mobile-station-tabs"
-      >
-        {STATIONS.map((station) => {
-          const color = STATION_COLORS[station];
-          const label = STATION_LABELS[station];
-          const count = issues.filter((i) => i.station === station).length;
-          const isActive = station === activeStation;
-          return (
-            <button
-              key={station}
-              data-testid={`mobile-tab-${station}`}
-              onClick={() => setActiveStation(station)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0"
-              style={{
-                background: isActive ? `${color}20` : '#18181B',
-                color: isActive ? color : '#71717A',
-                border: `1px solid ${isActive ? color : '#27272A'}`,
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
-              {label}
-              {count > 0 && (
-                <span
-                  className="ml-0.5 px-1.5 rounded-full text-[10px]"
-                  style={{
-                    background: isActive ? `${color}30` : '#27272A',
-                    color: isActive ? color : '#71717A',
-                  }}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Tab bar with scroll + fade affordance */}
+      <div className="relative flex-shrink-0 border-b" style={{ borderColor: '#27272A' }}>
+        <div
+          ref={tabBarRef}
+          data-testid="station-tab-bar"
+          className="mobile-tab-bar flex gap-2 px-4 py-3 overflow-x-auto"
+        >
+          {STATIONS.map((station) => {
+            const color = STATION_COLORS[station];
+            const label = STATION_LABELS[station];
+            const count = issues.filter((i) => i.station === station).length;
+            const isActive = station === activeStation;
+            return (
+              <button
+                key={station}
+                data-testid={`tab-${station}`}
+                onClick={() => handleTabClick(station)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                style={{
+                  background: isActive ? `${color}20` : '#18181B',
+                  color: isActive ? color : 'var(--text-muted)',
+                  border: `1px solid ${isActive ? color : '#27272A'}`,
+                  scrollSnapAlign: 'start',
+                  minHeight: '36px',
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                {label}
+                {count > 0 && (
+                  <span
+                    className="ml-0.5 px-1.5 rounded-full text-[10px]"
+                    style={{
+                      background: isActive ? `${color}30` : '#27272A',
+                      color: isActive ? color : 'var(--text-muted)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Fade gradient affordance */}
+        {showFade && (
+          <div
+            data-testid="tab-bar-fade"
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 48,
+              pointerEvents: 'none',
+              background: 'linear-gradient(to right, transparent 0%, var(--surface) 100%)',
+              borderBottom: '1px solid #27272A',
+            }}
+          />
+        )}
       </div>
+
+      {/* Issue list or empty state */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {filteredIssues.length === 0 ? (
-          <div
-            className="flex items-center justify-center py-12 rounded-lg border border-dashed text-sm"
-            style={{ borderColor: '#27272A', color: '#71717A' }}
-          >
-            No issues in {STATION_LABELS[activeStation].toLowerCase()}
-          </div>
+          <MobileEmptyState
+            station={activeStation}
+            onCreateIssue={activeStation === 'intake' ? onCreateIssue : undefined}
+          />
         ) : (
           filteredIssues.map((issue) => (
             <IssueCard key={issue.id} issue={issue} />

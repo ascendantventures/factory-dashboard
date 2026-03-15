@@ -26,7 +26,10 @@ export default function Header() {
         <GlobalSearch />
         <SyncStatus />
         <NotificationBell />
-        <NewIssueButton />
+        {/* Hidden on mobile — mobile uses MobileFAB instead (REQ-MOB-003) */}
+        <span className="hidden sm:contents">
+          <NewIssueButton />
+        </span>
       </div>
     </header>
   );

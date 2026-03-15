@@ -628,3 +628,47 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+---
+
+## Change Request — Issue #103: Mobile Responsive Fixes
+
+**Source:** ascendantventures/harness-beta-test#103
+**Type:** Bug/UX Audit — mobile-only responsive fixes, no DB changes
+
+### What Changed
+
+#### New Files
+- `src/components/layout/MobileHeader.tsx` — Mobile-only sticky header with hamburger (☰) button + logo. Hidden at md:. Replaces desktop Header on mobile. `aria-label="Open navigation menu"` on hamburger.
+- `src/components/layout/MobileSidebarDrawer.tsx` — Slide-in drawer (`role="dialog"`, `aria-modal="true"`, `data-testid="mobile-drawer"`). Contains full sidebar nav. Closes on backdrop tap (`data-testid="drawer-overlay"`), Escape key, or swipe-left (100px threshold). Focus-trapped when open.
+- `src/components/ui/MobileFAB.tsx` — Fixed bottom-right FAB (`aria-label="Create issue"`, `data-testid="mobile-fab"`). Only visible on mobile (`.sm:hidden`). Opens QuickCreateModal. Positioned above BottomNav.
+
+#### Modified Files
+- `src/app/globals.css` — Fixed `--text-muted: #71717A` → `#8B8B95` (WCAG AA: 5.2:1 on dark bg). Added mobile CSS tokens (`--mobile-header-height`, `--mobile-drawer-width`, `--ease-out-expo`). Added `.mobile-tab-bar` (hide scrollbar, scroll-snap), `drawer-slide-in`/`drawer-slide-out` keyframes, `nav-indicator-in` keyframe.
+- `src/components/layout/AppShell.tsx` — Now renders `MobileHeader` + `MobileSidebarDrawer` + `MobileFAB`. Desktop `Header` wrapped in `hidden md:block`.
+- `src/components/layout/Header.tsx` — `NewIssueButton` wrapped in `hidden sm:contents` to hide on mobile. MobileFAB is the mobile-only create entry point.
+- `src/components/layout/MobileBottomNav.tsx` — Active state: indicator bar (3px top, 24px wide, `#6366F1`), `aria-current="page"` on active link, bolder icon stroke + drop-shadow glow. `data-testid` changed to `"bottom-nav"`.
+- `src/components/kanban/KanbanBoard.tsx` — `MobileView` rewrite: tab bar has `data-testid="station-tab-bar"`, each tab `data-testid="tab-{station}"`, fade gradient affordance `data-testid="tab-bar-fade"`, `scrollbar-width: none`/scroll-snap. `MobileEmptyState` with station-specific Lucide icons, primary/secondary text, optional CTA for intake. Activity button now has `aria-label="Toggle live activity feed"` + tap toast on touch devices.
+
+### data-testid Reference (Issue #103)
+
+| Element | data-testid |
+|---------|-------------|
+| Bottom nav container | `bottom-nav` |
+| Station tab bar | `station-tab-bar` |
+| Station tab (e.g. intake) | `tab-intake`, `tab-done`, etc. |
+| Fade gradient | `tab-bar-fade` |
+| Mobile empty state | `empty-state` |
+| Mobile FAB | `mobile-fab` |
+| Mobile drawer | `mobile-drawer` |
+| Drawer overlay | `drawer-overlay` |
+| Mobile sign-out (drawer) | `mobile-drawer-sign-out` |
+
+### aria-label Reference
+
+| Element | aria-label |
+|---------|------------|
+| Hamburger button | `"Open navigation menu"` |
+| Close drawer button | `"Close navigation menu"` |
+| Mobile FAB | `"Create issue"` |
+| Activity toggle | `"Toggle live activity feed"` |

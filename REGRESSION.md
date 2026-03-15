@@ -885,3 +885,63 @@ _Added: 2026-03-14_
 - /dashboard/event-log (new page — fixes 404)
 - GET /api/event-log (new API route querying harness_events)
 
+
+---
+
+## Mobile Responsive View — Fixes [auth]
+_Issue #103 — Added: 2026-03-15_
+
+### Test Steps (viewport: 375×812)
+
+#### REQ-MOB-001: Station Tab Horizontal Scroll
+- [ ] Navigate to /pipeline (or / on mobile) — open in 375px viewport
+- [ ] Locate `[data-testid="station-tab-bar"]` — it renders without tabs clipping
+- [ ] A fade gradient `[data-testid="tab-bar-fade"]` is visible at the right edge when not fully scrolled
+- [ ] Scroll `[data-testid="station-tab-bar"]` to the right — `[data-testid="tab-done"]` becomes fully visible
+- [ ] Fade gradient disappears when scrolled fully right
+- [ ] Tab bar does NOT wrap to multiple lines
+
+#### REQ-MOB-002: Empty State
+- [ ] Click a station tab with 0 issues
+- [ ] `[data-testid="empty-state"]` is visible
+- [ ] Empty state shows station-specific icon + "No issues in {station}" text
+- [ ] Empty state has min-height ≥ 200px (no huge blank space)
+- [ ] For intake column with 0 issues: "New Issue" CTA button is visible inside empty state
+
+#### REQ-MOB-003: Single Create Button
+- [ ] At 375px viewport — count elements with `[aria-label="Create issue"]` — exactly 1 exists
+- [ ] Header + button (NewIssueButton) is NOT visible on mobile
+- [ ] `[data-testid="mobile-fab"]` is visible, fixed bottom-right
+- [ ] Tapping FAB opens QuickCreateModal
+
+#### REQ-MOB-004: Broadcast Icon Label
+- [ ] Activity toggle button in Kanban toolbar has `aria-label="Toggle live activity feed"`
+- [ ] Tap activity toggle on touch device (hover: none) — toast "Activity feed shown" or "Activity feed hidden" appears
+
+#### REQ-MOB-005: Bottom Nav Active State
+- [ ] Navigate to /dashboard — `[data-testid="bottom-nav"] [aria-current="page"]` has an indicator bar at top
+- [ ] Active item has 3px top border bar (indigo) — visible shape cue beyond color
+- [ ] Active icon uses bolder stroke weight + glow
+- [ ] Navigate to /dashboard/apps — indicator bar moves to Apps item
+
+#### REQ-MOB-006: Text Contrast
+- [ ] Open browser DevTools → Accessibility → check contrast for muted text
+- [ ] Timestamps, badge counts use `var(--text-muted)` (#8B8B95) — 5.2:1 contrast ratio ✅
+- [ ] No critical contrast violations (axe DevTools or similar)
+
+#### REQ-MOB-007: Hamburger + Sidebar Drawer
+- [ ] At 375px viewport — `[aria-label="Open navigation menu"]` (hamburger ☰) is visible in mobile header
+- [ ] Desktop sidebar is NOT visible at 375px
+- [ ] Tap hamburger — `[role="dialog"]` drawer slides in from left
+- [ ] Drawer contains: Dashboard, Apps, Activity, Metrics, Analytics, Pipeline, API Docs, Event Log, etc.
+- [ ] Tap a nav item in drawer — navigates to page and drawer closes
+- [ ] Tap `[data-testid="drawer-overlay"]` (outside drawer) — drawer closes
+- [ ] Tap `[aria-label="Close navigation menu"]` (×) — drawer closes
+- [ ] Swipe left on drawer — drawer closes
+- [ ] Press Escape — drawer closes
+- [ ] At 640px+ (tablet/desktop) — hamburger is NOT visible, desktop layout shows
+
+### Routes/Endpoints
+- /dashboard (mobile Kanban view)
+- /pipeline (pipeline page with mobile layout)
+- Any page using AppShell layout
