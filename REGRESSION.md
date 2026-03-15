@@ -972,3 +972,42 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+## [Phase 2: Timeline Auto-Population] (Issue #43)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Navigate to `/dashboard/apps` and click on any app card
+- [ ] Verify a "New Issue" button is visible in the app detail header (`data-testid="new-issue-button"`)
+- [ ] Click "New Issue" button — `data-testid="create-issue-modal"` should appear
+- [ ] Verify the modal shows the target repository name (decoded from repoId)
+- [ ] If the repo has a `CLAUDE.md`, verify `data-testid="claude-context-indicator"` shows "CLAUDE.md context will be auto-injected" in green
+- [ ] Fill in a title, select a type, and click "Create Issue" — modal should close on success
+- [ ] Click the "Timeline" tab (`data-testid="tab-timeline"`)
+- [ ] If no pipeline events have occurred: verify "No timeline events" empty state is shown
+- [ ] After a station transition occurs (e.g., issue moves from intake → spec), re-open Timeline tab — events should appear as `data-testid="timeline-event"` rows
+- [ ] Each timeline event should show station name, event type badge (Entered/Exited), and relative timestamp
+- [ ] Events with `duration_seconds` set should show formatted duration (e.g., "5m", "1h 30m")
+- [ ] Click "Issues" tab (`data-testid="tab-issues"`) — issues list should render as before
+
+### Routes/Endpoints
+- `/dashboard/apps/[repoId]` — app detail page with new tab bar and New Issue button
+- `GET /api/apps/[repoId]/timeline` — returns timeline events for this app
+- `POST /api/apps/[repoId]/issues` — creates GitHub issue with CLAUDE.md injection
+- `GET /api/apps/[repoId]/claude-check` — returns `{ exists: true|false }` for CLAUDE.md check
+
+## [Phase 2: CLAUDE.md Auto-Injection] (Issue #43)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Open the "New Issue" modal from any app detail page
+- [ ] If the app's repo has a `CLAUDE.md`, the indicator "✓ CLAUDE.md context will be auto-injected" should be visible below the repo name in green
+- [ ] If the app's repo does NOT have `CLAUDE.md`, no indicator should be shown (fail silently)
+- [ ] Submit an issue with a title — verify modal closes (no 500 error)
+- [ ] Open the created issue on GitHub — the body should start with `<details><summary>📋 Project Context (CLAUDE.md)</summary>` when CLAUDE.md exists
+- [ ] If CLAUDE.md does not exist: the issue body should still contain `build_repo: {repoId}` line
+- [ ] Verify `AC-002.4`: every created issue body contains `build_repo: {repoId}` (check GitHub issue)
+
+### Routes/Endpoints
+- `GET /api/apps/[repoId]/claude-check` — prefetch; returns `{ exists: boolean }`
+- `POST /api/apps/[repoId]/issues` — issue creation; CLAUDE.md injection happens server-side

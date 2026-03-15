@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/43
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -625,3 +625,43 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+## Phase 2 — Timeline Auto-Population & CLAUDE.md Injection (Issue #43)
+
+### Overview
+Phase 2 adds two backend features to the Factory Dashboard app detail page:
+1. **Timeline Auto-Population** — DB trigger on `dash_issues.station` emits `station_entered`/`station_exited` events into `fadash_timeline_events` whenever sync updates an issue's station.
+2. **CLAUDE.md Auto-Injection** — `POST /api/apps/[repoId]/issues` fetches CLAUDE.md server-side and prepends as `<details>` block in issue body.
+
+### Architecture Notes
+- **Why trigger is on `dash_issues`, not `submissions`:** The harness `submissions` table lives in a different Supabase project. The factory-dashboard's DB only has `dash_*` tables. The trigger fires on `dash_issues` when the sync process updates the station column.
+- **`fadash_timeline_events.submission_id`** = `dash_issues.id` (bigint = GitHub issue number). NOT UUID.
+- **CLAUDE.md fetch** is server-side only in `POST /api/apps/[repoId]/issues` — GITHUB_TOKEN never exposed to client.
+
+### New API Routes
+- `GET /api/apps/[repoId]/timeline` — returns timeline events for all issues linked to this app
+- `POST /api/apps/[repoId]/issues` — creates GitHub issue with CLAUDE.md injection; also supports GET for listing
+- `GET /api/apps/[repoId]/claude-check` — returns `{ exists: boolean }` — used by UI indicator prefetch
+
+### New Components
+- `src/app/dashboard/apps/[repoId]/components/CreateIssueModal.tsx` — per-app issue creation modal with CLAUDE.md indicator
+- `src/app/dashboard/apps/[repoId]/page.tsx` — updated to add Timeline tab, New Issue button, and tab navigation
+
+### New Tables
+- `fadash_timeline_events` — migration: `20260315150000_phase2_timeline_trigger.sql`
+  - Columns: id (uuid PK), submission_id (bigint FK → dash_issues.id), event_type, station, occurred_at, duration_seconds, metadata, created_at
+  - RLS: authenticated users can SELECT; only service_role/trigger can INSERT
+
+### UI Elements (CreateIssueModal)
+- `data-testid="create-issue-modal"` — modal container
+- `data-testid="new-issue-button"` — New Issue button in app detail header
+- `data-testid="claude-context-indicator"` — green CLAUDE.md indicator (shown when CLAUDE.md exists)
+- `data-testid="issue-title-input"` — issue title field
+- `data-testid="create-issue-submit"` — submit button
+- `data-testid="quick-type-bug"`, `quick-type-feature`, `quick-type-design`, `quick-type-performance` — type selectors
+- `data-testid="tab-issues"`, `data-testid="tab-timeline"` — tab switchers in app detail page
+
+### Gotchas
+- The trigger fires on `dash_issues` UPDATE (station column) — NOT on `submissions` (which is in the harness DB).
+- CLAUDE.md inject uses `AbortSignal.timeout(8000)` — if GitHub API is slow, the issue is still created without CLAUDE.md.
+- The claude-check endpoint uses `AbortSignal.timeout(5000)` for fast UI feedback.
