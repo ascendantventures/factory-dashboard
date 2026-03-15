@@ -268,6 +268,7 @@
 - **Migration:** `20260312210000_analytics_indexes.sql` — perf indexes on dash_agent_runs only
 
 ## Change Request Notes
+- **data-testid contract for RoleAuditPanel + QaPurgePanel (Bug #131):** All 17 spec-defined testids are now present. Key renames: `role-audit-panel-toggle` → `role-audit-header`, `qa-purge-panel-toggle` → `qa-purge-header`, `audit-row` → `role-audit-row`, `purge-preview-list` → `purge-preview-result`. New additions: `role-audit-table` on `<table>`, `audit-empty-state`, `audit-pagination`, `purge-preview-dismiss`. If you modify these components, DO NOT change these testids — they are the automation contract and breaks will immediately fail QA.
 - **Primary color is now #6366F1 (indigo)** — not the old blue. Update any hardcoded blue references.
 - All UI uses dark mode (zinc-950 background) — maintain this in all new components
 - Use shadcn/ui components (Dialog, Form, Button, etc.) for consistency
