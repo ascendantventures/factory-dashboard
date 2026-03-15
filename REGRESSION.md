@@ -972,3 +972,26 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+## Event Log Page at /dashboard/event-log [auth]
+_Issue #116 — Bug Fix: Sidebar Event Log 404_
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] Log in and click "Event Log" in the left sidebar → browser navigates to /dashboard/event-log (not /dashboard/admin/events)
+- [ ] Navigate directly to /dashboard/event-log → page loads (HTTP 200, no 404)
+- [ ] Page renders page title "Event Log" and subtitle "View harness events and webhook deliveries"
+- [ ] Filter bar is visible with: Direction select, Event Type input, Status select, From date, To date
+- [ ] If harness_events table has records: rows appear in the table with Timestamp, Dir badge, Event Type, Source, Status columns
+- [ ] If table is empty: empty state shows Radio icon and "No events yet" message
+- [ ] Click a row → expands to show metadata (Source, Created, Retry Count) and PayloadViewer
+- [ ] Click the expanded row again → collapses
+- [ ] Select a filter (e.g. Direction = IN) → URL updates with ?direction=in, table re-fetches
+- [ ] "Clear filters" button appears when any filter is active → click it clears all filters
+- [ ] With filters active and no results → shows FilterX icon and "No events match your filters"
+- [ ] Pagination bar appears when total > 50 events; Prev/Next/page number buttons work
+- [ ] For failed OUT events: Retry button visible → click triggers POST /api/admin/events/:id/retry
+
+### Routes/Endpoints
+- GET /dashboard/event-log
+- GET /api/event-log?page=1&per_page=50&direction=&event_type=&status=&from=&to=
