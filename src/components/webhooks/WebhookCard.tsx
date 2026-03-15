@@ -19,7 +19,7 @@ interface Webhook {
   events: string[];
   enabled: boolean;
   created_at: string;
-  format_type?: string;
+  format_type?: string | null;
 }
 
 interface WebhookCardProps {
