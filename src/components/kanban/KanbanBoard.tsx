@@ -358,7 +358,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   }
 
   return (
-    <div className="flex flex-col h-full" data-testid="kanban-board">
+    <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div
         className="flex items-center justify-between px-6 py-3 border-b flex-shrink-0 gap-4 flex-wrap"
@@ -454,6 +454,7 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
         {/* Desktop Board */}
         <div
           ref={boardScrollRef}
+          data-testid="kanban-board"
           className={`hidden sm:block flex-1 overflow-x-auto p-4 kanban-scroll-container${scrollState.left ? ' scrolled-left' : ''}${!scrollState.right ? ' scrolled-right' : ''}`}
           style={{ overflowY: 'hidden' }}
         >

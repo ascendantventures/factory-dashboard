@@ -49,12 +49,12 @@ function ComplexityBadge({ complexity }: { complexity: string }) {
       title={complexity}
       style={{
         background: bg, color, border: `1px solid ${border}`,
-        borderRadius: 4, padding: '3px 8px',
-        fontSize: 11, fontWeight: 600,
-        letterSpacing: '0.05em', textTransform: 'uppercase',
+        borderRadius: 4,
+        width: 20, height: 20,
+        fontSize: 11, fontWeight: 700,
         fontFamily: 'Inter, sans-serif',
-        display: 'inline-flex', alignItems: 'center',
-        whiteSpace: 'nowrap',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
       }}
     >
       {abbrev}
@@ -215,7 +215,7 @@ export function IssueCard({ issue, enrichment, isDragDisabled = false, isOverlay
         >
           {/* Header row: icon + title + complexity badge */}
           <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-6">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-8">
               <span data-testid="issue-type-icon" className="flex-shrink-0">
                 <IssueTypeIcon labels={labels} />
               </span>
