@@ -9,6 +9,8 @@ interface AttachmentListProps {
   onSelect: (id: string) => void;
   onDelete: (attachment: UatAttachment) => void;
   issueNumber: number;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
 export function AttachmentList({
@@ -17,6 +19,8 @@ export function AttachmentList({
   onSelect,
   onDelete,
   issueNumber,
+  selectedIds,
+  onToggleSelect,
 }: AttachmentListProps) {
   if (attachments.length === 0) {
     return (
@@ -51,13 +55,29 @@ export function AttachmentList({
       style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}
     >
       {attachments.map((attachment) => (
-        <AttachmentRow
-          key={attachment.id}
-          attachment={attachment}
-          isSelected={selectedId === attachment.id}
-          onSelect={() => onSelect(attachment.id)}
-          onDelete={() => onDelete(attachment)}
-        />
+        <div key={attachment.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {onToggleSelect && (
+            <div style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
+              <input
+                type="checkbox"
+                data-testid="attachment-checkbox"
+                checked={selectedIds?.has(attachment.id) ?? false}
+                onChange={() => onToggleSelect(attachment.id)}
+                onClick={(e) => e.stopPropagation()}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#6366F1' }}
+                aria-label={`Select ${attachment.file_name}`}
+              />
+            </div>
+          )}
+          <div style={{ flex: 1, paddingLeft: onToggleSelect ? '32px' : '0' }}>
+            <AttachmentRow
+              attachment={attachment}
+              isSelected={selectedId === attachment.id}
+              onSelect={() => onSelect(attachment.id)}
+              onDelete={() => onDelete(attachment)}
+            />
+          </div>
+        </div>
       ))}
     </div>
   );

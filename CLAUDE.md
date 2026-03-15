@@ -625,3 +625,49 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+## UAT Phase 2 — API Tokens, Webhooks, Bulk Download (Issue #50)
+_Added: 2026-03-15_
+
+### New DB Tables (migration: 20260315000000_spec_schema.sql)
+- `uat_api_tokens` — API token store; columns: id, token_hash (SHA-256), description, created_by, is_active, last_used_at, created_at, updated_at; RLS: authenticated read/insert/update
+- `uat_webhook_events` — GitHub webhook event log; columns: id, github_delivery_id (UNIQUE), event_type, raw_payload (jsonb), github_issue_number, processed, processed_at, error_message, created_at; RLS: authenticated SELECT only
+
+### New API Routes
+- `GET /api/uat/tokens` — list tokens (no token_hash returned); auth required
+- `POST /api/uat/tokens` — create token; returns raw_token ONCE; auth required
+- `PATCH /api/uat/tokens/[id]` — revoke token (set is_active=false); auth required
+- `GET /api/uat/attachments` — updated to support Bearer token auth in addition to session auth
+- `POST /api/uat/attachments/zip` — bulk ZIP download by attachment_ids (max 50); Bearer or session auth
+- `POST /api/uat/webhooks/github` — GitHub webhook receiver; HMAC-SHA256 sig verification (GITHUB_WEBHOOK_SECRET); upserts uat_webhook_events; extracts PNG/PDF URLs from issue/comment bodies; upserts uat_attachments
+
+### New lib
+- `src/lib/api-token.ts` — generateToken(), hashToken(), extractBearerToken(), lookupToken()
+
+### New UI Pages
+- `/uat/tokens` — Token management: create, list, revoke; token shown once with copy button
+- `/uat/webhooks` — Webhook event log with filter by event_type/status/delivery-ID search, pagination
+
+### Updated Components
+- `IssueAttachmentsPanel.tsx` — added selectedIds state, handleToggleSelect, BulkDownloadBar
+- `AttachmentList.tsx` — added selectedIds/onToggleSelect props, checkbox overlay per row (data-testid="attachment-checkbox")
+- `BulkDownloadBar.tsx` — NEW: fixed bottom bar with selected count, clear, Download ZIP button
+
+### Updated Navigation
+- Sidebar.tsx — added "UAT Tokens" (/uat/tokens) and "UAT Webhooks" (/uat/webhooks) nav items
+
+### New Environment Variables
+- `GITHUB_WEBHOOK_SECRET` — HMAC secret for GitHub webhook signature verification (optional; if absent, stub mode)
+
+### data-testid Reference (Issue #50 additions)
+| Element | data-testid |
+|---------|-------------|
+| Create token button | `create-token-btn` |
+| Generate token button | `generate-token-btn` |
+| Close token dialog | `close-token-dialog` |
+| Token value (revealed once) | `token-value` |
+| Revoke token button | `revoke-token-btn` |
+| Bulk download bar | `bulk-download-bar` |
+| Selected count label | `selected-count` |
+| Download ZIP button | `download-zip-btn` |
+| Attachment checkbox | `attachment-checkbox` |

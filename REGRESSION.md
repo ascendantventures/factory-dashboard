@@ -972,3 +972,69 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## UAT Phase 2 — API Tokens, Webhooks, Bulk Download (Issue #50)
+_Added: 2026-03-15_
+
+### API Token Management [auth]
+- [ ] Navigate to `/uat/tokens` — redirects to `/auth/login` if not authenticated
+- [ ] Authenticated: page renders "API Tokens" H1, "Create Token" button (data-testid="create-token-btn")
+- [ ] Info banner visible when fewer than 3 tokens exist; dismiss with X closes it
+- [ ] Empty state shows Key icon, "No API tokens yet", create prompt
+- [ ] Click "Create Token" — dialog opens with description input
+- [ ] Submit empty description — button disabled, form not submitted
+- [ ] Enter description, click "Generate Token" (data-testid="generate-token-btn") — token created
+- [ ] Token reveal shows raw_token in monospace (data-testid="token-value") — copy button visible
+- [ ] Copy button copies token to clipboard, shows checkmark for 2s
+- [ ] Click "Done" — dialog closes, token list refreshes with new entry (Active badge)
+- [ ] "Last Used" column shows "Never" for new token
+- [ ] Click "Revoke" (data-testid="revoke-token-btn") — token status changes to "Revoked", button disappears
+- [ ] `GET /api/uat/tokens` returns 401 without auth, array with auth
+- [ ] `POST /api/uat/tokens` with `{description:"test"}` returns 201 with raw_token field
+- [ ] `PATCH /api/uat/tokens/:id` sets is_active=false
+
+### Bearer Token Auth on Attachments [bearer]
+- [ ] `GET /api/uat/attachments` with `Authorization: Bearer <valid-token>` returns 200 with `{attachments:[]}`
+- [ ] `GET /api/uat/attachments` with invalid/revoked token returns 401
+- [ ] After a Bearer-authenticated request, the token's `last_used_at` is updated
+
+### Bulk ZIP Download [auth]
+- [ ] On `/uat/attachments` page, checkboxes appear left of each attachment row (data-testid="attachment-checkbox")
+- [ ] Checking a checkbox shows BulkDownloadBar (data-testid="bulk-download-bar") at bottom of page
+- [ ] Selected count label (data-testid="selected-count") shows correct count
+- [ ] "Clear selection" button deselects all and hides bar
+- [ ] "Download ZIP" (data-testid="download-zip-btn") with ≤50 items triggers file download named `uat-attachments-YYYYMMDD-HHmm.zip`
+- [ ] Success toast: "Downloaded N file(s)"
+- [ ] With >50 selected: Download ZIP button disabled, error message "Max 50 files per download" visible
+- [ ] `POST /api/uat/attachments/zip` with `{attachment_ids:[...]}` returns zip binary or 404 if no attachments
+- [ ] `POST /api/uat/attachments/zip` with empty array returns 400
+
+### Webhook Event Log [auth]
+- [ ] Navigate to `/uat/webhooks` — redirects to `/auth/login` if not authenticated
+- [ ] Authenticated: page renders "Webhook Events" H1, refresh button
+- [ ] Empty state shows Webhook icon, "No webhook events yet"
+- [ ] Filter by Event Type dropdown works (issues / issue_comment / all)
+- [ ] Filter by Status dropdown works (Processed / Failed / Pending / all)
+- [ ] Search by delivery ID input filters results
+- [ ] Event rows show truncated delivery ID (8 chars + ...), event type badge, issue # link, status badge, received time
+- [ ] issue # is a link to github.com/ascendantventures/harness-beta-test/issues/:n
+- [ ] Pagination Prev/Next buttons; Next disabled when fewer than 20 results
+- [ ] Refresh button spins while loading
+
+### Webhook Ingestion [no-auth]
+- [ ] `POST /api/uat/webhooks/github` without GITHUB_WEBHOOK_SECRET set → accepts any request, returns `{ok:true}`
+- [ ] With GITHUB_WEBHOOK_SECRET set, invalid signature → 401
+- [ ] Valid issues event with PNG URL in body → `attachments_ingested: 1`, attachment upserted
+- [ ] Duplicate delivery_id → idempotent (ignoreDuplicates=true)
+
+### Routes/Endpoints
+- `/uat/tokens` — Token management page
+- `/uat/webhooks` — Webhook event log page
+- `GET /api/uat/tokens`
+- `POST /api/uat/tokens`
+- `PATCH /api/uat/tokens/[id]`
+- `GET /api/uat/attachments` (updated — now supports Bearer token)
+- `POST /api/uat/attachments/zip`
+- `POST /api/uat/webhooks/github`
