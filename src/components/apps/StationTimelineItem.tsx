@@ -53,6 +53,7 @@ const nodeVariants = {
 
 export default function StationTimelineItem({
   station,
+  fromStation,
   transitionedAt,
   actor,
   index,
@@ -117,16 +118,36 @@ export default function StationTimelineItem({
             flexWrap: 'wrap',
           }}
         >
-          <span
-            style={{
-              fontSize: '13px',
-              fontWeight: 500,
-              color: 'var(--text-secondary, #A1A1AA)',
-              textTransform: 'capitalize',
-            }}
-          >
-            {station}
-          </span>
+          {fromStation ? (
+            <span
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-muted, #71717A)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span style={{ color: STATION_COLORS[fromStation] ?? '#6B7280', textTransform: 'capitalize' }}>
+                {fromStation}
+              </span>
+              →
+              <span style={{ color: STATION_COLORS[station] ?? '#6B7280', textTransform: 'capitalize' }}>
+                {station}
+              </span>
+            </span>
+          ) : (
+            <span
+              style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'var(--text-secondary, #A1A1AA)',
+                textTransform: 'capitalize',
+              }}
+            >
+              {station}
+            </span>
+          )}
 
           {/* Actor badge */}
           <span

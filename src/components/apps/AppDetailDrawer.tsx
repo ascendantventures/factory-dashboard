@@ -285,11 +285,11 @@ export default function AppDetailDrawer({ appId, onClose }: AppDetailDrawerProps
                       height: '40px',
                       background: 'none',
                       border: 'none',
-                      borderBottom: isActive ? '2px solid #6366F1' : '2px solid transparent',
+                      borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent',
                       cursor: 'pointer',
                       fontSize: '13px',
                       fontWeight: isActive ? 600 : 500,
-                      color: isActive ? '#6366F1' : 'var(--text-secondary)',
+                      color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
                       transition: 'color 150ms ease, border-color 150ms ease',
                       flexShrink: 0,
                     }}
@@ -355,7 +355,7 @@ export default function AppDetailDrawer({ appId, onClose }: AppDetailDrawerProps
                               rel="noopener noreferrer"
                               style={{
                                 fontSize: '13px',
-                                color: '#6366F1',
+                                color: 'var(--primary)',
                                 textDecoration: 'none',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -374,7 +374,7 @@ export default function AppDetailDrawer({ appId, onClose }: AppDetailDrawerProps
                             rel="noopener noreferrer"
                             style={{
                               fontSize: '13px',
-                              color: '#6366F1',
+                              color: 'var(--primary)',
                               textDecoration: 'none',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -443,7 +443,7 @@ export default function AppDetailDrawer({ appId, onClose }: AppDetailDrawerProps
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   style={{
-                                    color: '#6366F1',
+                                    color: 'var(--primary)',
                                     textDecoration: 'none',
                                     fontSize: '13px',
                                     overflow: 'hidden',

@@ -1063,3 +1063,37 @@ _Added: 2026-03-15_
 - `GET /api/apps/[repoId]/analytics`
 - Supabase: `dash_analytics_cache` table
 
+
+---
+
+## [Code Fix] Phase 2 Component Corrections (Issue #134)
+_Added: 2026-03-15_
+
+### Bug Fixes Applied
+- `AppAnalyticsPanel.tsx`: Fixed `useState()` used as side-effect hook → replaced with `useEffect([], [])`
+- `AppDetailDrawer.tsx`: Fixed hardcoded `#6366F1` active-tab colors → replaced with `var(--primary)`
+- `StationTimelineItem.tsx`: Added `fromStation` → `station` transition arrow display
+
+### Test Steps — AppAnalyticsPanel Auto-Fetch
+- [ ] [auth] Open any app drawer from `/dashboard/apps` → click "Analytics" tab
+- [ ] Verify analytics data loads automatically WITHOUT requiring a manual refresh button click
+- [ ] Verify 4 skeleton cards appear briefly while data loads, then metric cards appear
+- [ ] If `VERCEL_ANALYTICS_TOKEN` missing: verify "Analytics not configured" empty state (not a JS error)
+
+### Test Steps — Active Tab CSS Variables
+- [ ] [auth] Navigate to `/dashboard/apps`
+- [ ] Open any app drawer → verify active tab label and underline use `var(--primary)` indigo (#6366F1)
+- [ ] Switch between Overview / Analytics / Timeline tabs → verify active tab indicator follows correctly
+- [ ] Verify inactive tabs are `var(--text-secondary)` grey, not indigo
+
+### Test Steps — fromStation Transition Arrow
+- [ ] [auth] Open any app drawer → click "Timeline" tab
+- [ ] If station history exists: verify each timeline node shows `fromStation → toStation` (e.g., "spec → build")
+- [ ] Verify fromStation text uses the correct station color (amber for build, blue for spec, etc.)
+- [ ] If first transition (no fromStation): verify only destination station name is shown without arrow
+- [ ] Verify station colors match vocabulary: done=green, build=amber, qa=cyan, spec=blue, design=purple, bugfix=red, intake=gray
+
+### Routes/Endpoints
+- `GET /api/apps/[repoId]/analytics`
+- `GET /api/apps/[repoId]/history`
+- `/dashboard/apps` (app drawer component)

@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/134
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -178,6 +178,9 @@
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 - **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
+- **AppAnalyticsPanel auto-fetch bug (Issue #134)** — original Phase 2 code used `useState(() => { fetchAnalytics() })` (wrong pattern) instead of `useEffect(() => { ... }, [])`. This meant analytics data never loaded on mount. Fixed in bugfix #134. Do NOT use `useState` for side-effects.
+- **AppDetailDrawer hardcoded tab colors (Issue #134)** — original Phase 2 code hardcoded `#6366F1` for active tab `color` and `borderBottom`. All link colors were also `#6366F1`. Fixed to `var(--primary)` in bugfix #134. Always use CSS variables from `globals.css`; do not hardcode hex values from the design system.
+- **StationTimelineItem fromStation not rendered (Issue #134)** — `fromStation` prop was declared in the interface but not used in the JSX. Added `fromStation → station` transition arrow display. Nodes without fromStation (first transition) show only the destination station name.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel

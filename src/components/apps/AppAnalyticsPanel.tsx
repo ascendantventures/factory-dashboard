@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Eye, Users, Clock, AlertTriangle, RefreshCw, AlertCircle, BarChart3 } from 'lucide-react'
 
@@ -173,11 +173,11 @@ export default function AppAnalyticsPanel({ repoId, initialData }: AppAnalyticsP
   }, [repoId])
 
   // Auto-fetch on mount if no initial data
-  useState(() => {
+  useEffect(() => {
     if (!initialData) {
       fetchAnalytics()
     }
-  })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return <AnalyticsSkeleton />
