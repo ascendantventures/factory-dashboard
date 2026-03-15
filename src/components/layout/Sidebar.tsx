@@ -20,6 +20,7 @@ import {
   FileStack,
   Key,
   Webhook,
+  Paperclip,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/templates', label: 'Templates', icon: FileStack, exact: false },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, exact: false },
   { href: '/dashboard/settings/profile', label: 'Profile', icon: User, exact: true },
+  { href: '/uat/attachments', label: 'UAT Attachments', icon: Paperclip, exact: false },
   { href: '/uat/tokens', label: 'UAT Tokens', icon: Key, exact: false },
   { href: '/uat/webhooks', label: 'UAT Webhooks', icon: Webhook, exact: false },
 ];
