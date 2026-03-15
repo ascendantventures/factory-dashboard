@@ -1039,3 +1039,84 @@ _Added: 2026-03-15_
 ### Routes/Endpoints
 - POST /api/apps/refresh-deployments
 - GET /api/apps/[repoId]
+
+---
+
+## Global Search — Backend FTS API (Issue #15)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] `GET /api/search?q=factory` returns HTTP 200 with `{ results: [...], query: "factory", total: N }` where N >= 0
+- [ ] Each result has `type` ("issue" or "app"), `id`, `title`, `subtitle`, `href`, `rank` fields
+- [ ] `GET /api/search?q=a` (single char) returns `{ results: [], query: "a", total: 0 }` with HTTP 200
+- [ ] `GET /api/search` (no `q`) without auth session returns HTTP 401
+- [ ] Issue results have `href` starting with `/dashboard?issue=`
+- [ ] App results have `href` of `/dashboard/apps`
+- [ ] Results are ordered by `rank` descending
+
+### Routes/Endpoints
+- GET /api/search?q={query}&limit={n}
+
+---
+
+## Global Search — Frontend UX (Issue #15)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — search trigger button is visible in header with Search icon and "⌘K" kbd shortcut
+- [ ] Press ⌘K (Mac) or Ctrl+K (Win/Linux) — search modal opens, input auto-focused
+- [ ] Click the search trigger button — modal opens
+- [ ] Type a single character — no results shown, hint text visible "Type to search issues and apps"
+- [ ] Type "factory" (≥ 2 chars) — 3 skeleton placeholder rows appear while fetching, then results or empty state
+- [ ] After results load, [data-testid="search-result"] rows are visible (at least 1 if data exists)
+- [ ] Each result row shows: icon (FileText or Package), title, subtitle
+- [ ] Clicking a result row — modal closes, browser navigates to result href
+- [ ] Press ArrowDown — selection moves to next result row (highlighted with primary-muted bg + left border)
+- [ ] Press ArrowUp — selection moves to previous result row
+- [ ] Press Enter with selection — modal closes, navigates to selected result href
+- [ ] Type "zzznoresults999xyz" — after debounce, SearchX icon + "No results found" text shown (not on initial open)
+- [ ] Press Escape — modal closes, input cleared
+- [ ] Click overlay background — modal closes
+
+### Routes/Endpoints
+- (client-side → GET /api/search)
+
+---
+
+## Notification Bell — Real-time Feed (Issue #15)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — Bell icon button visible in header (aria-label="Notifications")
+- [ ] Click the Bell button — [data-testid="notification-panel"] panel opens below the bell
+- [ ] Panel shows header "Notifications" (14px/600)
+- [ ] If `dash_webhook_events` has rows: notification rows are visible with event_type, repo, and relative time ("2m ago" etc.)
+- [ ] If `dash_webhook_events` is empty: BellOff icon + "No recent events" text shown
+- [ ] After clicking bell: `localStorage.getItem('notif_last_read')` is a recent ISO timestamp (within 5 seconds)
+- [ ] Unread badge (red circle) shows when events exist newer than `notif_last_read` (visible count or "9+")
+- [ ] After clicking bell: unread badge count resets to 0 (badge hidden)
+- [ ] Click anywhere outside the panel (not on bell) — panel closes
+- [ ] Bell button shows `aria-expanded="true"` when open, `aria-expanded="false"` when closed
+
+### Routes/Endpoints
+- (client-side Supabase Realtime subscription on dash_webhook_events)
+
+---
+
+## Page Transitions (Issue #15)
+_Added: 2026-03-15_
+
+### Test Steps [auth]
+- [ ] Navigate to /dashboard — Kanban board loads, no layout flash
+- [ ] Click "Metrics" in sidebar — navigates to /dashboard/metrics with visible fade+slide-up animation (~180ms)
+- [ ] Click "Apps" in sidebar — navigates to /dashboard/apps with fade+slide-up animation
+- [ ] Click back to "Board" — navigates to /dashboard with animation
+- [ ] Navigate to /dashboard/settings — settings page loads with animation
+- [ ] Navigate to /dashboard/activity — activity feed loads with animation
+- [ ] All transitions complete cleanly (no stuck loading states, no layout flash)
+- [ ] Sidebar and Header remain fixed during page transitions (only main content area animates)
+- [ ] (Accessibility) With OS `prefers-reduced-motion: reduce` set: page transitions are instant (no animation)
+
+### Routes/Endpoints
+- /dashboard, /dashboard/metrics, /dashboard/apps, /dashboard/settings, /dashboard/activity
+

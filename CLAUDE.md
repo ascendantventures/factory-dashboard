@@ -133,6 +133,8 @@
 - `src/components/apps/AppAnalyticsPanel.tsx` — Phase 2: 2x2 metrics grid (pageviews, visitors, p75 latency, error rate) with cache timestamp + refresh button. Shows unconfigured state when VERCEL_ANALYTICS_TOKEN is absent.
 - `src/components/apps/StationTimeline.tsx` — Phase 2: Grouped vertical timeline of station transitions per issue. Fetches /api/apps/[repoId]/history. Empty state when no rows.
 - `src/components/apps/StationTimelineItem.tsx` — Phase 2: Single timeline node — station-colored dot, station name, relative timestamp, actor badge (harness/human/agent).
+- `src/app/api/search/route.ts` — Issue #15: GET /api/search?q={query}&limit={n} — authenticated Postgres FTS over dash_issues and dash_build_repos. Returns { results, query, total }.
+- `src/components/layout/PageTransition.tsx` — Issue #15: AnimatePresence wrapper keyed on usePathname(). Used in dashboard layout to animate route transitions. Respects prefers-reduced-motion.
 
 ## Webhook & Integration Configuration (Issue #29)
 - **New routes:** `/dashboard/settings/webhooks`, `/dashboard/settings/webhooks/new`, `/dashboard/settings/webhooks/[id]`
