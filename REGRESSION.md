@@ -816,182 +816,72 @@ _Added: 2026-03-14_
 
 ---
 
-## [Pipeline Heartbeat UX + Env Config Docs] (Issue #117)
+## Apps Portfolio UX Enhancements (Issue #113)
 _Added: 2026-03-14_
 
-### Test Steps
-
-**REQ-UAT117-002: "Never connected" state**
-- [ ] Navigate to `/pipeline` when no heartbeat has ever been written (harness never started or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing from harness `.env`)
-- [ ] The "Last Heartbeat" field displays `Never connected` in muted grey (not `—` and not red)
-- [ ] Start the harness and confirm heartbeat begins writing; within 60 s the "Last Heartbeat" field updates to a relative timestamp (e.g. `5s ago`) in the default color
-- [ ] Stop the harness and wait 6+ minutes; confirm "Last Heartbeat" turns red with a stale relative time (e.g. `7m ago`)
-
-**REQ-UAT117-003: Activity feed empty state explanation**
-- [ ] Navigate to `/dashboard/activity` when the activity feed is empty (or simulate an empty state)
-- [ ] Confirm all three lines are present:
-  - Line 1: emoji `📡`
-  - Line 2: `No activity yet` (medium weight, grey)
-  - Line 3: `Waiting for pipeline events…` (muted grey)
-  - Line 4 (new): `Events appear when agents complete stages, builds finish, or issues are deployed.` (muted grey, max-width 240px)
-- [ ] Confirm the emoji and first two lines are unchanged from their previous appearance
-
-**REQ-UAT117-001: Env var documentation**
-- [ ] Confirm `.env.example` exists in repo root
-- [ ] Confirm it documents `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in a "Harness .env" section with instructions to retrieve values from Supabase Dashboard → Project Settings → API
+### Test Steps [auth]
+- [ ] Login and navigate to /dashboard/apps — app cards render
+- [ ] Click anywhere on an app card (not the external URL) — browser navigates to /dashboard/apps/[repoId] (REQ-APP-001)
+- [ ] Each app card has a visible "View details" text with chevron at bottom-right (AC-001.3)
+- [ ] Click the external live URL link on a card — opens in new tab, /dashboard/apps list page stays active (AC-001.2)
+- [ ] Verify no card shows "Add VERCEL_TOKEN to enable deployment tracking" text anywhere (AC-002.1)
+- [ ] Verify cards without deployment tracking show "Deployment tracking not configured" (AC-002.1)
+- [ ] Login as admin and check app card — if deployment not configured, "Configure →" link appears linking to /dashboard/settings (AC-002.2)
+- [ ] Login as non-admin — "Configure →" link is NOT shown, only plain status text (AC-002.3)
+- [ ] Hover over the sync badge in the top nav — tooltip appears with plain-language explanation (AC-003.1)
+- [ ] Tab to the sync badge with keyboard — tooltip appears on focus (AC-003.3)
+- [ ] Navigate to /dashboard/apps/[repoId] by clicking a card — page loads without knowing the URL (AC-004.1, AC-004.3)
+- [ ] Click the app title or "View details →" affordance on a card — navigates to correct detail page (AC-004.2)
 
 ### Routes/Endpoints
-- `/pipeline` — PipelineStatusCard "Never connected" change
-- `/dashboard/activity` — ActivityFeed empty state explanation line
+- /dashboard/apps — app card grid, all cards now navigable
+- /dashboard/apps/[repoId] — detail page, reachable via card click
+- /dashboard/settings — settings page (linked from admin deployment status)
 
----
-
-## [Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete] (Issue #108)
+## Event Log Route Fix (Issue #116)
 _Added: 2026-03-14_
 
-### Route
-`/dashboard/admin/users`
+### Test Steps [auth]
 
-### Test Steps
+#### AC-001.1: Sidebar link navigates to /dashboard/event-log
+- [ ] Log in and observe the left sidebar — "Event Log" nav item is visible
+- [ ] Click "Event Log" in the sidebar — browser navigates to `/dashboard/event-log` (not /dashboard/admin/events)
+- [ ] URL in address bar shows `/dashboard/event-log`
 
-#### REQ-USR-001: User Search
-- [ ] [auth] Navigate to `/dashboard/admin/users`
-- [ ] Type "qa_login" in the search bar (`data-testid="user-search"`)
-- [ ] Wait 400ms (debounce)
-- [ ] Verify rows appear and each `[data-testid="user-email"]` contains "qa_login"
-- [ ] Clear search — verify all users return
-- [ ] Type a nonexistent email — verify "No users found" empty state appears
+#### AC-001.2: Page renders event list from harness_events
+- [ ] Navigate to `/dashboard/event-log` — page loads with "Event Log" H1, subtitle "View harness events and webhook deliveries"
+- [ ] `data-testid="event-log-list"` element is present in the DOM
+- [ ] Page does NOT show a 404 error or "page not found" message
+- [ ] If harness_events table has records, table rows with `data-testid="event-row"` are visible
 
-#### REQ-USR-002: Filter Tabs
-- [ ] [auth] Navigate to `/dashboard/admin/users`
-- [ ] Click "Test Accounts" tab (`data-testid="filter-tab-test"`)
-- [ ] Verify every row has `[data-testid="test-account-badge"]` visible
-- [ ] Count badges should equal tab badge count
-- [ ] Click "Real" tab (`data-testid="filter-tab-real"`)
-- [ ] Verify no rows have `[data-testid="test-account-badge"]`
-- [ ] Click "All" tab (`data-testid="filter-tab-all"`)
-- [ ] Verify both test and real users appear
+#### AC-001.3: Events display with direction badge, status badge, payload viewer
+- [ ] (With events present) Each row shows a direction badge (IN/OUT) with correct dark-mode colors
+- [ ] Each row shows a status badge (received/delivered/failed)
+- [ ] Click an event row — row expands to show payload viewer (`data-testid="payload-viewer"`)
+- [ ] Click the row again — row collapses
 
-#### REQ-USR-003: Pagination
-- [ ] [auth] Navigate to `/dashboard/admin/users`
-- [ ] Verify at most 20 rows (`[data-testid="user-row"]`) are visible
-- [ ] If total > 20, verify `[data-testid="pagination"]` is visible
-- [ ] Click Next button — verify page increments
-- [ ] Verify Prev button disabled on page 1, Next button disabled on last page
+#### AC-001.4: Direct navigation loads without 404
+- [ ] Navigate directly to `/dashboard/event-log` — page loads (HTTP status not 404)
+- [ ] Page title does NOT contain "404" or "Not Found"
 
-#### REQ-USR-004: Role Change Confirmation
-- [ ] [auth] Navigate to `/dashboard/admin/users`
-- [ ] Click the first `[data-testid="role-dropdown"]` for a non-own user
-- [ ] Select a different role from the dropdown
-- [ ] Verify `[data-testid="role-confirm-dialog"]` appears
-- [ ] Verify dialog shows email, old role, new role
-- [ ] Click `[data-testid="confirm-cancel"]` — verify dialog closes, no role change applied
-- [ ] Open dropdown again, select different role, click `[data-testid="confirm-submit"]`
-- [ ] Verify dialog closes, toast appears, role updates in table
+#### Filter Bar
+- [ ] `data-testid="filter-direction"` select is present — select "in" — table updates to show only IN events
+- [ ] `data-testid="filter-status"` select is present — select "failed" — table updates
+- [ ] `data-testid="filter-event-type"` input is present — type an event type — table filters
+- [ ] `data-testid="filter-from"` date input is present
+- [ ] `data-testid="filter-to"` date input is present
+- [ ] With filters applied, `data-testid="clear-filters"` button appears — click it — all filters reset
 
-#### REQ-USR-005: Bulk Delete
-- [ ] [auth] Navigate to `/dashboard/admin/users`
-- [ ] Click "Test Accounts" tab
-- [ ] Click `[data-testid="select-all-checkbox"]`
-- [ ] Verify all non-own rows are checked
-- [ ] Verify `[data-testid="bulk-action-bar"]` appears with count
-- [ ] Click `[data-testid="bulk-delete-btn"]`
-- [ ] Verify `[data-testid="bulk-delete-dialog"]` appears
-- [ ] Click `[data-testid="confirm-cancel"]` — verify dialog closes, no deletion
-- [ ] (Optional destructive): Click delete button, confirm, verify users removed from table
+#### Pagination
+- [ ] `data-testid="pagination"` is visible when total events > 50
+- [ ] Pagination shows "Showing X–Y of Z" count text
 
-### API Endpoints
-- `GET /api/admin/users?filter=test&search=qa` — returns filtered users with isTestAccount
-- `POST /api/admin/users/bulk` (body: `{ user_ids, action: "delete" }`) — bulk delete
-- `PATCH /api/admin/users/[id]/role` (body: `{ role }`) — role change with confirmation
-
----
-
-## Users Page — Search, Filter, Pagination & Cleanup (Issue #108)
-_Added: 2026-03-14_
-
-### Context
-The users admin page (`/dashboard/admin/users`) was enhanced with search, filter tabs (All/Real/Test Accounts), pagination (20/page), role change confirmation dialog, bulk permanent delete, and visual test account tagging.
-
-### Test Steps (All require Admin login) [auth]
-
-**Search (REQ-USR-001):**
-- [ ] Navigate to /dashboard/admin/users
-- [ ] Type "qa_login" in search box (data-testid="user-search") — results filter within 300ms
-- [ ] Type string matching no users — "No users found" empty state appears
-- [ ] Clear search — full user list reloads
-- [ ] Search is case-insensitive
-
-**Filter Tabs (REQ-USR-002):**
-- [ ] Three tabs: "All", "Real", "Test Accounts" with count badges (data-testid="filter-tab-all/real/test")
-- [ ] "Test Accounts" tab shows only rows with amber "TEST" badge (data-testid="test-account-badge")
-- [ ] "Real" tab shows only non-test users
-- [ ] "All" tab shows all users
-
-**Pagination (REQ-USR-003):**
-- [ ] Pagination control visible (data-testid="pagination") — shows "Page N of M"
-- [ ] Max 20 rows per page; Prev disabled on page 1, Next disabled on last page
-- [ ] Changing search or filter resets to page 1
-
-**Role Change Confirmation (REQ-USR-004):**
-- [ ] Click role dropdown (data-testid="role-dropdown") on non-self row
-- [ ] Select different role — confirmation dialog (data-testid="role-confirm-dialog") appears
-- [ ] Click Cancel (data-testid="confirm-cancel") — dialog closes, no change
-- [ ] Click Confirm (data-testid="confirm-submit") — role updated, success toast
-
-**Bulk Delete (REQ-USR-005):**
-- [ ] Check select-all (data-testid="select-all-checkbox") — all rows selected
-- [ ] Bulk bar appears (data-testid="bulk-action-bar") with "Delete N Selected" (data-testid="bulk-delete-btn")
-- [ ] Click bulk delete — confirmation dialog (data-testid="bulk-delete-dialog") appears
-- [ ] Click "Keep Users" (data-testid="confirm-cancel") — cancelled, nothing deleted
-- [ ] For >5 users: warning box shown in dialog
+#### API
+- [ ] `GET /api/event-log` returns JSON with keys `data` (array) and `pagination` (object)
+- [ ] `GET /api/event-log?direction=in` filters correctly
+- [ ] `GET /api/event-log` without auth returns 401
 
 ### Routes/Endpoints
-- /dashboard/admin/users
-- GET /api/admin/users?search=&filter=all|real|test&page=N&pageSize=20
-- DELETE /api/admin/users/bulk (body: { userIds: string[] })
-- PATCH /api/admin/users/[id]/role (body: { role: string })
+- /dashboard/event-log (new page — fixes 404)
+- GET /api/event-log (new API route querying harness_events)
 
----
-
-## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
-_Added: 2026-03-14_
-
-### Test Steps — PipelineStatusCard "Never connected" state [auth]
-- [ ] Navigate to /pipeline — page loads
-- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
-- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
-- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
-- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
-
-### Test Steps — ActivityFeed empty state explanation [auth]
-- [ ] Navigate to /dashboard or any page with the activity feed sidebar
-- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
-- [ ] All four elements are visible simultaneously in the empty state
-
-### Routes/Endpoints
-- /pipeline (PipelineStatusCard)
-- /dashboard (ActivityFeed sidebar)
-
-## Event Log Page at /dashboard/event-log [auth]
-_Issue #116 — Bug Fix: Sidebar Event Log 404_
-_Added: 2026-03-15_
-
-### Test Steps
-- [ ] Log in and click "Event Log" in the left sidebar → browser navigates to /dashboard/event-log (not /dashboard/admin/events)
-- [ ] Navigate directly to /dashboard/event-log → page loads (HTTP 200, no 404)
-- [ ] Page renders page title "Event Log" and subtitle "View harness events and webhook deliveries"
-- [ ] Filter bar is visible with: Direction select, Event Type input, Status select, From date, To date
-- [ ] If harness_events table has records: rows appear in the table with Timestamp, Dir badge, Event Type, Source, Status columns
-- [ ] If table is empty: empty state shows Radio icon and "No events yet" message
-- [ ] Click a row → expands to show metadata (Source, Created, Retry Count) and PayloadViewer
-- [ ] Click the expanded row again → collapses
-- [ ] Select a filter (e.g. Direction = IN) → URL updates with ?direction=in, table re-fetches
-- [ ] "Clear filters" button appears when any filter is active → click it clears all filters
-- [ ] With filters active and no results → shows FilterX icon and "No events match your filters"
-- [ ] Pagination bar appears when total > 50 events; Prev/Next/page number buttons work
-- [ ] For failed OUT events: Retry button visible → click triggers POST /api/admin/events/:id/retry
-
-### Routes/Endpoints
-- GET /dashboard/event-log
-- GET /api/event-log?page=1&per_page=50&direction=&event_type=&status=&from=&to=

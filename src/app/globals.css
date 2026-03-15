@@ -23,6 +23,17 @@
   --stage-qa: #06B6D4;
   --stage-bugfix: #EF4444;
   --stage-done: #22C55E;
+
+  /* Notification Panel — Issue #101 */
+  --surface-elevated: #323238;
+  --border-subtle: #2D2D33;
+  --notif-spec-ready: #3B82F6;
+  --notif-build-complete: #F59E0B;
+  --notif-qa-passed: #22C55E;
+  --notif-qa-failed: #EF4444;
+  --notif-deploy-complete: #22C55E;
+  --notif-agent-stalled: #F59E0B;
+  --notif-pipeline-error: #EF4444;
 }
 
 @theme inline {
@@ -174,3 +185,13 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-scroll::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
 .kanban-scroll::-webkit-scrollbar-thumb:hover { background: #52525B; }
+
+/* Kanban horizontal scroll container with styled scrollbar affordance (REQ-003) */
+.kanban-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #52525B #18181B;
+}
+.kanban-scroll-container::-webkit-scrollbar { height: 8px; }
+.kanban-scroll-container::-webkit-scrollbar-track { background: #18181B; border-radius: 4px; }
+.kanban-scroll-container::-webkit-scrollbar-thumb { background: #52525B; border-radius: 4px; }
+.kanban-scroll-container::-webkit-scrollbar-thumb:hover { background: #71717A; }

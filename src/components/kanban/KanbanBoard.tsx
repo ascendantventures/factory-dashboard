@@ -80,6 +80,34 @@ interface KanbanBoardProps {
   trackedRepos: string[];
 }
 
+function useScrollShadow(ref: { current: HTMLDivElement | null }) {
+  const [scrollState, setScrollState] = useState({ left: false, right: true });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const checkScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setScrollState({
+        left: scrollLeft > 10,
+        right: scrollLeft < scrollWidth - clientWidth - 10,
+      });
+    };
+
+    checkScroll();
+    el.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [ref]);
+
+  return scrollState;
+}
+
 export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [issues, setIssues] = useState<DashIssue[]>(initialIssues);
   const [syncing, setSyncing] = useState(false);
@@ -91,6 +119,8 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
   const [selectedIssue, setSelectedIssue] = useState<DashIssue | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const supabaseRef = useRef<SupabaseClient | null>(null);
+  const boardScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollState = useScrollShadow(boardScrollRef);
 
   // Load prefs from localStorage on mount
   useEffect(() => {
@@ -422,7 +452,11 @@ export function KanbanBoard({ initialIssues, trackedRepos }: KanbanBoardProps) {
       {/* Board + Activity Sidebar Row */}
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Board */}
-        <div className="hidden sm:block flex-1 overflow-x-auto p-4" style={{ overflowY: 'hidden' }}>
+        <div
+          ref={boardScrollRef}
+          className={`hidden sm:block flex-1 overflow-x-auto p-4 kanban-scroll-container${scrollState.left ? ' scrolled-left' : ''}${!scrollState.right ? ' scrolled-right' : ''}`}
+          style={{ overflowY: 'hidden' }}
+        >
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <AnimatePresence mode="wait">
               {prefs.viewMode === 'full' ? (
