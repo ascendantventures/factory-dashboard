@@ -53,9 +53,19 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_harness_webhook_deliveries_updated_at
-  BEFORE UPDATE ON harness_webhook_deliveries
-  FOR EACH ROW EXECUTE FUNCTION harness_set_webhook_delivery_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_harness_webhook_deliveries_updated_at'
+      AND tgrelid = 'harness_webhook_deliveries'::regclass
+  ) THEN
+    CREATE TRIGGER trg_harness_webhook_deliveries_updated_at
+      BEFORE UPDATE ON harness_webhook_deliveries
+      FOR EACH ROW EXECUTE FUNCTION harness_set_webhook_delivery_updated_at();
+  END IF;
+END;
+$$;
 
 -- ============================================================
 -- RLS — harness_webhook_deliveries
@@ -64,25 +74,37 @@ CREATE TRIGGER trg_harness_webhook_deliveries_updated_at
 ALTER TABLE harness_webhook_deliveries ENABLE ROW LEVEL SECURITY;
 
 -- service_role: unrestricted (for delivery worker)
-CREATE POLICY "service_role full access on harness_webhook_deliveries"
-  ON harness_webhook_deliveries
-  AS PERMISSIVE FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename='harness_webhook_deliveries' AND policyname='service_role full access on harness_webhook_deliveries'
+  ) THEN
+    CREATE POLICY "service_role full access on harness_webhook_deliveries"
+      ON harness_webhook_deliveries
+      AS PERMISSIVE FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true);
+  END IF;
+END; $$;
 
 -- authenticated: read own deliveries (via webhook ownership)
-CREATE POLICY "owner read harness_webhook_deliveries"
-  ON harness_webhook_deliveries
-  AS PERMISSIVE FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM harness_webhooks hw
-      WHERE hw.webhook_id = harness_webhook_deliveries.webhook_id
-        AND hw.created_by = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename='harness_webhook_deliveries' AND policyname='owner read harness_webhook_deliveries'
+  ) THEN
+    CREATE POLICY "owner read harness_webhook_deliveries"
+      ON harness_webhook_deliveries
+      AS PERMISSIVE FOR SELECT
+      TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 FROM harness_webhooks hw
+          WHERE hw.webhook_id = harness_webhook_deliveries.webhook_id
+            AND hw.created_by = auth.uid()
+        )
+      );
+  END IF;
+END; $$;
 
 -- ============================================================
 -- harness_events: add index for real-time subscription efficiency

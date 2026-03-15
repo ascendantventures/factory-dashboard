@@ -686,3 +686,61 @@ All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles
 ### Supabase Realtime Setup
 Enable postgres_changes publication for `harness_events`:
 - Supabase Dashboard → Database → Replication → supabase_realtime → Add table → harness_events
+
+---
+
+## Issue #112 — Phase 2 Users Page: Audit Log + QA Purge
+
+### New Tables (Migration 20260315120001_spec_schema_issue112.sql)
+- `users_page_role_audit` — Audit log for role changes. PK: `id` (uuid). Fields: `changed_at`, `target_user_id`, `changed_by_id`, `old_role`, `new_role`, `notes`. Written exclusively by the `users_page_trg_role_change_audit` trigger. RLS: admin-read only.
+- `users_page_purge_log` — Log of QA purge runs. PK: `id` (uuid). Fields: `purged_at`, `triggered_by`, `accounts_deleted`, `accounts_skipped`, `deleted_emails`, `error_message`. RLS: admin-read only.
+
+### DB Trigger
+- `users_page_fn_role_change_audit()` — SECURITY DEFINER function fired AFTER UPDATE OF role ON `fd_user_roles`. Auto-records role changes to `users_page_role_audit`.
+- `users_page_trg_role_change_audit` — Trigger on `fd_user_roles`. Role changes captured at DB level, cannot be bypassed by application code.
+
+### New API Routes (Issue #112)
+- `GET /api/admin/role-audit` — Paginated role change history. Params: `page`, `per_page`, `user_id`. Joins with `auth.users` via admin client to resolve emails. Admin only (403 otherwise).
+- `POST /api/admin/qa-purge` — Delete QA test accounts. Auth: `x-qa-purge-secret` header OR admin session. Supports `dry_run: true`. 30-day safety guard on old accounts. Logs run to `users_page_purge_log`.
+- `GET /api/admin/qa-purge/history` — Last 10 purge log entries. Admin only.
+
+### New UI Components (Issue #112)
+- `RoleAuditPanel.tsx` — Collapsible panel (default collapsed). Blue ClipboardList icon. Shows paginated role change history table. Empty state + pagination. `data-testid="role-audit-panel"`.
+- `QaPurgePanel.tsx` — Collapsible panel (default collapsed). Red Trash2 icon. Dry-run preview, purge confirmation dialog, result alert (8s auto-dismiss on success), purge history table. `data-testid="qa-purge-panel"`.
+
+### data-testid Reference (Issue #112 additions)
+| Element | data-testid |
+|---------|-------------|
+| Role audit panel | `role-audit-panel` |
+| Role audit header | `role-audit-header` |
+| Role audit table | `role-audit-table` |
+| Role audit row | `role-audit-row` |
+| Audit empty state | `audit-empty-state` |
+| Audit pagination | `audit-pagination` |
+| QA purge panel | `qa-purge-panel` |
+| QA purge header | `qa-purge-header` |
+| Preview button | `purge-preview-btn` |
+| Purge now button | `purge-now-btn` |
+| Preview result | `purge-preview-result` |
+| Preview dismiss | `purge-preview-dismiss` |
+| Purge history table | `purge-history-table` |
+| Purge confirm dialog | `purge-confirm-dialog` |
+| Purge confirm cancel | `purge-confirm-cancel` |
+| Purge confirm submit | `purge-confirm-submit` |
+| Purge result alert | `purge-result-alert` |
+
+### Environment Variables Added (Issue #112)
+- `QA_PURGE_SECRET` — Secret token for CI/CD calls to `POST /api/admin/qa-purge`. Generate a secure random string. Add to Vercel env + CI secrets. Without this, only admin-session calls work.
+
+### CI/CD Integration
+```bash
+# Example: call purge endpoint from CI teardown step
+curl -s -X POST "$APP_URL/api/admin/qa-purge" \
+  -H "Content-Type: application/json" \
+  -H "x-qa-purge-secret: $QA_PURGE_SECRET" \
+  -d '{"dry_run": false}' \
+  --fail-with-body
+```
+
+### Collapse State Persistence
+Both panels persist collapsed/expanded state to `localStorage` key `users-admin-panels` as `{ roleAudit: boolean, qaPurge: boolean }`. Default: both collapsed.

@@ -971,3 +971,44 @@ _Added: 2026-03-15_
 - GET /api/harness/webhook-delivery/[webhookId]?limit=20&offset=0
 - POST /api/harness/webhook-delivery/process
 - POST /api/webhooks/github
+
+## Role Audit Log (Issue #112)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Scroll below the user table — confirm `[data-testid="role-audit-panel"]` is visible
+- [ ] Click the "Role Change History" panel header — it expands to show the table or empty state
+- [ ] If no records: confirm `[data-testid="audit-empty-state"]` shows "No role changes recorded yet"
+- [ ] Change a user's role via the RoleDropdown and confirm — the new row appears in the audit table after refresh
+- [ ] Confirm audit row shows: timestamp, target user email, changed-by email, old role → new role badge
+- [ ] Click "Next" pagination button if more than 25 rows — confirm page increments and new rows load
+- [ ] As non-admin (operator session): `GET /api/admin/role-audit` should return 403
+
+### Routes/Endpoints
+- `/dashboard/admin/users` — page with panels
+- `GET /api/admin/role-audit?page=1&per_page=25` — audit log data
+
+---
+
+## QA Account Purge (Issue #112)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Scroll below the user table — confirm `[data-testid="qa-purge-panel"]` is visible
+- [ ] Click the "QA Account Purge" panel header — it expands
+- [ ] Click `[data-testid="purge-preview-btn"]` (Preview) — `[data-testid="purge-preview-result"]` appears with list of QA accounts (or "No test accounts found")
+- [ ] Click `[data-testid="purge-now-btn"]` — `[data-testid="purge-confirm-dialog"]` appears with account count
+- [ ] Click `[data-testid="purge-confirm-cancel"]` — dialog closes, no purge performed
+- [ ] Click Purge Now again, then click `[data-testid="purge-confirm-submit"]` — purge executes
+- [ ] `[data-testid="purge-result-alert"]` appears with success/error message
+- [ ] `[data-testid="purge-history-table"]` shows the new purge run row
+- [ ] `POST /api/admin/qa-purge` with no auth and no secret header returns 401
+- [ ] `POST /api/admin/qa-purge` with `x-qa-purge-secret: <valid>` and `{"dry_run": true}` returns 200 with `emails` array
+- [ ] `GET /api/admin/qa-purge/history` as non-admin returns 403
+
+### Routes/Endpoints
+- `/dashboard/admin/users` — page with QA purge panel
+- `POST /api/admin/qa-purge` — purge/dry-run endpoint
+- `GET /api/admin/qa-purge/history` — last 10 purge runs
