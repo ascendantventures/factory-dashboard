@@ -1092,3 +1092,35 @@ _Added: 2026-03-15_
 - `QaPurgePanel`: `qa-purge-panel-toggle` → `qa-purge-header`; `purge-preview-list` → `purge-preview-result`; added `purge-preview-dismiss` dismiss button to `PurgePreviewList`.
 
 **Regression guard:** Before marking BUILD COMPLETE, cross-reference every `data-testid` in `RoleAuditPanel.tsx` and `QaPurgePanel.tsx` against the spec table. Missing or renamed testids will fail QA selectors.
+
+---
+
+## [BUG #131] data-testid Contract Fix — RoleAuditPanel + QaPurgePanel
+_Added: 2026-03-15_
+
+**Scope:** Verifies all 17 spec-defined `data-testid` attributes are present and correctly named after the #131 bug fix. Old/renamed testids must NOT exist in the DOM.
+
+### RoleAuditPanel testid verification [auth]
+- [ ] Navigate to `/dashboard/admin/users`
+- [ ] Confirm `[data-testid="role-audit-panel"]` exists on the outer wrapper div
+- [ ] Click `[data-testid="role-audit-header"]` — panel expands (tests rename from `role-audit-panel-toggle`)
+- [ ] Confirm `[data-testid="role-audit-panel-toggle"]` has count 0 — old testid must NOT exist
+- [ ] Confirm `[data-testid="role-audit-table"]` resolves to a `<table>` element (not a div wrapper)
+- [ ] If audit rows present: each row has `[data-testid="role-audit-row"]`; confirm `[data-testid="audit-row"]` has count 0 (old testid gone)
+- [ ] If no audit rows: `[data-testid="audit-empty-state"]` is visible with "No role changes recorded yet" message
+- [ ] If more than 25 audit rows: `[data-testid="audit-pagination"]` is present with page/total count
+
+### QaPurgePanel testid verification [auth]
+- [ ] Navigate to `/dashboard/admin/users`
+- [ ] Click `[data-testid="qa-purge-header"]` — panel expands (tests rename from `qa-purge-panel-toggle`)
+- [ ] Confirm `[data-testid="qa-purge-panel-toggle"]` has count 0 — old testid must NOT exist
+- [ ] Click Preview button — `[data-testid="purge-preview-result"]` appears (tests rename from `purge-preview-list`)
+- [ ] Confirm `[data-testid="purge-preview-list"]` has count 0 — old testid must NOT exist
+- [ ] `[data-testid="purge-preview-dismiss"]` button is visible inside the preview result container
+- [ ] Click `[data-testid="purge-preview-dismiss"]` — `[data-testid="purge-preview-result"]` disappears from DOM
+
+### Routes/Endpoints
+- `/dashboard/admin/users` — page containing both panels
+
+### Playwright E2E
+- `tests/e2e/bug-131-testids.spec.ts` — 5 automated tests covering all 8 renames/additions
