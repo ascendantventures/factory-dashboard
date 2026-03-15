@@ -30,7 +30,7 @@ export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Prop
   const { running, pid, uptime_seconds, last_tick_at } = loop;
 
   const heartbeatStale =
-    lastSeen != null &&
+    lastSeen == null ||
     Date.now() - new Date(lastSeen).getTime() > 5 * 60 * 1000;
 
   return (
@@ -170,15 +170,11 @@ export default function PipelineStatusCard({ loop, lastSeen, onStartLoop }: Prop
             style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: '13px',
-              color: lastSeen == null ? '#6B7489' : heartbeatStale ? '#EF4444' : '#F1F3F9',
+              color: heartbeatStale ? '#EF4444' : '#F1F3F9',
             }}
             title={lastSeen ?? undefined}
           >
-            {lastSeen == null ? (
-              <span style={{ color: '#6B7489' }}>Never connected</span>
-            ) : (
-              formatRelativeTime(lastSeen)
-            )}
+            {lastSeen ? formatRelativeTime(lastSeen) : '—'}
           </div>
         </div>
       </div>

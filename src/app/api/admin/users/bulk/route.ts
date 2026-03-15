@@ -89,33 +89,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ updated, errors });
 }
-
-// DELETE /api/admin/users/bulk — bulk delete via body { userIds: string[] }
-export async function DELETE(req: NextRequest) {
-  const body = await req.json().catch(() => ({})) as { userIds?: string[] };
-  // Reuse POST handler logic by delegating
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const role = await getUserRole(user.id);
-  if (!['admin'].includes(role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-  const targets = (body.userIds ?? []).filter((id) => id !== user.id);
-  const admin = createSupabaseAdminClient();
-  const failed: string[] = [];
-  let deleted = 0;
-
-  for (const targetId of targets) {
-    try {
-      const { error: delError } = await admin.auth.admin.deleteUser(targetId);
-      if (delError) throw delError;
-      await admin.from('fd_user_roles').delete().eq('user_id', targetId);
-      await writeAuditLog({ actorId: user.id, targetUserId: targetId, action: 'delete', details: { bulk: true } });
-      deleted++;
-    } catch (err) {
-      failed.push(targetId);
-    }
-  }
-
-  return NextResponse.json({ deleted, failed });
-}

@@ -227,6 +227,53 @@ _Issue #36 — Added: 2026-03-12_
 
 ---
 
+## [Pipeline Heartbeat UX + Env Config Docs] (Issue #117)
+_Added: 2026-03-14_
+
+### Test Steps
+
+**REQ-UAT117-002: "Never connected" state**
+- [ ] Navigate to `/pipeline` when no heartbeat has ever been written (harness never started or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing from harness `.env`)
+- [ ] The "Last Heartbeat" field displays `Never connected` in muted grey (not `—` and not red)
+- [ ] Start the harness and confirm heartbeat begins writing; within 60 s the "Last Heartbeat" field updates to a relative timestamp (e.g. `5s ago`) in the default color
+- [ ] Stop the harness and wait 6+ minutes; confirm "Last Heartbeat" turns red with a stale relative time (e.g. `7m ago`)
+
+**REQ-UAT117-003: Activity feed empty state explanation**
+- [ ] Navigate to `/dashboard/activity` when the activity feed is empty (or simulate an empty state)
+- [ ] Confirm all three lines are present:
+  - Line 1: emoji `📡`
+  - Line 2: `No activity yet` (medium weight, grey)
+  - Line 3: `Waiting for pipeline events…` (muted grey)
+  - Line 4 (new): `Events appear when agents complete stages, builds finish, or issues are deployed.` (muted grey, max-width 240px)
+- [ ] Confirm the emoji and first two lines are unchanged from their previous appearance
+
+**REQ-UAT117-001: Env var documentation**
+- [ ] Confirm `.env.example` exists in repo root
+- [ ] Confirm it documents `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in a "Harness .env" section with instructions to retrieve values from Supabase Dashboard → Project Settings → API
+
+### Routes/Endpoints
+- `/pipeline` — PipelineStatusCard "Never connected" change
+- `/dashboard/activity` — ActivityFeed empty state explanation line
+
+---
+
+## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
+_Added: 2026-03-14_
+### Test Steps — PipelineStatusCard "Never connected" state [auth]
+- [ ] Navigate to /pipeline — page loads
+- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
+- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
+- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
+- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
+### Test Steps — ActivityFeed empty state explanation [auth]
+- [ ] Navigate to /dashboard or any page with the activity feed sidebar
+- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
+- [ ] All four elements are visible simultaneously in the empty state
+- /pipeline (PipelineStatusCard)
+- /dashboard (ActivityFeed sidebar)
+
+---
+
 ## Webhook & Integration Configuration (Issue #29)
 _Added: 2026-03-12_
 
@@ -814,38 +861,6 @@ _Added: 2026-03-14_
 - `harness_heartbeat` table exists with columns: `id`, `pid`, `active_agents`, `lock_snapshot`, `status`, `last_seen`, `created_at`
 - RLS enabled: authenticated users can SELECT; service role handles INSERT/UPDATE
 
----
-
-## [Pipeline Heartbeat UX + Env Config Docs] (Issue #117)
-_Added: 2026-03-14_
-
-### Test Steps
-
-**REQ-UAT117-002: "Never connected" state**
-- [ ] Navigate to `/pipeline` when no heartbeat has ever been written (harness never started or `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` missing from harness `.env`)
-- [ ] The "Last Heartbeat" field displays `Never connected` in muted grey (not `—` and not red)
-- [ ] Start the harness and confirm heartbeat begins writing; within 60 s the "Last Heartbeat" field updates to a relative timestamp (e.g. `5s ago`) in the default color
-- [ ] Stop the harness and wait 6+ minutes; confirm "Last Heartbeat" turns red with a stale relative time (e.g. `7m ago`)
-
-**REQ-UAT117-003: Activity feed empty state explanation**
-- [ ] Navigate to `/dashboard/activity` when the activity feed is empty (or simulate an empty state)
-- [ ] Confirm all three lines are present:
-  - Line 1: emoji `📡`
-  - Line 2: `No activity yet` (medium weight, grey)
-  - Line 3: `Waiting for pipeline events…` (muted grey)
-  - Line 4 (new): `Events appear when agents complete stages, builds finish, or issues are deployed.` (muted grey, max-width 240px)
-- [ ] Confirm the emoji and first two lines are unchanged from their previous appearance
-
-**REQ-UAT117-001: Env var documentation**
-- [ ] Confirm `.env.example` exists in repo root
-- [ ] Confirm it documents `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in a "Harness .env" section with instructions to retrieve values from Supabase Dashboard → Project Settings → API
-
-### Routes/Endpoints
-- `/pipeline` — PipelineStatusCard "Never connected" change
-- `/dashboard/activity` — ActivityFeed empty state explanation line
-
----
-
 ## [Users Page: Search, Filter Tabs, Test Badges, Role Confirmation, Bulk Delete] (Issue #108)
 _Added: 2026-03-14_
 
@@ -952,23 +967,128 @@ The users admin page (`/dashboard/admin/users`) was enhanced with search, filter
 - DELETE /api/admin/users/bulk (body: { userIds: string[] })
 - PATCH /api/admin/users/[id]/role (body: { role: string })
 
+
 ---
 
-## Pipeline Heartbeat UX — "Never Connected" + Activity Feed Explanation (Issue #117)
-_Added: 2026-03-14_
+## Phase 2: Event Log & Webhooks — Outbound Delivery, GitHub Ingestion, Retention, Real-Time (Issue #110)
+_Added: 2026-03-15_
 
-### Test Steps — PipelineStatusCard "Never connected" state [auth]
-- [ ] Navigate to /pipeline — page loads
-- [ ] When no harness heartbeat has ever been written (lastSeen is null), the "Last Heartbeat" field displays "Never connected" in muted grey (not "—" and not in red)
-- [ ] When lastSeen is a timestamp older than 5 minutes, the "Last Heartbeat" field displays the relative time (e.g. "12m ago") in red (#EF4444)
-- [ ] When lastSeen is a timestamp within the last 5 minutes, the "Last Heartbeat" field displays the relative time in white/default color
-- [ ] "Running" / "Stopped" status badge, PID, Uptime, and Last Tick fields are unchanged
+### Outbound webhook delivery history [auth]
 
-### Test Steps — ActivityFeed empty state explanation [auth]
-- [ ] Navigate to /dashboard or any page with the activity feed sidebar
-- [ ] When there are no activity events, the empty state shows: emoji 📡, "No activity yet" heading, "Waiting for pipeline events…" subtitle, AND the explanation: "Events appear when agents complete stages, builds finish, or issues are deployed."
-- [ ] All four elements are visible simultaneously in the empty state
+- [ ] Navigate to /dashboard/settings/webhooks — webhook cards render
+- [ ] Each webhook card has a "View deliveries" button (data-testid="view-deliveries-btn")
+- [ ] Click "View deliveries" — DeliveryHistoryDrawer slides in (data-testid="delivery-history-drawer")
+- [ ] Drawer header shows "Delivery History" and a close button (data-testid="delivery-drawer-close")
+- [ ] Webhook URL appears in URL bar below header (JetBrains Mono font)
+- [ ] If no deliveries exist: empty state shows (data-testid="delivery-empty-state") with "No deliveries yet" text
+- [ ] If deliveries exist: rows render with data-testid="delivery-row"
+- [ ] Each row shows: event type, attempt number, status badge (data-testid="delivery-status-badge"), HTTP code, timestamp
+- [ ] Status badges: success=green, failed=red, retrying=amber, pending=muted
+- [ ] Press Escape or click backdrop — drawer closes
+- [ ] Close button click — drawer closes
+
+### GitHub incoming webhook capture (unsigned = 401)
+
+- [ ] POST to /api/webhooks/github without x-hub-signature-256 header → HTTP 401
+- [ ] POST to /api/webhooks/github with invalid signature → HTTP 401
+- [ ] POST to /api/webhooks/github with valid HMAC signature → HTTP 200, event written to harness_events
+
+### Real-time event log [auth]
+
+- [ ] Navigate to /dashboard/event-log
+- [ ] RealtimePulse indicator visible (data-testid="realtime-pulse") in page header
+- [ ] Indicator shows "Live" (green dot) when Supabase Realtime connected, "Connecting..." during init, "Polling" on failure
+- [ ] Refresh button visible (data-testid="refresh-btn") next to RealtimePulse
+- [ ] Click Refresh button → table reloads (loading state briefly), new data appears
+- [ ] Event table renders (data-testid="event-table") with headers: Timestamp, Dir, Event Type, Source, Status, Actions
+- [ ] New harness_events inserted in DB appear at top of list without manual refresh (when Live)
+- [ ] Navigating away and back — no subscription memory leaks (channel removed on unmount)
+
+### Delivery retry worker
+
+- [ ] POST /api/harness/webhook-delivery/process without auth → HTTP 401
+- [ ] POST /api/harness/webhook-delivery/process with valid service-role Bearer → processes pending deliveries
+- [ ] Response includes: { processed: N, succeeded: N, failed: N }
+- [ ] Deliveries with next_retry_at <= NOW() and status retrying are picked up
+- [ ] Max 20 deliveries processed per call
 
 ### Routes/Endpoints
-- /pipeline (PipelineStatusCard)
-- /dashboard (ActivityFeed sidebar)
+- /dashboard/settings/webhooks
+- /dashboard/event-log
+- GET /api/harness/webhook-delivery/[webhookId]?limit=20&offset=0
+- POST /api/harness/webhook-delivery/process
+- POST /api/webhooks/github
+
+## Role Audit Log (Issue #112)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Scroll below the user table — confirm `[data-testid="role-audit-panel"]` is visible
+- [ ] Click the "Role Change History" panel header — it expands to show the table or empty state
+- [ ] If no records: confirm `[data-testid="audit-empty-state"]` shows "No role changes recorded yet"
+- [ ] Change a user's role via the RoleDropdown and confirm — the new row appears in the audit table after refresh
+- [ ] Confirm audit row shows: timestamp, target user email, changed-by email, old role → new role badge
+- [ ] Click "Next" pagination button if more than 25 rows — confirm page increments and new rows load
+- [ ] As non-admin (operator session): `GET /api/admin/role-audit` should return 403
+
+### Routes/Endpoints
+- `/dashboard/admin/users` — page with panels
+- `GET /api/admin/role-audit?page=1&per_page=25` — audit log data
+
+---
+
+## QA Account Purge (Issue #112)
+_Added: 2026-03-15_
+
+### Test Steps
+- [ ] [auth] Navigate to `/dashboard/admin/users`
+- [ ] Scroll below the user table — confirm `[data-testid="qa-purge-panel"]` is visible
+- [ ] Click the "QA Account Purge" panel header — it expands
+- [ ] Click `[data-testid="purge-preview-btn"]` (Preview) — `[data-testid="purge-preview-result"]` appears with list of QA accounts (or "No test accounts found")
+- [ ] Click `[data-testid="purge-now-btn"]` — `[data-testid="purge-confirm-dialog"]` appears with account count
+- [ ] Click `[data-testid="purge-confirm-cancel"]` — dialog closes, no purge performed
+- [ ] Click Purge Now again, then click `[data-testid="purge-confirm-submit"]` — purge executes
+- [ ] `[data-testid="purge-result-alert"]` appears with success/error message
+- [ ] `[data-testid="purge-history-table"]` shows the new purge run row
+- [ ] `POST /api/admin/qa-purge` with no auth and no secret header returns 401
+- [ ] `POST /api/admin/qa-purge` with `x-qa-purge-secret: <valid>` and `{"dry_run": true}` returns 200 with `emails` array
+- [ ] `GET /api/admin/qa-purge/history` as non-admin returns 403
+
+### Routes/Endpoints
+- `/dashboard/admin/users` — page with QA purge panel
+- `POST /api/admin/qa-purge` — purge/dry-run endpoint
+- `GET /api/admin/qa-purge/history` — last 10 purge runs
+
+---
+
+## Bug Learnings — Issue #112 QA Cycle
+
+### Vercel Deployment Stuck in "Building" State
+**Observed:** QA was blocked because the preview URL was still showing "Deployment is building" after the initial BUILD COMPLETE comment. All 35+ Vercel status checks on PR #45 remained PENDING indefinitely.
+
+**Root cause:** The initial `vercel --yes` deployment from the build agent appeared to complete but the deployment never finished propagating. The preview URL was captured before build completion was confirmed.
+
+**Fix applied:** Re-triggered deployment via `vercel --yes` from the feature branch with confirmed build output before posting the live URL.
+
+**Regression guard:** Before posting BUGFIX COMPLETE, always verify the preview URL returns HTTP 200 (not a Vercel "building" or "error" page) before including it in the comment.
+
+### REGRESSION.md Sections Accidentally Dropped
+**Observed:** PR diff removed Issue #117 test sections (Pipeline Heartbeat "Never connected" + ActivityFeed explanation).
+
+**Root cause:** Branch was rebased/merged without preserving REGRESSION.md additions from `feature/issue-117`.
+
+**Fix applied:** Restored both #117 test sections in commit `d3527f9`.
+
+**Regression guard:** After any rebase or merge, run `grep -n "117\|116\|115" REGRESSION.md` to confirm prior-issue sections are intact.
+
+### data-testid Mismatches Between Spec and Implementation
+**Observed (Issue #112, QA cycle 2):** 8 of 17 `data-testid` attributes in `RoleAuditPanel` and `QaPurgePanel` did not match the spec, causing QA selector tests to fail.
+
+**Root cause:** Component header buttons were given interaction-scoped names (`role-audit-panel-toggle`, `qa-purge-panel-toggle`) instead of the spec-defined semantic names (`role-audit-header`, `qa-purge-header`). Several elements (table, empty-state, pagination, preview dismiss) were missing `data-testid` entirely. The `PurgePreviewList` component lacked a dismiss button altogether.
+
+**Fixes applied:**
+- `RoleAuditPanel`: `role-audit-panel-toggle` → `role-audit-header`; added `role-audit-table` on `<table>`; `audit-row` → `role-audit-row`; added `audit-empty-state` on empty-state div; added `audit-pagination` on pagination container.
+- `QaPurgePanel`: `qa-purge-panel-toggle` → `qa-purge-header`; `purge-preview-list` → `purge-preview-result`; added `purge-preview-dismiss` dismiss button to `PurgePreviewList`.
+
+**Regression guard:** Before marking BUILD COMPLETE, cross-reference every `data-testid` in `RoleAuditPanel.tsx` and `QaPurgePanel.tsx` against the spec table. Missing or renamed testids will fail QA selectors.

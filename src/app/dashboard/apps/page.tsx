@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { FolderOpen, RefreshCw } from 'lucide-react';
 import AppCard from '@/components/apps/AppCard';
 import AppGrid from '@/components/apps/AppGrid';
-import AppDetailDrawer from '@/components/apps/AppDetailDrawer';
 import type { AppSummary } from '@/app/api/apps/route';
 
 function SkeletonCard() {
@@ -33,7 +32,6 @@ export default function AppsPage() {
   const [apps, setApps] = useState<AppSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -88,14 +86,6 @@ export default function AppsPage() {
       // ignore
     } finally {
       setRefreshing(false);
-    }
-  }
-
-  function handleCardClick(app: AppSummary) {
-    if (window.innerWidth >= 768) {
-      setSelectedAppId(app.id);
-    } else {
-      window.location.href = `/dashboard/apps/${app.id}`;
     }
   }
 
@@ -190,16 +180,10 @@ export default function AppsPage() {
       {!loading && !error && apps.length > 0 && (
         <AppGrid>
           {apps.map((app) => (
-            <AppCard key={app.id} app={app} onClick={() => handleCardClick(app)} />
+            <AppCard key={app.id} app={app} isAdmin={isAdmin} />
           ))}
         </AppGrid>
       )}
-
-      {/* Detail drawer (desktop) */}
-      <AppDetailDrawer
-        appId={selectedAppId}
-        onClose={() => setSelectedAppId(null)}
-      />
 
       <style>{`
         @keyframes spin {

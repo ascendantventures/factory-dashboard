@@ -1,10 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 
 interface DeploymentHistoryProps {
   deployedAt: string | null
   deployState: string | null
+  isAdmin?: boolean
 }
 
 function getDeployStateStyle(state: string): React.CSSProperties {
@@ -20,19 +22,35 @@ function getDeployStateStyle(state: string): React.CSSProperties {
   }
 }
 
-export default function DeploymentHistory({ deployedAt, deployState }: DeploymentHistoryProps) {
+export default function DeploymentHistory({ deployedAt, deployState, isAdmin }: DeploymentHistoryProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
       {deployedAt === null ? (
-        <span style={{ color: 'var(--text-muted)' }}>
-          <span style={{ marginRight: '8px' }}>—</span>
-          <span style={{ color: 'var(--text-muted)' }}>
-            Add VERCEL_TOKEN to enable deployment tracking.
-          </span>
+        <span
+          data-testid="deployment-status"
+          style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <span>Deployment tracking not configured</span>
+          {isAdmin && (
+            <Link
+              href="/dashboard/settings"
+              data-testid="deployment-settings-link"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#6366F1',
+                textDecoration: 'none',
+              }}
+            >
+              Configure →
+            </Link>
+          )}
         </span>
       ) : (
         <>
           <span
+            data-testid="deployment-status"
             style={{ color: 'var(--text-secondary)' }}
             title={deployedAt}
           >

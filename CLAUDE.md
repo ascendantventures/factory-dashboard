@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/117
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/110
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -169,6 +169,8 @@
 - **Old Sidebar.tsx still exists** at `src/components/Sidebar.tsx` — it's no longer used. New sidebar is at `src/components/layout/Sidebar.tsx`. Safe to delete old one in future CR.
 - **Next.js 14/15 params compat** — Dynamic route params need `use(params)` pattern for Next.js 15 compatibility. Direct destructuring fails.
 - **VERCEL_TOKEN not set** — deployment fields return null, deploy history shows "—" on cards. Set VERCEL_TOKEN env var in Vercel project settings to enable deploy tracking.
+- **harness_events vs fdash_event_log** — Two event tables exist. `fdash_event_log` is used by the webhook ingest handler (GitHub events). `harness_events` is written by the agentic harness itself (direction=incoming/outgoing/internal, status=success/failure/pending). The `/dashboard/event-log` page (issue #116) queries `harness_events` via `/api/event-log`. Schema differences are mapped in the API route: direction incoming→in, outgoing/internal→out; status success→delivered, failure→failed, pending→received.
+- **Event Log route fix (issue #116)** — Sidebar now links to `/dashboard/event-log` (not `/dashboard/admin/events`). Files: `src/components/layout/Sidebar.tsx`, `src/app/dashboard/event-log/page.tsx`, `src/app/api/event-log/route.ts`.
 - **Apps issue linking** — Issues linked to apps via `build_repo: org/repo` in `dash_issues.body`. The original BUILD issue is also linked via `dash_build_repos.issue_number`. If neither matches, issues won't appear under that app.
 - **Webhooks page try/catch (Issue #90)** — `page.tsx` data fetch is wrapped in try/catch that returns empty state on error. `error.tsx` boundary added for unhandled exceptions. Root cause was unhandled async throws from `createSupabaseServerClient()` / Supabase query propagating as server-side exception (Digest: 2416468996).
 - **Notification bell** — static placeholder, no real notification data wired up.
@@ -178,6 +180,7 @@
 - **Supabase Storage signed URLs** — `upload/route.ts` previously built a fake `/storage/v1/object/sign/…` URL without a signature token, causing 400 errors on fetch. Always use `admin.storage.from(bucket).createSignedUrl(path, expiry)` to generate a real signed URL; never hand-construct one (#70).
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 - **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
+- **Event Log route fix (Issue #116)** — Sidebar "Event Log" href was updated in CR #114 to `/dashboard/event-log` but the page was never created. Fixed by creating `src/app/dashboard/event-log/page.tsx` (dark-mode, fetches from `/api/event-log`) and `src/app/api/event-log/route.ts` (queries `harness_events` table). The old page at `/dashboard/admin/events` is intentionally kept as a legacy route. Do NOT modify `/api/admin/events/route.ts` — it still queries `fdash_event_log` and may have other consumers.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
@@ -625,3 +628,119 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+---
+
+## Issue #110 — Phase 2: Event Log & Webhooks (Outbound Delivery, GitHub Ingestion, Retention, Real-Time)
+
+### New Tables (Migration 20260315000000_harness_phase2_webhooks.sql)
+- `harness_webhook_deliveries` — Delivery attempt log for outbound webhook POSTs. PK: `id` (uuid). FK: `webhook_id → harness_webhooks.webhook_id ON DELETE CASCADE`, `event_id → harness_events.id ON DELETE SET NULL`. Status: `pending|success|failed|retrying`. RLS: service_role full access, authenticated read own (via webhook ownership).
+- `harness_events.metadata` — Added `metadata jsonb` column to existing harness_events table for structured context (e.g., GitHub webhook fields).
+
+### Phase 1 Tables (Migration 20260314160000_spec_schema_issue106.sql — cherry-picked from feature/issue-106)
+- `harness_events` — Pipeline event log. PK: `id` (uuid). Fields: direction, event_type, status, issue_number, submission_id, payload, error_message, duration_ms, metadata.
+- `harness_webhooks` — Outbound webhook endpoints. **PK is `webhook_id` (not `id`)**. Fields: name, url, secret, enabled, events (text[]), created_by.
+
+### ⚠️ Schema Gotchas
+- `harness_webhooks.webhook_id` is the PK — NOT `id`
+- `harness_webhooks.enabled` (not `is_enabled`)
+- `harness_webhooks.created_by` (not `owner_id`)
+- Always use `createSupabaseAdminClient()` for factory loop operations (bypasses RLS)
+
+### New API Routes (Phase 2)
+- `POST /api/harness/webhook-delivery/process` — Delivery worker: flushes pending/retrying deliveries in batches of 20. Called by factory loop on each tick via `deliverWebhooksAsync`. Auth: `x-factory-secret` header.
+- `GET /api/harness/webhook-delivery/[webhookId]` — Delivery history for a webhook. Auth: authenticated user (owner check). Params: limit, offset.
+- `POST /api/webhooks/github` — GitHub incoming webhook. Validates `x-hub-signature-256` HMAC, writes to `harness_events` (direction=incoming, event_type=github_webhook). Also writes legacy `dash_webhook_events` row. Returns 401 on bad signature, 503 if `GITHUB_WEBHOOK_SECRET` not set.
+
+### New Lib Files
+- `src/lib/harness-webhooks.ts` — `writeEventAsync()` and `deliverWebhooksAsync()` fire-and-forget functions. Used by any code that needs to record harness events or queue outbound webhook deliveries.
+
+### New UI Components (Phase 2)
+- `src/components/webhooks/DeliveryHistoryDrawer.tsx` — Slide-in drawer showing delivery attempts for a webhook. Test IDs: `delivery-history-drawer`, `delivery-drawer-close`, `delivery-row`, `delivery-status-badge`, `delivery-empty-state`.
+- `src/components/event-log/RealtimePulse.tsx` — Live/Connecting/Polling status dot. Test ID: `realtime-pulse`.
+- `src/hooks/useRealtimeEvents.ts` — Supabase Realtime subscription on `harness_events` INSERT. Calls onNewEvent callback for each new row.
+
+### Updated Components (Phase 2)
+- `src/app/dashboard/settings/webhooks/HarnessWebhooksClient.tsx` — Added "Deliveries" button on each webhook card (opens DeliveryHistoryDrawer). Test ID: `view-deliveries-btn`.
+- `src/app/dashboard/event-log/page.tsx` — Added RealtimePulse + useRealtimeEvents. New events prepend to table with `event-row-new` CSS animation. Refresh button still functional.
+
+### Supabase Edge Function
+- `supabase/functions/harness-purge-events/index.ts` — Daily purge function. Calls `harness_purge_old_events(event_ttl_days, delivery_ttl_days)` SQL function. Schedule: daily at 02:00 UTC (set in Supabase Dashboard).
+
+### Environment Variables Added (Phase 2)
+- `GITHUB_WEBHOOK_SECRET` — HMAC secret for GitHub webhook signature verification. Must match the secret configured in GitHub webhook settings.
+- `EVENT_RETENTION_DAYS` — Optional. Defaults to 90. Controls harness_events purge TTL.
+
+### Factory Loop Integration
+- `factory/src/notify/supabase.ts` — `deliverWebhooksAsync()` already implemented. Calls `POST /api/harness/webhook-delivery/process` on each tick. `FACTORY_APP_URL` and `FACTORY_SECRET` env vars required.
+- `factory/src/loop.ts` — Already imports and calls `deliverWebhooksAsync` on each tick.
+
+### GitHub Webhook Setup
+1. Set `GITHUB_WEBHOOK_SECRET` env var in Vercel project settings
+2. In GitHub repo/org settings → Webhooks → Add webhook
+3. Payload URL: `https://factory-dashboard-tau.vercel.app/api/webhooks/github`
+4. Content type: `application/json`
+5. Secret: same value as `GITHUB_WEBHOOK_SECRET`
+6. Events: Choose "Send me everything" or select specific events
+
+### Supabase Realtime Setup
+Enable postgres_changes publication for `harness_events`:
+- Supabase Dashboard → Database → Replication → supabase_realtime → Add table → harness_events
+
+---
+
+## Issue #112 — Phase 2 Users Page: Audit Log + QA Purge
+
+### New Tables (Migration 20260315120001_spec_schema_issue112.sql)
+- `users_page_role_audit` — Audit log for role changes. PK: `id` (uuid). Fields: `changed_at`, `target_user_id`, `changed_by_id`, `old_role`, `new_role`, `notes`. Written exclusively by the `users_page_trg_role_change_audit` trigger. RLS: admin-read only.
+- `users_page_purge_log` — Log of QA purge runs. PK: `id` (uuid). Fields: `purged_at`, `triggered_by`, `accounts_deleted`, `accounts_skipped`, `deleted_emails`, `error_message`. RLS: admin-read only.
+
+### DB Trigger
+- `users_page_fn_role_change_audit()` — SECURITY DEFINER function fired AFTER UPDATE OF role ON `fd_user_roles`. Auto-records role changes to `users_page_role_audit`.
+- `users_page_trg_role_change_audit` — Trigger on `fd_user_roles`. Role changes captured at DB level, cannot be bypassed by application code.
+
+### New API Routes (Issue #112)
+- `GET /api/admin/role-audit` — Paginated role change history. Params: `page`, `per_page`, `user_id`. Joins with `auth.users` via admin client to resolve emails. Admin only (403 otherwise).
+- `POST /api/admin/qa-purge` — Delete QA test accounts. Auth: `x-qa-purge-secret` header OR admin session. Supports `dry_run: true`. 30-day safety guard on old accounts. Logs run to `users_page_purge_log`.
+- `GET /api/admin/qa-purge/history` — Last 10 purge log entries. Admin only.
+
+### New UI Components (Issue #112)
+- `RoleAuditPanel.tsx` — Collapsible panel (default collapsed). Blue ClipboardList icon. Shows paginated role change history table. Empty state + pagination. `data-testid="role-audit-panel"`.
+- `QaPurgePanel.tsx` — Collapsible panel (default collapsed). Red Trash2 icon. Dry-run preview, purge confirmation dialog, result alert (8s auto-dismiss on success), purge history table. `data-testid="qa-purge-panel"`.
+
+### data-testid Reference (Issue #112 additions)
+| Element | data-testid |
+|---------|-------------|
+| Role audit panel | `role-audit-panel` |
+| Role audit header | `role-audit-header` |
+| Role audit table | `role-audit-table` |
+| Role audit row | `role-audit-row` |
+| Audit empty state | `audit-empty-state` |
+| Audit pagination | `audit-pagination` |
+| QA purge panel | `qa-purge-panel` |
+| QA purge header | `qa-purge-header` |
+| Preview button | `purge-preview-btn` |
+| Purge now button | `purge-now-btn` |
+| Preview result | `purge-preview-result` |
+| Preview dismiss | `purge-preview-dismiss` |
+| Purge history table | `purge-history-table` |
+| Purge confirm dialog | `purge-confirm-dialog` |
+| Purge confirm cancel | `purge-confirm-cancel` |
+| Purge confirm submit | `purge-confirm-submit` |
+| Purge result alert | `purge-result-alert` |
+
+### Environment Variables Added (Issue #112)
+- `QA_PURGE_SECRET` — Secret token for CI/CD calls to `POST /api/admin/qa-purge`. Generate a secure random string. Add to Vercel env + CI secrets. Without this, only admin-session calls work.
+
+### CI/CD Integration
+```bash
+# Example: call purge endpoint from CI teardown step
+curl -s -X POST "$APP_URL/api/admin/qa-purge" \
+  -H "Content-Type: application/json" \
+  -H "x-qa-purge-secret: $QA_PURGE_SECRET" \
+  -d '{"dry_run": false}' \
+  --fail-with-body
+```
+
+### Collapse State Persistence
+Both panels persist collapsed/expanded state to `localStorage` key `users-admin-panels` as `{ roleAudit: boolean, qaPurge: boolean }`. Default: both collapsed.

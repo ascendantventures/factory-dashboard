@@ -4,6 +4,8 @@ import type { PipelineEvent } from '@/lib/webhook-events';
 
 export type { PipelineEvent };
 
+export type FormatType = 'standard' | 'slack' | 'discord';
+
 export interface WebhookPayload {
   event: PipelineEvent | 'test';
   timestamp: string;
@@ -52,49 +54,69 @@ async function computeHmac(secret: string, body: string): Promise<string> {
 }
 
 /**
- * dispatchEvent — fire-and-forget; call from any server action or route handler.
- * Fires all enabled webhooks subscribed to `event`.
+ * Build the Discord embed color for an event.
  */
-export async function dispatchEvent(
-  event: PipelineEvent,
-  details?: Record<string, unknown>,
-  issueContext?: { number: number; title: string; repo: string }
-): Promise<void> {
-  const admin = createSupabaseAdminClient();
-
-  // Find enabled webhooks subscribed to this event
-  const { data: webhooks, error } = await admin
-    .from('fd_webhooks')
-    .select('id, url, secret_hash, events, enabled')
-    .eq('enabled', true);
-
-  if (error || !webhooks?.length) return;
-
-  const subscribed = webhooks.filter((wh) => {
-    const events = Array.isArray(wh.events) ? wh.events : [];
-    return events.includes(event);
-  });
-
-  if (!subscribed.length) return;
-
-  const payload: WebhookPayload = {
-    event,
-    timestamp: new Date().toISOString(),
-    ...(issueContext && { issue: issueContext }),
-    ...(details && { details }),
-  };
-
-  await Promise.allSettled(
-    subscribed.map((wh) => deliverWebhook(admin, wh, payload))
-  );
+function getDiscordColor(event: string): number {
+  if (/^build\./.test(event) && event !== 'build.failed') return 5763719;   // green
+  if (['qa.failed', 'build.failed', 'pipeline.error'].includes(event)) return 15548997; // red
+  if (['qa.passed', 'deploy.completed'].includes(event)) return 3092790;    // blue
+  return 10070709; // grey
 }
 
-async function deliverWebhook(
+/**
+ * Format the outgoing POST body based on the webhook's format_type.
+ * Exported for use by the retry endpoint.
+ */
+export function formatPayload(payload: WebhookPayload, formatType: FormatType): string {
+  const { event, timestamp, issue, details } = payload;
+
+  if (formatType === 'slack') {
+    const issueText = issue
+      ? `*${event}* — #${issue.number} ${issue.title}\n_${issue.repo}_`
+      : `*${event}*`;
+    return JSON.stringify({
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: issueText } },
+        { type: 'context', elements: [{ type: 'mrkdwn', text: timestamp }] },
+      ],
+    });
+  }
+
+  if (formatType === 'discord') {
+    return JSON.stringify({
+      embeds: [
+        {
+          title: event,
+          description: issue ? `#${issue.number} — ${issue.title}` : undefined,
+          color: getDiscordColor(event),
+          fields: issue ? [{ name: 'Repo', value: issue.repo, inline: true }] : [],
+          timestamp,
+        },
+      ],
+    });
+  }
+
+  // standard (default — existing WebhookPayload shape)
+  return JSON.stringify({
+    event,
+    timestamp,
+    ...(issue && { issue }),
+    ...(details && { details }),
+  });
+}
+
+/**
+ * deliverToUrl — send a payload to a webhook URL and record the result.
+ * Used for both initial dispatches and retries.
+ */
+export async function deliverToUrl(
   admin: ReturnType<typeof createSupabaseAdminClient>,
-  wh: { id: string; url: string; secret_hash: string | null },
+  wh: { id: string; url: string; secret_hash: string | null; format_type?: string | null },
   payload: WebhookPayload
-): Promise<void> {
-  const body = JSON.stringify(payload);
+): Promise<{ status_code: number | null; response_body: string | null; delivery_id: string }> {
+  const formatType: FormatType = (wh.format_type as FormatType) ?? 'standard';
+  const body = formatPayload(payload, formatType);
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'User-Agent': 'Factory-Dashboard/1.0',
@@ -125,12 +147,59 @@ async function deliverWebhook(
     // timeout or network error — statusCode stays null
   }
 
-  await admin.from('fd_webhook_deliveries').insert({
+  const { data: delivery } = await admin.from('fd_webhook_deliveries').insert({
     webhook_id: wh.id,
     event: payload.event,
     payload,
     status_code: statusCode,
     response_body: responseBody,
     sent_at: new Date().toISOString(),
+  }).select('id').single();
+
+  return {
+    status_code: statusCode,
+    response_body: responseBody,
+    delivery_id: delivery?.id ?? '',
+  };
+}
+
+/**
+ * dispatchEvent — fires all enabled webhooks subscribed to `event`.
+ * Returns { fired, skipped } counts.
+ */
+export async function dispatchEvent(
+  event: PipelineEvent,
+  details?: Record<string, unknown>,
+  issueContext?: { number: number; title: string; repo: string }
+): Promise<{ fired: number; skipped: number }> {
+  const admin = createSupabaseAdminClient();
+
+  const { data: webhooks, error } = await admin
+    .from('fd_webhooks')
+    .select('id, url, secret_hash, events, enabled, format_type')
+    .eq('enabled', true);
+
+  if (error || !webhooks?.length) return { fired: 0, skipped: 0 };
+
+  const subscribed = webhooks.filter((wh) => {
+    const events = Array.isArray(wh.events) ? wh.events : [];
+    return events.includes(event);
   });
+
+  const skipped = webhooks.length - subscribed.length;
+  if (!subscribed.length) return { fired: 0, skipped };
+
+  const payload: WebhookPayload = {
+    event,
+    timestamp: new Date().toISOString(),
+    ...(issueContext && { issue: issueContext }),
+    ...(details && { details }),
+  };
+
+  const results = await Promise.allSettled(
+    subscribed.map((wh) => deliverToUrl(admin, wh, payload))
+  );
+
+  const fired = results.filter((r) => r.status === 'fulfilled').length;
+  return { fired, skipped };
 }

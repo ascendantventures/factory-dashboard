@@ -8,6 +8,8 @@ import { UserFilterTabs, type UserFilter } from './UserFilterTabs';
 import { TestAccountBadge } from './TestAccountBadge';
 import { RoleChangeConfirmDialog } from './RoleChangeConfirmDialog';
 import { BulkDeleteConfirmDialog } from './BulkDeleteConfirmDialog';
+import { RoleAuditPanel } from './RoleAuditPanel';
+import { QaPurgePanel } from './QaPurgePanel';
 
 interface User {
   id: string;
@@ -373,6 +375,11 @@ export function UserManagementClient({ currentUserId }: Props) {
       {showInvite && (
         <InviteUserModal onClose={() => setShowInvite(false)} onSuccess={() => { setShowInvite(false); showToast('Invite sent successfully'); fetchUsers(); fetchCounts(); }} />
       )}
+
+      <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <RoleAuditPanel />
+        <QaPurgePanel />
+      </div>
     </div>
   );
 }
