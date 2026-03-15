@@ -6,7 +6,7 @@
 - **Live URL:** https://factory-dashboard-tau.vercel.app
 - **Build Repo:** https://github.com/ascendantventures/factory-dashboard
 - **Original Issue:** https://github.com/ascendantventures/harness-beta-test/issues/2
-- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/110
+- **Latest CR:** https://github.com/ascendantventures/harness-beta-test/issues/131
 
 ## Stack
 - Next.js 14 (App Router, v16.1.6)
@@ -181,6 +181,7 @@
 - **Webhooks page error handling (Issue #90)** — `page.tsx` uses Supabase `{ data, error }` pattern (not try/catch) to catch DB errors. On error, `webhooks` is null and empty state renders. An `error.tsx` boundary exists in the same directory to catch any unhandled server exceptions. The `WEBHOOK_SECRET_ENCRYPTION_KEY` is set for Production + Preview + Development in Vercel — do NOT remove it from Preview scope.
 - **Settings page duplicate `<main>` (Issue #107)** — `SettingsClient.tsx` had an inner `<main className="flex-1 md:pl-8 md:pt-0">` inside the outer layout `<main>`. This violates WCAG 2.1 SC 1.3.6 and breaks `agent-browser get text 'main'` with strict-mode violations. Fixed by changing inner `<main>` to `<section>` (line ~852 in `SettingsClient.tsx`). Do not use `<main>` for content sub-sections inside the layout shell.
 - **Event Log route fix (Issue #116)** — Sidebar "Event Log" href was updated in CR #114 to `/dashboard/event-log` but the page was never created. Fixed by creating `src/app/dashboard/event-log/page.tsx` (dark-mode, fetches from `/api/event-log`) and `src/app/api/event-log/route.ts` (queries `harness_events` table). The old page at `/dashboard/admin/events` is intentionally kept as a legacy route. Do NOT modify `/api/admin/events/route.ts` — it still queries `fdash_event_log` and may have other consumers.
+- **data-testid contract (Issue #131)** — All 17 testids in `RoleAuditPanel.tsx` and `QaPurgePanel.tsx` must exactly match the spec. Authoritative list: `role-audit-panel`, `role-audit-header`, `role-audit-list`, `role-audit-table`, `role-audit-row`, `audit-timestamp`, `audit-actor`, `audit-empty-state`, `audit-pagination`, `qa-purge-panel`, `qa-purge-header`, `purge-run-button`, `purge-preview-result`, `purge-preview-dismiss`, `purge-confirm-dialog`, `purge-result-alert`, `purge-history-table`. The preview/dry-run trigger button uses `purge-run-button` (NOT `purge-preview-btn`). Do not rename any of these testids without updating REGRESSION.md and the spec.
 
 ## Enhanced Kanban Cards (CR #13)
 - **IssueCard** now accepts `enrichment?: IssueEnrichment` + `onSelect?` — card click opens IssueDetailPanel
