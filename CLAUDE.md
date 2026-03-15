@@ -199,6 +199,16 @@
 - **API discriminator logic:** running→agent_spawned; qa+completed/failed→qa_result; cost+completed→cost_logged; done+live_url→build_deployed; else→stage_completed
 - **Issue title resolution:** JOIN in /api/activity; Realtime payloads don't join (title=null on live events)
 
+## Activity API — Cursor Pagination (CR #119)
+- **Route:** `GET /api/activity`
+- **Pagination:** Cursor-based using `before` ISO-8601 timestamp (NOT offset-based)
+- **Why cursor over offset:** Offset pagination skips events during concurrent inserts; cursor pagination is stable
+- **Parameters:**
+  - `limit` — max 200, default 50
+  - `before` — ISO timestamp; returns events with `occurred_at < before`
+- **Example:** `GET /api/activity?limit=50&before=2026-03-15T01:00:00.000Z`
+- **Tenant scoping (CR #119):** Route filters `dash_stage_transitions` and `dash_agent_runs` by repos in `dash_dashboard_config.tracked_repos` for the authenticated user. Returns `{ events: [] }` if user has no tracked repos.
+
 ## Live Agent Log Viewer (CR #21)
 - **Storage bucket:** `dash-agent-logs` — must be created in Supabase; logs stored as `{run_id}.log`
 - **New DB columns on dash_agent_runs:** `log_file_path` (text), `pid` (integer) — added via migration 20260313000000
