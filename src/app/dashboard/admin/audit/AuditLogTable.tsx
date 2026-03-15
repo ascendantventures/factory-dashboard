@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, FileSearch, SearchX } from 'lucide-react';
 import { AuditFilters, FilterState } from './AuditFilters';
 import { AuditEntryRow, AuditEntry } from './AuditEntryRow';
 import { ExportButton } from './ExportButton';
+import { LiveIndicator, LiveStatus } from './LiveIndicator';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
 
 interface AuditLogTableProps {
   initialEntries: AuditEntry[];
@@ -44,6 +46,59 @@ export function AuditLogTable({ initialEntries, initialTotal }: AuditLogTablePro
   const [filters, setFilters] = useState<FilterState>({
     email: '', category: '', action: '', dateFrom: '', dateTo: '',
   });
+  const [realtimeStatus, setRealtimeStatus] = useState<LiveStatus>('CONNECTING');
+  const [newEntryIds, setNewEntryIds] = useState<Set<string>>(new Set());
+  const filtersRef = useRef(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  // Supabase Realtime subscription on audit_log_entries
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+
+    const channel = supabase
+      .channel('audit-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'audit_log_entries' },
+        (payload) => {
+          const newEntry = payload.new as AuditEntry;
+          const f = filtersRef.current;
+
+          // AC-001.5: respect active filters — skip entries that don't match
+          if (f.category && newEntry.category !== f.category) return;
+          if (f.email && !newEntry.actor_email?.toLowerCase().includes(f.email.toLowerCase())) return;
+          if (f.action && !newEntry.action?.toLowerCase().includes(f.action.toLowerCase())) return;
+
+          setEntries(prev => [newEntry, ...prev]);
+          setTotal(prev => prev + 1);
+          setNewEntryIds(prev => new Set([...prev, newEntry.id]));
+
+          // Remove highlight after animation completes
+          setTimeout(() => {
+            setNewEntryIds(prev => {
+              const next = new Set(prev);
+              next.delete(newEntry.id);
+              return next;
+            });
+          }, 2000);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('SUBSCRIBED');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setRealtimeStatus('CLOSED');
+        } else {
+          setRealtimeStatus('CONNECTING');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const buildParams = useCallback((f: FilterState, p: number) => {
     const params = new URLSearchParams();
@@ -123,7 +178,10 @@ export function AuditLogTable({ initialEntries, initialTotal }: AuditLogTablePro
             Complete history of all dashboard actions
           </p>
         </div>
-        <ExportButton filters={filters} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <LiveIndicator status={realtimeStatus} />
+          <ExportButton filters={filters} />
+        </div>
       </div>
 
       {/* Filters */}
@@ -131,6 +189,7 @@ export function AuditLogTable({ initialEntries, initialTotal }: AuditLogTablePro
 
       {/* Table Panel */}
       <div
+        data-testid="audit-table"
         style={{
           background: '#161A1F',
           border: '1px solid #2A3038',
@@ -179,7 +238,12 @@ export function AuditLogTable({ initialEntries, initialTotal }: AuditLogTablePro
                 </tr>
               ) : (
                 entries.map((entry, i) => (
-                  <AuditEntryRow key={entry.id} entry={entry} index={i} />
+                  <AuditEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    index={i}
+                    isNew={newEntryIds.has(entry.id)}
+                  />
                 ))
               )}
             </tbody>
@@ -240,7 +304,7 @@ export function AuditLogTable({ initialEntries, initialTotal }: AuditLogTablePro
                 {loadingMore ? (
                   <Loader2 style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
                 ) : null}
-                {loadingMore ? 'Loading…' : 'Load more entries'}
+                {loadingMore ? 'Loading\u2026' : 'Load more entries'}
               </button>
             )}
           </div>

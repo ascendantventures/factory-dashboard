@@ -41,9 +41,10 @@ function absoluteTime(iso: string): string {
 interface AuditEntryRowProps {
   entry: AuditEntry;
   index: number;
+  isNew?: boolean;
 }
 
-export function AuditEntryRow({ entry, index }: AuditEntryRowProps) {
+export function AuditEntryRow({ entry, index, isNew }: AuditEntryRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -51,13 +52,12 @@ export function AuditEntryRow({ entry, index }: AuditEntryRowProps) {
     <>
       <motion.tr
         custom={index}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: Math.min(index * 0.03, 0.3),
-          duration: 0.3,
-          ease: [0.25, 1, 0.5, 1],
-        }}
+        initial={isNew ? { opacity: 0, y: -8, backgroundColor: 'rgba(99,102,241,0.2)' } : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0, backgroundColor: 'transparent' }}
+        transition={isNew
+          ? { duration: 0.5, ease: [0.25, 1, 0.5, 1] }
+          : { delay: Math.min(index * 0.03, 0.3), duration: 0.3, ease: [0.25, 1, 0.5, 1] }
+        }
         style={{
           background: expanded ? '#3D3526' : hovered ? '#1E2328' : 'transparent',
           borderBottom: '1px solid #1F242A',
