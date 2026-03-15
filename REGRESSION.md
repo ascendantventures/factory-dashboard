@@ -9,6 +9,23 @@ Tests marked `[auth]` require login first.
 
 ---
 
+## Bugfix Log — Issue #16 (2026-03-15)
+
+### Root Cause
+The BUILD agent completed all Phase 2 implementation on `feature/issue-16` (commit `dc0c946`) but did not open a pull request and did not deploy a Vercel preview. As a result, all three new API routes (`/api/webhooks/vercel`, `/api/apps/[repoId]/analytics`, `/api/apps/[repoId]/history`) returned 404 on production because the feature branch code was never merged or deployed.
+
+### Fix Applied
+- Opened PR from `feature/issue-16` → `main` in `ascendantventures/factory-dashboard`
+- Deployed Vercel preview from the feature branch
+- No code changes were required — the implementation was correct and TypeScript-clean
+
+### Regression Notes
+- **Always verify a PR exists** for feature branches before closing a BUILD station. A branch with zero open PRs = deployment blocker.
+- **Route smoke test should target the preview URL**, not production, when QA runs against feature branches.
+- Phase 2 routes require auth (`Authorization: Bearer <token>`) — 401 is the correct unauthenticated response; 404 means the route does not exist at all.
+
+---
+
 ## Authentication
 _Core: Issue #2_
 
@@ -972,3 +989,111 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## [Phase 2 Deferred Features] (Issue #16)
+_Added: 2026-03-15_
+
+### REQ-DASH2-001 & 002: Vercel Webhook Ingestion + Signature Verification
+
+#### Test Steps
+- [ ] POST to `https://factory-dashboard-tau.vercel.app/api/webhooks/vercel` with a valid HMAC-SHA1 signed body → expect `200 {"received":true}`
+- [ ] POST with invalid/missing `x-vercel-signature` header → expect `401` response
+- [ ] POST with missing `VERCEL_WEBHOOK_SECRET` env var set → expect `500` (check with env temporarily removed — skip in prod)
+- [ ] POST `deployment.ready` event → verify `dash_deployment_cache` row for that repo shows `deploy_state: 'READY'` within 5 seconds
+- [ ] POST `deployment.error` event → verify row shows `deploy_state: 'ERROR'`
+- [ ] POST `deployment.created` event → verify row shows `deploy_state: 'BUILDING'`
+- [ ] POST unknown event type (e.g., `project.created`) → expect `200 {"received":true,"ignored":true}` with no DB change
+
+#### Routes/Endpoints
+- `POST /api/webhooks/vercel`
+
+---
+
+### REQ-DASH2-003: Station Transition History Recording
+
+#### Test Steps
+- [ ] Trigger a station label flip on any issue via the harness (e.g., move from `station:build` to `station:qa`)
+- [ ] Query `dash_station_history` for that `issue_number` → expect a new row with correct `from_station`, `station`, `transitioned_at`, `actor: 'harness'`
+- [ ] Verify first-ever transition for a new issue has `from_station: null`
+- [ ] Verify existing history rows are NOT deleted or modified after subsequent transitions (append-only)
+
+#### Routes/Endpoints
+- Harness `factory/src/pipeline/reconciler.ts` → `flipLabel()`
+- Harness `factory/src/notify/supabase.ts` → `recordStationTransition()`
+
+---
+
+### REQ-DASH2-004: Station Timeline UI
+
+#### Test Steps
+- [ ] [auth] Log in and navigate to `/dashboard/apps`
+- [ ] Click any app card to open the `AppDetailDrawer`
+- [ ] Verify tab bar is visible with three tabs: "Overview", "Analytics", "Timeline" (`data-testid`: `drawer-tab-overview`, `drawer-tab-analytics`, `drawer-tab-timeline`)
+- [ ] Click the "Timeline" tab → verify it activates (border-bottom turns indigo) and tab panel appears
+- [ ] If station history exists: verify each transition node has station name, relative timestamp, actor badge (`data-testid`: `timeline-node`)
+- [ ] If no history: verify "No history recorded" empty state appears (`data-testid`: `timeline-empty`)
+- [ ] Verify timeline is grouped by issue (`data-testid`: `timeline-issue-group`)
+- [ ] Hover over timestamp → verify absolute datetime appears in tooltip/title
+- [ ] Verify station-colored dots: done=green, build=amber, qa=cyan, spec=blue, design=purple, intake=gray
+- [ ] Switch back to "Overview" tab → verify Overview content still renders correctly
+- [ ] Keyboard: Tab to tab bar, use Arrow keys to move between tabs, press Enter/Space to activate
+
+#### Routes/Endpoints
+- `GET /api/apps/[repoId]/history`
+
+---
+
+### REQ-DASH2-005 & 006: Vercel Analytics Display + Cache Staleness
+
+#### Test Steps
+- [ ] [auth] Open any app drawer, click "Analytics" tab
+- [ ] If `VERCEL_ANALYTICS_TOKEN` is NOT configured: verify `data-testid="analytics-unconfigured"` panel shows with instructions
+- [ ] If `VERCEL_ANALYTICS_TOKEN` IS configured:
+  - [ ] Verify 4 metric cards appear: Page Views (`analytics-pageviews`), Unique Visitors (`analytics-visitors`), p75 Latency (`analytics-latency`), Error Rate (`analytics-errorrate`)
+  - [ ] Verify metric values are numbers (not NaN or undefined)
+  - [ ] Verify cache notice shows "Updated X min ago" (`data-testid="analytics-cache-notice"`)
+  - [ ] Click refresh button (`data-testid="analytics-refresh"`) → icon spins, cache notice updates
+  - [ ] Wait 1 hour (or manually expire cache in DB) → verify next tab open fetches fresh data and updates `fetched_at`
+- [ ] Error state: if analytics API returns non-200 → verify error state with retry button appears
+- [ ] Skeleton: verify 4 skeleton cards appear while loading (before first fetch)
+
+#### Routes/Endpoints
+- `GET /api/apps/[repoId]/analytics`
+- Supabase: `dash_analytics_cache` table
+
+
+---
+
+## [Code Fix] Phase 2 Component Corrections (Issue #134)
+_Added: 2026-03-15_
+
+### Bug Fixes Applied
+- `AppAnalyticsPanel.tsx`: Fixed `useState()` used as side-effect hook → replaced with `useEffect([], [])`
+- `AppDetailDrawer.tsx`: Fixed hardcoded `#6366F1` active-tab colors → replaced with `var(--primary)`
+- `StationTimelineItem.tsx`: Added `fromStation` → `station` transition arrow display
+
+### Test Steps — AppAnalyticsPanel Auto-Fetch
+- [ ] [auth] Open any app drawer from `/dashboard/apps` → click "Analytics" tab
+- [ ] Verify analytics data loads automatically WITHOUT requiring a manual refresh button click
+- [ ] Verify 4 skeleton cards appear briefly while data loads, then metric cards appear
+- [ ] If `VERCEL_ANALYTICS_TOKEN` missing: verify "Analytics not configured" empty state (not a JS error)
+
+### Test Steps — Active Tab CSS Variables
+- [ ] [auth] Navigate to `/dashboard/apps`
+- [ ] Open any app drawer → verify active tab label and underline use `var(--primary)` indigo (#6366F1)
+- [ ] Switch between Overview / Analytics / Timeline tabs → verify active tab indicator follows correctly
+- [ ] Verify inactive tabs are `var(--text-secondary)` grey, not indigo
+
+### Test Steps — fromStation Transition Arrow
+- [ ] [auth] Open any app drawer → click "Timeline" tab
+- [ ] If station history exists: verify each timeline node shows `fromStation → toStation` (e.g., "spec → build")
+- [ ] Verify fromStation text uses the correct station color (amber for build, blue for spec, etc.)
+- [ ] If first transition (no fromStation): verify only destination station name is shown without arrow
+- [ ] Verify station colors match vocabulary: done=green, build=amber, qa=cyan, spec=blue, design=purple, bugfix=red, intake=gray
+
+### Routes/Endpoints
+- `GET /api/apps/[repoId]/analytics`
+- `GET /api/apps/[repoId]/history`
+- `/dashboard/apps` (app drawer component)
