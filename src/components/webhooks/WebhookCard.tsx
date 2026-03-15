@@ -16,11 +16,12 @@ interface Webhook {
 
 interface WebhookCardProps {
   webhook: Webhook;
+  onViewDeliveries?: (webhookId: string) => void;
 }
 
 const MAX_VISIBLE_EVENTS = 5;
 
-export default function WebhookCard({ webhook }: WebhookCardProps) {
+export default function WebhookCard({ webhook, onViewDeliveries }: WebhookCardProps) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(webhook.enabled);
   const [toggling, setToggling] = useState(false);
@@ -199,8 +200,10 @@ export default function WebhookCard({ webhook }: WebhookCardProps) {
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <Link
-            href={`/dashboard/settings/webhooks/${webhook.id}`}
+          <button
+            data-testid="view-deliveries-btn"
+            type="button"
+            onClick={() => onViewDeliveries?.(webhook.id)}
             style={{
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '13px',
@@ -211,12 +214,14 @@ export default function WebhookCard({ webhook }: WebhookCardProps) {
               gap: '6px',
               padding: '6px 10px',
               borderRadius: '6px',
-              textDecoration: 'none',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
               transition: 'all 150ms ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#E85D04';
-              e.currentTarget.style.background = 'rgba(232, 93, 4, 0.1)';
+              e.currentTarget.style.color = 'var(--primary, #6366F1)';
+              e.currentTarget.style.background = 'var(--primary-muted, rgba(99,102,241,0.15))';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = '#6B7380';
@@ -225,7 +230,7 @@ export default function WebhookCard({ webhook }: WebhookCardProps) {
           >
             <Activity size={14} />
             View deliveries
-          </Link>
+          </button>
 
           <div className="flex items-center gap-2">
             <Link

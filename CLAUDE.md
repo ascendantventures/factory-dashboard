@@ -661,8 +661,11 @@ All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles
 - `src/hooks/useRealtimeEvents.ts` — Supabase Realtime subscription on `harness_events` INSERT. Calls onNewEvent callback for each new row.
 
 ### Updated Components (Phase 2)
-- `src/app/dashboard/settings/webhooks/HarnessWebhooksClient.tsx` — Added "Deliveries" button on each webhook card (opens DeliveryHistoryDrawer). Test ID: `view-deliveries-btn`.
+- `src/app/dashboard/settings/webhooks/page.tsx` — Now renders `HarnessWebhooksClient` in a "Pipeline Event Webhooks" section above the existing fd_webhooks list.
+- `src/app/dashboard/settings/webhooks/HarnessWebhooksClient.tsx` — Full CRUD for harness_webhooks + DeliveryHistoryDrawer integration. Test ID: `view-deliveries-btn`.
+- `src/components/webhooks/WebhookCard.tsx` — Added `onViewDeliveries` prop + `data-testid="view-deliveries-btn"` on the deliveries button.
 - `src/app/dashboard/event-log/page.tsx` — Added RealtimePulse + useRealtimeEvents. New events prepend to table with `event-row-new` CSS animation. Refresh button still functional.
+- `src/app/globals.css` — Phase 2 CSS tokens in `:root`: `--delivery-*-bg`, `--pulse-live`, `--pulse-polling`, `--ease-out-expo`. Animations: `delivery-drawer-in/out`, `event-row-enter`, `realtime-pulse-ring`, `retry-spin`, `pulse-blink`.
 
 ### Supabase Edge Function
 - `supabase/functions/harness-purge-events/index.ts` — Daily purge function. Calls `harness_purge_old_events(event_ttl_days, delivery_ttl_days)` SQL function. Schedule: daily at 02:00 UTC (set in Supabase Dashboard).

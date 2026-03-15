@@ -971,3 +971,12 @@ _Added: 2026-03-15_
 - GET /api/harness/webhook-delivery/[webhookId]?limit=20&offset=0
 - POST /api/harness/webhook-delivery/process
 - POST /api/webhooks/github
+
+### CSS tokens and Pipeline Webhooks section [auth]
+
+- [ ] Navigate to /dashboard/settings/webhooks — "Pipeline Event Webhooks" section visible above existing webhooks
+- [ ] Delivery drawer animation: smooth slide from right (300ms ease-out-expo) on open
+- [ ] Delivery drawer backdrop: blurred dark overlay behind drawer
+- [ ] Reduced motion: drawer opens with opacity fade only (no slide) when prefers-reduced-motion is set
+- [ ] DeliveryRow hover: subtle indigo tint highlight on row hover
+- [ ] RetryBadge: retrying rows show "Retrying" label with spinning RefreshCw icon

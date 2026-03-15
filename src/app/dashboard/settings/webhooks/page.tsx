@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Plus, Webhook } from 'lucide-react';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import WebhookCard from '@/components/webhooks/WebhookCard';
+import HarnessWebhooksClient from './HarnessWebhooksClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,6 +169,24 @@ export default async function WebhooksSettingsPage() {
             </div>
           </Link>
         </div>
+      </div>
+
+      {/* Phase 2: Harness Pipeline Webhooks (outbound delivery with delivery history) */}
+      <div style={{ marginBottom: '40px' }}>
+        <div
+          style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: '#6B7380',
+            marginBottom: '12px',
+          }}
+        >
+          Pipeline Event Webhooks
+        </div>
+        <HarnessWebhooksClient />
       </div>
 
       {/* Webhooks List */}
