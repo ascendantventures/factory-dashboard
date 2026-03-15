@@ -972,3 +972,33 @@ _Added: 2026-03-14_
 ### Routes/Endpoints
 - /pipeline (PipelineStatusCard)
 - /dashboard (ActivityFeed sidebar)
+
+---
+
+## Activity Feed Tenant Isolation + Webhook from_station Recovery (Issue #119)
+_Added: 2026-03-15_
+
+### Test Steps — Activity feed tenant isolation [auth]
+- [ ] Login and navigate to /dashboard
+- [ ] Open activity sidebar (click activity toggle button, data-testid="activity-toggle-btn")
+- [ ] Activity feed shows only events from repos listed in your dashboard config tracked_repos
+- [ ] Hit GET /api/activity directly — response is 200 with `{ events: [] }` shape; all event.repo values are in user's tracked_repos
+- [ ] Hit GET /api/activity without auth (logged out) — response is 401
+
+### Test Steps — Activity feed empty when no tracked repos [auth]
+- [ ] If user has no tracked repos configured, GET /api/activity returns `{ events: [] }` (not an error)
+- [ ] Activity feed shows empty state (not an error message)
+
+### Test Steps — Cursor pagination [auth]
+- [ ] Hit GET /api/activity?before=<ISO timestamp>&limit=10 — all returned events have occurred_at < the before parameter
+- [ ] Hit GET /api/activity?limit=200 — up to 200 events returned
+- [ ] Hit GET /api/activity?limit=999 — capped at 200 events
+
+### Test Steps — Webhook from_station recovery (manual)
+- [ ] On a test GitHub issue in a tracked repo, add a station:build label (triggers labeled event) — activity feed shows transition with correct from_station
+- [ ] Remove station:build and immediately add station:qa (triggers unlabeled then labeled) — the new stage_completed event shows from_station: "build" (not null)
+
+### Routes/Endpoints
+- GET /api/activity?limit=N&before=<ISO>
+- POST /api/webhooks/github (issues.labeled / issues.unlabeled events)
+- /dashboard (activity sidebar)

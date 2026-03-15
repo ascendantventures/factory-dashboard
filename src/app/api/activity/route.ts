@@ -112,16 +112,31 @@ export async function GET(request: NextRequest) {
 
     const admin = createSupabaseAdminClient();
 
-    // Two parallel queries
+    // Derive user's tracked repos for tenant scoping
+    const { data: configRow } = await admin
+      .from('dash_dashboard_config')
+      .select('tracked_repos')
+      .eq('user_id', user.id)
+      .single();
+
+    const trackedRepos: string[] = configRow?.tracked_repos ?? [];
+
+    if (trackedRepos.length === 0) {
+      return NextResponse.json({ events: [] });
+    }
+
+    // Two parallel queries — scoped to user's tracked repos
     let transitionsQuery = admin
       .from('dash_stage_transitions')
       .select('id, issue_id, issue_number, repo, from_station, to_station, transitioned_at, duration_seconds, metadata')
+      .in('repo', trackedRepos)
       .order('transitioned_at', { ascending: false })
       .limit(limit);
 
     let runsQuery = admin
       .from('dash_agent_runs')
       .select('id, issue_id, issue_number, repo, station, model, started_at, run_status, duration_seconds, estimated_cost_usd, log_summary')
+      .in('repo', trackedRepos)
       .order('started_at', { ascending: false })
       .limit(limit);
 

@@ -99,8 +99,20 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (existingIssue) {
-            const oldStation = existingIssue.station;
+            let fromStation = existingIssue.station;
             const targetStation = payload.action === 'labeled' ? newStation : null;
+
+            // If station was cleared by a prior unlabeled event, recover from last transition
+            if (fromStation === null && payload.action === 'labeled') {
+              const { data: lastTransition } = await admin
+                .from('dash_stage_transitions')
+                .select('to_station')
+                .eq('issue_id', existingIssue.id)
+                .order('transitioned_at', { ascending: false })
+                .limit(1)
+                .single();
+              fromStation = lastTransition?.to_station ?? null;
+            }
 
             await admin
               .from('dash_issues')
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
               issue_id: existingIssue.id,
               repo,
               issue_number: issueNumber,
-              from_station: oldStation,
+              from_station: fromStation,
               to_station: targetStation,
               transitioned_at: new Date().toISOString(),
             });
