@@ -641,7 +641,7 @@ export function QaPurgePanel() {
             {/* Action buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
               <button
-                data-testid="purge-preview-btn"
+                data-testid="purge-run-button"
                 onClick={handlePreview}
                 disabled={previewLoading}
                 style={{

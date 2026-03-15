@@ -210,7 +210,7 @@ export function RoleAuditPanel() {
 
       {/* Body */}
       {open && (
-        <div>
+        <div data-testid="role-audit-list">
           {loading ? (
             <div style={{ padding: '48px 24px', textAlign: 'center', color: '#71717A', fontSize: '14px', fontFamily: "'Inter', system-ui, sans-serif" }}>
               Loading…
@@ -262,7 +262,7 @@ export function RoleAuditPanel() {
                         height: '48px',
                       }}
                     >
-                      <td style={{ padding: '0 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: '#71717A', whiteSpace: 'nowrap' as const }}>
+                      <td data-testid="audit-timestamp" style={{ padding: '0 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', color: '#71717A', whiteSpace: 'nowrap' as const }}>
                         {formatDateTime(row.changed_at)}
                       </td>
                       <td style={{ padding: '0 16px', fontSize: '13px', color: '#FAFAFA', fontFamily: "'Inter', system-ui, sans-serif", maxWidth: '200px' }}>
@@ -270,7 +270,7 @@ export function RoleAuditPanel() {
                           {row.target_email}
                         </span>
                       </td>
-                      <td style={{ padding: '0 16px', fontSize: '13px', color: '#A1A1AA', fontFamily: "'Inter', system-ui, sans-serif", maxWidth: '200px' }}>
+                      <td data-testid="audit-actor" style={{ padding: '0 16px', fontSize: '13px', color: '#A1A1AA', fontFamily: "'Inter', system-ui, sans-serif", maxWidth: '200px' }}>
                         <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={row.changed_by_email}>
                           {row.changed_by_email}
                         </span>
