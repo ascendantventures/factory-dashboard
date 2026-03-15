@@ -625,3 +625,65 @@ _Source: https://github.com/ascendantventures/harness-beta-test/issues/108_
 
 ### No DB migrations required
 All operations use existing `auth.users` (Supabase Admin API) and `fd_user_roles` table.
+
+---
+
+## Phase 2 — Issue #16: Deferred Features (Webhooks, Timeline, Analytics)
+_Source: https://github.com/ascendantventures/harness-beta-test/issues/16_
+_Build date: 2026-03-15_
+
+### What was added
+
+**Three deferred features from Phase 1 now live:**
+
+1. **Vercel Deployment Webhooks** — `POST /api/webhooks/vercel`
+   - Receives Vercel deployment events (created/ready/error/canceled)
+   - Verifies HMAC-SHA1 signature via `VERCEL_WEBHOOK_SECRET`
+   - Updates `dash_deployment_cache` with deploy_state, deploy_url, deployed_at
+   - Requires raw body (not parsed) — Next.js route reads `request.arrayBuffer()`
+
+2. **Station Transition Timeline** — `GET /api/apps/[repoId]/history`
+   - Returns station history from new `dash_station_history` table
+   - Joined with `dash_issues` to group by issue
+   - Shown in new "Timeline" tab in `AppDetailDrawer`
+
+3. **Vercel Analytics** — `GET /api/apps/[repoId]/analytics`
+   - Fetches from Vercel Analytics API if `VERCEL_ANALYTICS_TOKEN` is set
+   - 1h cache in `dash_analytics_cache` table
+   - Graceful "not configured" state when token missing
+   - Shown in new "Analytics" tab in `AppDetailDrawer`
+
+### New DB tables (migration: `20260315120000_spec_schema.sql`)
+- `dash_station_history` — one row per station transition (issue_number, station, from_station, transitioned_at, actor)
+- `dash_analytics_cache` — Vercel Analytics cached per repo (metrics jsonb, fetched_at)
+- Added `last_webhook_at`, `webhook_event` columns to `dash_deployment_cache`
+
+### New environment variables
+- `VERCEL_WEBHOOK_SECRET` — HMAC-SHA1 secret for verifying Vercel webhook payloads
+- `VERCEL_ANALYTICS_TOKEN` — Token for Vercel Analytics Query API (optional; graceful degradation if missing)
+
+### New files
+- `src/lib/webhooks.ts` — `verifyVercelWebhook()` HMAC utility
+- `src/lib/vercel-analytics.ts` — Vercel Analytics API client
+- `src/app/api/webhooks/vercel/route.ts` — Webhook ingestion endpoint
+- `src/app/api/apps/[repoId]/analytics/route.ts` — Analytics API with 1h cache
+- `src/app/api/apps/[repoId]/history/route.ts` — Station history API
+- `src/components/apps/AppAnalyticsPanel.tsx` — Analytics 2x2 metric grid
+- `src/components/apps/StationTimeline.tsx` — Timeline grouped by issue
+- `src/components/apps/StationTimelineItem.tsx` — Single timeline node
+
+### Modified files
+- `src/components/apps/AppDetailDrawer.tsx` — Added tab bar (Overview/Analytics/Timeline) with lazy fetch
+- `src/lib/motion.ts` — Added `tabContentVariants`, `metricCardVariants`, `timelineNodeVariants`
+- `src/app/globals.css` — Added Phase 2 CSS tokens for analytics and timeline
+- `factory/src/notify/supabase.ts` — Added `recordStationTransition()` function
+- `factory/src/pipeline/reconciler.ts` — `flipLabel()` now calls `recordStationTransition()` after label flip
+
+### Harness patch note
+The reconciler calls `recordStationTransition()` non-blocking (fire-and-forget) after each label flip. Requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in harness environment to write history. If not set, silently no-ops.
+
+### Known gotchas
+- Vercel webhook payload structure: repo info is in `payload.deployment.meta.githubOrg` / `payload.deployment.meta.githubRepo`
+- Analytics token is `VERCEL_ANALYTICS_TOKEN` (separate from `VERCEL_API_TOKEN` for deploy API)
+- `dash_station_history` has no unique constraint — every transition is a new row (insert, not upsert)
+- `dash_analytics_cache` upserts on `repo_full_name` — one row per repo

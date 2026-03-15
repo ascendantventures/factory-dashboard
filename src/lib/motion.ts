@@ -33,3 +33,44 @@ export const viewModeVariants: Variants = {
   animate: { opacity: 1, transition: { duration: 0.2 } },
   exit: { opacity: 0, transition: { duration: 0.15 } },
 }
+
+// Phase 2 variants — drawer tabs, analytics, timeline
+export const tabContentVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.15, ease: [0.25, 1, 0.5, 1] as unknown as string },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    transition: { duration: 0.1, ease: [0.25, 1, 0.5, 1] as unknown as string },
+  },
+}
+
+export const metricCardVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.05,
+      duration: 0.2,
+      ease: [0.25, 1, 0.5, 1] as unknown as string,
+    },
+  }),
+}
+
+export const timelineNodeVariants: Variants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: i * 0.03,
+      duration: 0.15,
+      ease: [0.25, 1, 0.5, 1] as unknown as string,
+    },
+  }),
+}
