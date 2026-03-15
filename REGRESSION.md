@@ -1138,3 +1138,17 @@ _Added: 2026-03-15_
 ### Routes/Endpoints
 - `POST /api/admin/audit/purge` — requires `x-cron-secret` header matching `CRON_SECRET` env var
 
+---
+
+## Bugfix Log — Issue #34 (2026-03-15)
+
+### QA Block: Missing PR and Vercel Preview Deployment
+
+**Root cause:** The feature branch `feature/issue-34` was pushed with all implementation complete but no pull request was opened. Without a PR, Vercel did not auto-deploy a preview environment, causing QA to block with 404s on `/api/admin/audit/retention` and `/api/admin/audit/purge`.
+
+**Fix applied:** Opened PR from `feature/issue-34` → `main`; Vercel preview auto-deployed on PR creation.
+
+**Regression note:** Static code review PASSED — all ACs, auth guards, data-testid attributes, and migration SQL were correct in the original commit. No code changes were required; the only gap was deployment.
+
+**Gotcha to avoid:** Build agent must open a PR (not just push a branch) to trigger Vercel preview deployment. A pushed branch without a PR will not deploy and QA will block.
+
