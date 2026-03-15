@@ -52,6 +52,12 @@ export function ActivityFeed() {
         <p className="text-xs" style={{ color: '#71717A' }}>
           Waiting for pipeline events…
         </p>
+        <p
+          className="text-xs mt-1"
+          style={{ color: '#71717A', maxWidth: '240px' }}
+        >
+          Events appear when agents complete stages, builds finish, or issues are deployed.
+        </p>
       </div>
     );
   }
